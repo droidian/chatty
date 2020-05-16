@@ -1,5 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: chatty
+Upstream-Contact: Mohammed Sadiq <sadiq@sadiqpk.org>
 Source: https://code.puri.sm/Librem5/chatty
 
 Files: *
