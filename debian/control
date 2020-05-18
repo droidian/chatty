@@ -27,7 +27,7 @@ Recommends: purple-carbons,
             purple-lurch,
             purple-mm-sms,
             purple-xmpp-http-upload
-Suggests: calls
+Suggests: gnome-calls
 Description: XMPP and SMS messaging
  Chatty is a chat application for XMPP and SMS using
  libpurple and Modemmanager.
