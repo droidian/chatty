@@ -6,6 +6,7 @@ Uploaders: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 Build-Depends: appstream-util,
                debhelper-compat (= 13),
                desktop-file-utils,
+               help2man,
                libebook-contacts1.2-dev,
                libebook1.2-dev,
                libfeedback-dev,
