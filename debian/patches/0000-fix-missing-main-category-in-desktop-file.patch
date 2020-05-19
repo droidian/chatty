@@ -1,5 +1,5 @@
 Subject: Fix missing main category from desktop file
-From: Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>
+From: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 --- a/data/sm.puri.Chatty-daemon.desktop.in
 +++ b/data/sm.puri.Chatty-daemon.desktop.in
 @@ -6,7 +6,7 @@

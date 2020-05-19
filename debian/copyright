@@ -6,6 +6,13 @@ Source: https://code.puri.sm/Librem5/chatty
 Files: *
 Copyright: 2018 Andrea Schaefer <andrea.schaefer@puri.sm>
 License: GPL-3+
+
+Files: debian/*
+Copyright: 2018 Andrea Schaefer <andrea.schaefer@puri.sm>
+ 2020 Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
+License: GPL-3+
+
+License: GPL-3+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or

@@ -2,7 +2,7 @@ Source: chatty
 Section: net
 Priority: optional
 Maintainer: Mohammed Sadiq <sadiq@sadiqpk.org>
-Uploaders: Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>
+Uploaders: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 Build-Depends: appstream-util,
                debhelper-compat (= 13),
                desktop-file-utils,

@@ -1,5 +1,5 @@
 Subject: Rename appdata.xml to metainfo.xml
-From: Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>
+From: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 --- a/data/meson.build
 +++ b/data/meson.build
 @@ -29,11 +29,11 @@
