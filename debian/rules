@@ -10,7 +10,14 @@ override_dh_shlibdeps:
 
 override_dh_install:
 	dh_install
-# install metadata in correct location
+# Install metadata in correct location
 	mv debian/chatty/usr/share/appdata debian/chatty/usr/share/metainfo
 	mv debian/chatty/usr/share/metainfo/sm.puri.Chatty.appdata.xml \
                 debian/chatty/usr/share/metainfo/sm.puri.Chatty.metainfo.xml
+
+# Generate manpage with help2man
+override_dh_installman:
+	mkdir -p debian/chatty/usr/share/man/man1
+	help2man --no-info --name "XMPP and SMS messaging" --section=1 \
+		debian/chatty/usr/bin/chatty > \
+		debian/chatty/usr/share/man/man1/chatty.1
