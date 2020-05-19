@@ -2,19 +2,21 @@ Source: chatty
 Section: net
 Priority: optional
 Maintainer: DebianOnMobile Maintainers <debian-on-mobile-maintainers@alioth-lists.debian.net>
-Uploaders: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
-Build-Depends: appstream-util,
-               debhelper-compat (= 13),
-               desktop-file-utils,
-               help2man,
-               libebook-contacts1.2-dev,
-               libebook1.2-dev,
-               libfeedback-dev,
-               libgtk-3-dev,
-               libhandy-0.0-dev (>= 0.0.10),
-               libpurple-dev,
-               libsqlite3-dev,
-               meson
+Uploaders:
+ Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>,
+Build-Depends:
+ appstream-util,
+ debhelper-compat (= 13),
+ desktop-file-utils,
+ help2man,
+ libebook-contacts1.2-dev,
+ libebook1.2-dev,
+ libfeedback-dev,
+ libgtk-3-dev,
+ libhandy-0.0-dev (>= 0.0.10),
+ libpurple-dev,
+ libsqlite3-dev,
+ meson,
 Standards-Version: 4.5.0
 Homepage: https://source.puri.sm/Librem5/chatty
 Vcs-Browser: https://salsa.debian.org/DebianOnMobile-team/chatty
@@ -23,12 +25,16 @@ Rules-Requires-Root: no
 
 Package: chatty
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Recommends: purple-carbons,
-            purple-lurch,
-            purple-mm-sms,
-            purple-xmpp-http-upload
-Suggests: gnome-calls
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Recommends:
+ purple-carbons,
+ purple-lurch,
+ purple-mm-sms,
+ purple-xmpp-http-upload,
+Suggests:
+ gnome-calls,
 Description: XMPP and SMS messaging
  Chatty is a chat application for XMPP and SMS using
  libpurple and Modemmanager.
