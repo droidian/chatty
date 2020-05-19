@@ -1,7 +1,7 @@
 Source: chatty
 Section: net
 Priority: optional
-Maintainer: Mohammed Sadiq <sadiq@sadiqpk.org>
+Maintainer: DebianOnMobile Maintainers <debian-on-mobile-maintainers@alioth-lists.debian.net>
 Uploaders: Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 Build-Depends: appstream-util,
                debhelper-compat (= 13),
