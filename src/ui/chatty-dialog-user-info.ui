@@ -58,10 +58,9 @@
                             <property name="margin_bottom">24</property>
                             <signal name="clicked" handler="button_avatar_clicked_cb" swapped="yes"/>
                             <child>
-                              <object class="GtkImage">
+                              <object class="ChattyAvatar" id="avatar">
                                 <property name="visible">True</property>
                                 <property name="pixel_size">96</property>
-                                <property name="icon_name">avatar-default-symbolic</property>
                               </object>
                             </child>
                           </object>
@@ -234,7 +233,6 @@
                                     <property name="can_focus">True</property>
                                     <property name="valign">center</property>
                                     <property name="visible">True</property>
-                                    <signal name="notify::active" handler="switch_encryption_changed_cb" swapped="yes"/>
                                   </object>
                                 </child>
                               </object>

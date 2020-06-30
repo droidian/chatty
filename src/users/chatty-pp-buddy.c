@@ -21,7 +21,6 @@
 #include "chatty-account.h"
 #include "chatty-pp-account.h"
 #include "chatty-window.h"
-#include "chatty-purple-init.h"
 #include "chatty-pp-buddy.h"
 
 /**
@@ -44,6 +43,7 @@ struct _ChattyPpBuddy
 
   PurpleConvChatBuddy *chat_buddy;
 
+  gpointer          *avatar_data; /* purple icon data */
   PurpleStoredImage *pp_avatar;
   GdkPixbuf         *avatar;
   ChattyProtocol     protocol;
@@ -297,7 +297,12 @@ load_icon (gpointer user_data)
     len = purple_imgstore_get_size (img);
   }
 
+  /* If Icon hasn’t changed, don’t update */
+  if (data == self->avatar_data)
+    return G_SOURCE_REMOVE;
+
   g_clear_object (&self->avatar);
+  self->avatar_data = (gpointer)data;
   self->avatar = chatty_icon_from_data (data, len);
   g_signal_emit_by_name (self, "avatar-changed");
 
@@ -391,14 +396,15 @@ chatty_pp_buddy_constructed (GObject *object)
 }
 
 static void
-chatty_pp_buddy_finalize (GObject *object)
+chatty_pp_buddy_dispose (GObject *object)
 {
   ChattyPpBuddy *self = (ChattyPpBuddy *)object;
 
-  g_free (self->username);
-  g_free (self->name);
+  g_clear_object (&self->avatar);
+  g_clear_pointer (&self->username, g_free);
+  g_clear_pointer (&self->name, g_free);
 
-  G_OBJECT_CLASS (chatty_pp_buddy_parent_class)->finalize (object);
+  G_OBJECT_CLASS (chatty_pp_buddy_parent_class)->dispose (object);
 }
 
 static void
@@ -409,7 +415,7 @@ chatty_pp_buddy_class_init (ChattyPpBuddyClass *klass)
 
   object_class->set_property = chatty_pp_buddy_set_property;
   object_class->constructed  = chatty_pp_buddy_constructed;
-  object_class->finalize = chatty_pp_buddy_finalize;
+  object_class->dispose = chatty_pp_buddy_dispose;
 
   item_class->get_protocols = chatty_pp_buddy_get_protocols;
   item_class->matches  = chatty_pp_buddy_matches;

@@ -11,6 +11,9 @@
 #include "chatty-utils.h"
 #include <libebook-contacts/libebook-contacts.h>
 
+/* https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gtk/org.gtk.Settings.FileChooser.gschema.xml#L42 */
+#define CLOCK_FORMAT_24H 0
+#define CLOCK_FORMAT_12H 1
 
 static const char *avatar_colors[] = {
   "E57373", "F06292", "BA68C8", "9575CD",
@@ -50,7 +53,7 @@ chatty_utils_check_phonenumber (const char *phone_number)
   number = e_phone_number_from_string (stripped, NULL, &err);
 
   if (!number || !e_phone_number_is_supported ()) {
-    g_debug ("%s %s: %s\n", __func__, phone_number, err->message);
+    g_debug ("%s %s: %s", __func__, phone_number, err->message);
 
     result = NULL;
   } else {
@@ -242,28 +245,6 @@ chatty_utils_create_fingerprint_row (const char *fp,
   return GTK_WIDGET(row);
 }
 
-
-// TODO: This is a temporary solution to access member-funtions
-// of the chatty-window class from code-modules that aren't
-// initialized/instantiated yet
-ChattyWindow *
-chatty_utils_get_window (void)
-{
-  GList        *list, *l;
-  ChattyWindow *win = NULL;
-
-  list = gtk_application_get_windows (GTK_APPLICATION(g_application_get_default ()));
-
-  for (l = list; l != NULL; l = g_list_next (l)) {
-    if ((CHATTY_IS_WINDOW(l->data))) {
-      win = CHATTY_WINDOW(l->data);
-      break;
-    };
-  }
-
-  return win;
-}
-
 gpointer
 chatty_utils_get_node_object (PurpleBlistNode *node)
 {
@@ -282,4 +263,76 @@ chatty_utils_get_color_for_str (const char *str)
   hash = g_str_hash (str);
 
   return avatar_colors[hash % G_N_ELEMENTS (avatar_colors)];
+}
+
+char *
+chatty_utils_get_human_time (time_t unix_time)
+{
+  g_autoptr(GDateTime) now = NULL;
+  g_autoptr(GDateTime) utc_time = NULL;
+  g_autoptr(GDateTime) local_time = NULL;
+  gint year_now, month_now, day_now;
+  gint year, month, day;
+
+  g_return_val_if_fail (unix_time >= 0, g_strdup (""));
+
+  now = g_date_time_new_now_local ();
+  utc_time = g_date_time_new_from_unix_utc (unix_time);
+  local_time = g_date_time_to_local (utc_time);
+
+  g_date_time_get_ymd (now, &year_now, &month_now, &day_now);
+  g_date_time_get_ymd (local_time, &year, &month, &day);
+
+  if (year  == year_now &&
+      month == month_now)
+    {
+      g_autoptr(GSettings) gtk_settings = NULL;
+      gint clock_format;
+
+      gtk_settings = g_settings_new ("org.gnome.desktop.interface");
+      clock_format = g_settings_get_enum (gtk_settings, "clock-format");
+
+      /* Time Format */
+      if (day == day_now && clock_format == CLOCK_FORMAT_24H)
+        return g_date_time_format (local_time, "%R");
+      else if (day == day_now)
+        /* TRANSLATORS: Time format with time in AM/PM format */
+        return g_date_time_format (local_time, _("%I:%M %p"));
+
+      /* Localized day name */
+      if (day_now - day <= 7 && clock_format == CLOCK_FORMAT_24H)
+        /* TRANSLATORS: Time format as supported by g_date_time_format() */
+        return g_date_time_format (local_time, _("%A %R"));
+      else if (day_now - day <= 7)
+        /* TRANSLATORS: Time format with day and time in AM/PM format */
+        return g_date_time_format (local_time, _("%A %I:%M %p"));
+    }
+
+  /* TRANSLATORS: Year format as supported by g_date_time_format() */
+  return g_date_time_format (local_time, _("%Y-%m-%d"));
+}
+
+PurpleBlistNode *
+chatty_utils_get_conv_blist_node (PurpleConversation *conv)
+{
+  PurpleBlistNode *node = NULL;
+
+  switch (purple_conversation_get_type (conv)) {
+  case PURPLE_CONV_TYPE_IM:
+    node = PURPLE_BLIST_NODE (purple_find_buddy (conv->account,
+                                                 conv->name));
+    break;
+  case PURPLE_CONV_TYPE_CHAT:
+    node = PURPLE_BLIST_NODE (purple_blist_find_chat (conv->account,
+                                                      conv->name));
+    break;
+  case PURPLE_CONV_TYPE_UNKNOWN:
+  case PURPLE_CONV_TYPE_MISC:
+  case PURPLE_CONV_TYPE_ANY:
+  default:
+    g_warning ("Unhandled conversation type %d",
+               purple_conversation_get_type (conv));
+    break;
+  }
+  return node;
 }

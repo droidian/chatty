@@ -14,19 +14,31 @@ stages:
 before_script:
   - export DEBIAN_FRONTEND=noninteractive
   - apt-get -y update
-  - apt-get -y install build-essential wget ca-certificates gnupg
+  - apt-get -y install build-essential wget ca-certificates gnupg lcov
   - echo "deb http://ci.puri.sm/ scratch librem5" > /etc/apt/sources.list.d/ci.list
   - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
   - apt-get -y update
   - apt-get -y build-dep .
 
-build-debian-gcc:
+build-debian-gcc-buster:
   <<: *tags
   image: debian:buster
   stage: build
   script:
     - export LC_ALL=C.UTF-8
-    - meson . _build --werror
+    - meson . _build -Db_coverage=true --werror
+    - ninja -C _build
+  artifacts:
+    paths:
+      - _build
+
+build-debian-gcc-bullseye:
+  <<: *tags
+  image: debian:bullseye
+  stage: build
+  script:
+    - export LC_ALL=C.UTF-8
+    - meson . _build -Db_coverage=true --werror
     - ninja -C _build
   artifacts:
     paths:
@@ -36,11 +48,29 @@ test:debian-gcc:
   <<: *tags
   stage: test
   dependencies:
-    - build-debian-gcc
+    - build-debian-gcc-buster
   script:
     - export G_DEBUG=fatal-warnings
     - export LC_ALL=C.UTF-8
     - ninja -C _build test
+    - ninja -C _build coverage
+  coverage: '/^\s+lines\.+:\s+([\d.]+\%)\s+/'
+
+check-po:
+  <<: *tags
+  stage: test
+  image: debian:bullseye
+  dependencies:
+    - build-debian-gcc-buster
+  before_script:
+    - apt-get -y update
+    - apt-get -y install intltool
+  script:
+    # barf on untranslated C files. Seems intltool
+    # can't be told to exit with non-zero exit status
+    # in this case
+    - cd po/
+    - intltool-update -m 2>&1 | grep -qs '/.*\.c' && { intltool-update -m; exit 1; } || exit 0
 
 package:deb-debian-buster:
   extends: .l5-build-debian-package

@@ -29,11 +29,11 @@ if desktop_utils.found()
 endif
 
 appstream_file = i18n.merge_file(
-  input: 'sm.puri.Chatty.appdata.xml.in',
-  output: 'sm.puri.Chatty.appdata.xml',
+  input: 'sm.puri.Chatty.metainfo.xml.in',
+  output: 'sm.puri.Chatty.metainfo.xml',
   po_dir: '../po',
   install: true,
-  install_dir: join_paths(get_option('datadir'), 'appdata')
+  install_dir: join_paths(get_option('datadir'), 'metainfo')
 )
 
 appstream_util = find_program('appstream-util', required: false)

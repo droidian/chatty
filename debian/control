@@ -5,6 +5,7 @@ Maintainer: DebianOnMobile Maintainers <debian-on-mobile-maintainers@alioth-list
 Uploaders:
  Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>,
 Build-Depends:
+ appstream,
  appstream-util,
  debhelper-compat (= 13),
  desktop-file-utils,
@@ -28,6 +29,7 @@ Architecture: any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
+ gsettings-desktop-schemas,
 Recommends:
  purple-carbons,
  purple-lurch,

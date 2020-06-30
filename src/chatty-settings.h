@@ -38,7 +38,7 @@ gboolean        chatty_settings_get_message_carbons          (ChattySettings *se
 gboolean        chatty_settings_get_send_typing              (ChattySettings *self);
 gboolean        chatty_settings_get_greyout_offline_buddies  (ChattySettings *self);
 gboolean        chatty_settings_get_blur_idle_buddies        (ChattySettings *self);
-gboolean        chatty_settings_get_indicate_unkown_contacts (ChattySettings *self);
+gboolean        chatty_settings_get_indicate_unknown_contacts (ChattySettings *self);
 gboolean        chatty_settings_get_convert_emoticons        (ChattySettings *self);
 gboolean        chatty_settings_get_return_sends_message     (ChattySettings *self);
 gboolean        chatty_settings_get_mam_enabled              (ChattySettings *self);

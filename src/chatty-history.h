@@ -8,12 +8,25 @@
 #ifndef __HISTORY_H_INCLUDE__
 #define __HISTORY_H_INCLUDE__
 
-#include "time.h"
-#include "chatty-conversation.h"
+#include <glib.h>
+#include <purple.h>
+#include <time.h>
+
+/* #include "chatty-conversation.h" */
+
+typedef struct chatty_log ChattyLog;
+
+struct chatty_log {
+  time_t   epoch;  // TODO: @LELAND: Once log-parsing functions are cleaned, review this
+  char    *uid;
+  char    *msg;
+  int      dir;
+};
 
 //TODO:LELAND: Document methods!
 
-int chatty_history_open (void);
+int chatty_history_open (const char *dir,
+                         const char *file_name);
 
 void chatty_history_close (void);
 
@@ -55,21 +68,21 @@ void chatty_history_get_im_messages (const char* account,
                                                 int                 last_message),
                                      gpointer   data,
                                      guint      limit,
-                                     char       *oldest_message_displayed);
+                                     const char *oldest_message_displayed);
 
 void
 chatty_history_get_chat_messages (const char *account,
                                   const char *room,
                                   void (*cb)(const unsigned char *msg,
                                             int                  direction,
-					    int                  time_stamp,
+                                            int                  time_stamp,
                                             const char           *room,
                                             const unsigned char  *who,
                                             const unsigned char  *uuid,
                                             gpointer             data),
                                   gpointer  data,
                                   guint      limit,
-                                  char       *oldest_message_displayed);
+                                  const char *oldest_message_displayed);
 
 int
 chatty_history_get_chat_last_message_time (const char* account,

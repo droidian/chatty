@@ -698,7 +698,7 @@ msgstr "Konvertiere ASCII Emoticons"
 
 #: src/ui/chatty-settings-dialog.ui:250
 msgid "Return = Send Message"
-msgstr "Konvertiere ASCII Emoticons"
+msgstr "Return = Nachricht senden"
 
 #: src/ui/chatty-settings-dialog.ui:251
 msgid "Send message with return key"

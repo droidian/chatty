@@ -16,7 +16,8 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, CHATTY, USER_INFO_DIALOG, HdyDialog)
 
 
-
-GtkWidget *chatty_user_info_dialog_new (GtkWindow *parent_window, gpointer chatty_conv);
+GtkWidget *chatty_user_info_dialog_new      (GtkWindow            *parent_window);
+void       chatty_user_info_dialog_set_chat (ChattyUserInfoDialog *self,
+                                             ChattyChat           *chat);
 
 G_END_DECLS

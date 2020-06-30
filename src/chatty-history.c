@@ -181,16 +181,18 @@ chatty_history_create_schemas (void)
 
 
 int
-chatty_history_open (void)
+chatty_history_open (const char *dir,
+                     const char *file_name)
 {
   int rc;
-  g_autofree char *db_dir = NULL;
   g_autofree char *db_path = NULL;
 
+  g_assert (dir && *dir);
+  g_assert (file_name && *file_name);
+
   if(db == NULL){
-    db_dir =  g_build_filename (purple_user_dir(), "chatty", "db", NULL);
-    g_mkdir_with_parents (db_dir, S_IRWXU);
-    db_path = g_build_filename (db_dir, "chatty-history.db", NULL);
+    g_mkdir_with_parents (dir, S_IRWXU);
+    db_path = g_build_filename (dir, file_name, NULL);
     rc = sqlite3_open(db_path, &db);
 
     if (rc != SQLITE_OK){
@@ -222,6 +224,7 @@ chatty_history_close (void)
     }
   }
 
+  db = NULL;
 }
 
 
@@ -341,7 +344,7 @@ chatty_history_get_chat_last_message_time (const char* account,
   sqlite3_stmt *stmt;
   int time_stamp  = 0;
 
-  rc = sqlite3_prepare_v2(db, "SELECT max(timestamp) FROM chatty_chat WHERE room=(?)", -1, &stmt, NULL);
+  rc = sqlite3_prepare_v2(db, "SELECT max(timestamp),max(id)  FROM chatty_chat WHERE room=(?)", -1, &stmt, NULL);
   if (rc != SQLITE_OK)
       g_debug("Error preparing when getting chat last message. errno: %d, desc: %s", rc, sqlite3_errmsg(db));
 
@@ -369,7 +372,7 @@ chatty_history_get_im_last_message (const char *account,
   int           rc;
   sqlite3_stmt *stmt;
 
-  rc = sqlite3_prepare_v2(db, "SELECT message,direction,max(timestamp) FROM chatty_im WHERE account=(?) AND who=(?)", -1, &stmt, NULL);
+  rc = sqlite3_prepare_v2(db, "SELECT message,direction,max(timestamp),uid,max(id) FROM chatty_im WHERE account=(?) AND who=(?)", -1, &stmt, NULL);
   if (rc != SQLITE_OK)
     g_debug("Error preparing when getting chat last message. errno: %d, desc: %s", rc, sqlite3_errmsg(db));
 
@@ -385,6 +388,7 @@ chatty_history_get_im_last_message (const char *account,
     chatty_log->msg = (char *) g_strdup((const gchar *) sqlite3_column_text(stmt, 0));
     chatty_log->dir = sqlite3_column_int(stmt, 1);
     chatty_log->epoch = sqlite3_column_int(stmt, 2);
+    chatty_log->uid = g_strdup((const char *)sqlite3_column_text(stmt, 3));
   }
 
   rc = sqlite3_finalize(stmt);
@@ -410,7 +414,7 @@ chatty_history_get_chat_messages (const char *account,
                                               gpointer data),
                                   gpointer    data,
                                   guint       limit,
-                                  char        *oldest_message_displayed)
+                                  const char *oldest_message_displayed)
 {
 
   int                  rc;
@@ -425,7 +429,7 @@ chatty_history_get_chat_messages (const char *account,
 
   from_timestamp = get_chat_timestamp_for_uuid(oldest_message_displayed, room);
 
-  rc = sqlite3_prepare_v2(db, "SELECT timestamp,direction,message,who,uid FROM chatty_chat WHERE account=(?) AND room=(?) AND timestamp <= (?) ORDER BY timestamp DESC LIMIT (?)", -1, &stmt, NULL);
+  rc = sqlite3_prepare_v2(db, "SELECT timestamp,direction,message,who,uid FROM chatty_chat WHERE account=(?) AND room=(?) AND timestamp <= (?) ORDER BY timestamp DESC, id DESC LIMIT (?)", -1, &stmt, NULL);
   if (rc != SQLITE_OK)
       g_debug("Error preparing statement when querying CHAT messages. errno: %d, desc: %s", rc, sqlite3_errmsg(db));
 
@@ -456,7 +460,7 @@ chatty_history_get_chat_messages (const char *account,
       if (skip){
         skip = g_strcmp0(oldest_message_displayed, (const char *)uuid);
       } else {
-        cb(msg, time_stamp, direction, room, who, uuid, data);
+        cb(msg, direction, time_stamp, room, who, uuid, data);
       }
 
   }
@@ -479,7 +483,7 @@ chatty_history_get_im_messages (const char* account,
                                            int                  last_message),
                                 gpointer   data,
                                 guint      limit,
-                                char       *oldest_message_displayed)
+                                const char *oldest_message_displayed)
 {
 
   int rc;
@@ -495,7 +499,7 @@ chatty_history_get_im_messages (const char* account,
   from_timestamp = get_im_timestamp_for_uuid(oldest_message_displayed, account);
 
    // Then, fetch the result and detect the last row.
-  rc = sqlite3_prepare_v2(db, "SELECT timestamp,direction,message,uid FROM chatty_im WHERE account=(?) AND who=(?) AND timestamp <= (?) ORDER BY timestamp DESC LIMIT (?)", -1, &stmt, NULL);
+  rc = sqlite3_prepare_v2(db, "SELECT timestamp,direction,message,uid FROM chatty_im WHERE account=(?) AND who=(?) AND timestamp <= (?) ORDER BY timestamp DESC, id DESC LIMIT (?)", -1, &stmt, NULL);
   if (rc != SQLITE_OK)
       g_debug("Error preparing statement when querying IM messages. errno: %d, desc: %s", rc, sqlite3_errmsg(db));
 

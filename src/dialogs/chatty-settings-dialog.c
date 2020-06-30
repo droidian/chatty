@@ -28,7 +28,6 @@
 #include <glib/gi18n.h>
 
 #include "chatty-config.h"
-#include "chatty-purple-init.h"
 #include "chatty-utils.h"
 #include "users/chatty-pp-account.h"
 #include "chatty-manager.h"
@@ -134,7 +133,7 @@ get_fp_list_own_cb (int         err,
     for (curr_p = filtered_list; curr_p; curr_p = curr_p->next) {
       fp = (char *) g_hash_table_lookup(id_fp_table, curr_p->data);
 
-      g_debug ("DeviceId: %i fingerprint:\n%s\n", *((guint32 *) curr_p->data),
+      g_debug ("DeviceId: %i fingerprint: %s", *((guint32 *) curr_p->data),
                fp ? fp : "(no session)");
 
       row = chatty_utils_create_fingerprint_row (fp, *((guint32 *) curr_p->data));
@@ -497,7 +496,7 @@ settings_edit_password_clicked_cb (ChattySettingsDialog *self)
   gtk_widget_grab_focus (self->password_entry);
 }
 
-static void chatty_settings_dialog_popuplate_account_list (ChattySettingsDialog *self);
+static void chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self);
 
 static void
 settings_delete_account_clicked_cb (ChattySettingsDialog *self)
@@ -530,7 +529,7 @@ settings_delete_account_clicked_cb (ChattySettingsDialog *self)
       self->selected_account = NULL;
       purple_accounts_delete (account);
 
-      chatty_settings_dialog_popuplate_account_list (self);
+      chatty_settings_dialog_populate_account_list (self);
       gtk_widget_hide (self->save_button);
       gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
     }
@@ -609,7 +608,7 @@ chatty_account_row_new (ChattyPpAccount *account)
 }
 
 static void
-chatty_settings_dialog_popuplate_account_list (ChattySettingsDialog *self)
+chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self)
 {
   GListModel *model;
   guint n_items;
@@ -690,7 +689,7 @@ chatty_settings_dialog_constructed (GObject *object)
                           self->return_sends_switch, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
-  chatty_settings_dialog_popuplate_account_list (self);
+  chatty_settings_dialog_populate_account_list (self);
 }
 
 static void
@@ -780,7 +779,7 @@ chatty_settings_dialog_init (ChattySettingsDialog *self)
 
   g_signal_connect_object (G_OBJECT (chatty_manager_get_accounts (manager)),
                            "items-changed",
-                           G_CALLBACK (chatty_settings_dialog_popuplate_account_list),
+                           G_CALLBACK (chatty_settings_dialog_populate_account_list),
                            self, G_CONNECT_SWAPPED);
 
   gtk_widget_init_template (GTK_WIDGET (self));

@@ -141,7 +141,7 @@ chatty_new_muc_name_check (ChattyNewMucDialog *self,
                            GtkWidget          *button)
 {
   PurpleAccount *account;
-  PurpleBuddy   *buddy;
+  PurpleBuddy   *buddy = NULL;
   const char    *name;
 
   g_return_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self));

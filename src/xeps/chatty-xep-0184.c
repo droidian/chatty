@@ -12,13 +12,14 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
+#include "chatty-chat.h"
+#include "chatty-manager.h"
 #include "version.h"
 #include "prpl.h"
 #include "xmlnode.h"
 #include "xeps.h"
 #include "chatty-xep-0184.h"
 #include "chatty-conversation.h"
-#include "chatty-purple-init.h"
 #include "chatty-settings.h"
 
 
@@ -45,13 +46,13 @@ cb_ht_bubble_node_check_items (gpointer key,
 static void
 cb_chatty_xep_deleting_conversation (PurpleConversation *conv)
 {
-  ChattyConversation  *chatty_conv;
+  ChattyChat *chat;
 
-  chatty_conv = CHATTY_CONVERSATION(conv);
+  chat = chatty_manager_find_purple_conv (chatty_manager_get_default (), conv);
 
   g_hash_table_foreach_remove (ht_bubble_node,
                                cb_ht_bubble_node_check_items,
-                               chatty_conv->msg_bubble_footer);
+                               chat);
 
   g_debug ("conversation closed");
 }
@@ -69,36 +70,31 @@ cb_chatty_xep_deleting_conversation (PurpleConversation *conv)
 static void
 chatty_xeps_display_received (const char* node_id)
 {
-  GtkWidget *bubble_footer;
-  GDateTime *time;
-  gchar     *footer_tm;
-  gchar     *footer_str;
+  ChattyChat *chat;
 
   if (node_id == NULL) {
     return;
   }
 
-  time = g_date_time_new_now_local ();
-  footer_tm = g_date_time_format (time, "%R");
-  g_date_time_unref (time);
+  chat = g_hash_table_lookup (ht_bubble_node, node_id);
 
-  bubble_footer = (GtkWidget*) g_hash_table_lookup (ht_bubble_node, node_id);
+  if (chat != NULL) {
+    GListModel *message_list;
+    g_autoptr(ChattyMessage) message = NULL;
+    guint n_items;
 
-  footer_str = g_strconcat ("<small>",
-                            footer_tm,
-                            "<span color='#6cba3d'>"
-                            " ✓",
-                            "</span></small>",
-                            NULL);
-  g_free (footer_tm);
+    message_list = chatty_chat_get_messages (chat);
+    n_items = g_list_model_get_n_items (message_list);
+    message = g_list_model_get_item (message_list, n_items - 1);
 
-  if (bubble_footer != NULL) {
-    gtk_label_set_markup (GTK_LABEL(bubble_footer), footer_str);
+    if (message)
+      chatty_message_set_status (message, CHATTY_STATUS_DELIVERED, time (NULL));
+    else
+      g_warn_if_reached ();
 
     g_hash_table_remove (ht_bubble_node, node_id);
   }
 
-  g_free (footer_str);
 }
 
 
@@ -117,9 +113,9 @@ chatty_xeps_add_sent (PurpleConnection *gc,
                       const char       *node_to,
                       const char       *node_id)
 {
+  ChattyChat          *chat;
   PurpleAccount       *account;
   PurpleConversation  *conv;
-  ChattyConversation  *chatty_conv;
 
   account = purple_connection_get_account (gc);
 
@@ -135,10 +131,9 @@ chatty_xeps_add_sent (PurpleConnection *gc,
     return;
   }
 
-  chatty_conv = CHATTY_CONVERSATION(conv);
+  chat = chatty_manager_find_purple_conv (chatty_manager_get_default (), conv);
 
-  g_hash_table_insert (ht_bubble_node,
-                       strdup (node_id), chatty_conv->msg_bubble_footer);
+  g_hash_table_insert (ht_bubble_node, strdup (node_id), chat);
 
   g_debug ("attached key: %s, table size %i \n",
            node_id,

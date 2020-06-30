@@ -33,14 +33,6 @@ typedef enum {
 
 
 typedef enum {
-  LURCH_STATUS_DISABLED = 0,  // manually disabled
-  LURCH_STATUS_NOT_SUPPORTED, // no OMEMO support, i.e. there is no devicelist node
-  LURCH_STATUS_NO_SESSION,    // OMEMO is supported, but there is no libsignal session yet
-  LURCH_STATUS_OK             // OMEMO is supported and session exists
-} e_lurch_status;
-
-
-typedef enum {
   CHATTY_VIEW_CHAT_LIST,
   CHATTY_VIEW_MESSAGE_LIST,
   CHATTY_VIEW_SETTINGS,
@@ -52,7 +44,6 @@ void       chatty_window_set_uri (ChattyWindow *self,
                                  const char   *uri);
 
 void chatty_window_change_view (ChattyWindow *self, guint state);
-void chatty_window_update_sub_header_titlebar (ChattyWindow *self, GdkPixbuf *icon, const char *title);
 
 GtkWidget *chatty_window_get_convs_notebook (ChattyWindow *self);
 

@@ -1,1 +1,1 @@
-chatty: binary-or-shlib-defines-rpath usr/bin/chatty /usr/lib/purple-2
+chatty: custom-library-search-path usr/bin/chatty /usr/lib/purple-2

@@ -48,17 +48,10 @@ struct _ChattyMucInfoDialog
   const char *current_topic;
   const char *new_topic;
 
+  ChattyChat *chat;
   ChattyConversation *chatty_conv;
 };
 
-
-enum {
-  PROP_0,
-  PROP_CHATTY_CONV,
-  PROP_LAST
-};
-
-static GParamSpec *props[PROP_LAST];
 
 G_DEFINE_TYPE (ChattyMucInfoDialog, chatty_muc_info_dialog, HDY_TYPE_DIALOG)
 
@@ -272,47 +265,7 @@ chatty_muc_set_topic (ChattyMucInfoDialog *self)
 
 
 static void
-chatty_muc_info_dialog_set_property (GObject       *object,
-                                      guint         property_id,
-                                      const GValue *value,
-                                      GParamSpec   *pspec)
-{
-  ChattyMucInfoDialog *self = (ChattyMucInfoDialog *)object;
-
-  switch (property_id) {
-    case PROP_CHATTY_CONV:
-      self->chatty_conv = g_value_get_pointer (value);
-      break;
-    
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
-  }
-}
-
-
-static void
-chatty_muc_info_dialog_get_property (GObject    *object,
-                                     guint       property_id,
-                                     GValue     *value,
-                                     GParamSpec *pspec)
-{
-  ChattyMucInfoDialog *self = (ChattyMucInfoDialog *)object;
-
-  switch (property_id) {
-    case PROP_CHATTY_CONV:
-      g_value_set_pointer (value, self->chatty_conv);
-      break;
-
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
-  }
-}
-
-
-static void
-chatty_muc_info_dialog_constructed (GObject *object)
+chatty_muc_info_dialog_update_chat (ChattyMucInfoDialog *self)
 {
   ChattyChat               *chatty_chat;
   GListModel               *user_list;
@@ -324,9 +277,7 @@ chatty_muc_info_dialog_constructed (GObject *object)
   const char               *chat_name;
   const char               *topic;
 
-  ChattyMucInfoDialog *self = (ChattyMucInfoDialog *)object;
-
-  G_OBJECT_CLASS (chatty_muc_info_dialog_parent_class)->constructed (object);
+  g_assert (CHATTY_IS_MUC_INFO_DIALOG (self));
 
   self->msg_buffer_topic = gtk_text_buffer_new (NULL);
 
@@ -381,21 +332,7 @@ chatty_muc_info_dialog_constructed (GObject *object)
 static void
 chatty_muc_info_dialog_class_init (ChattyMucInfoDialogClass *klass)
 {
-  GObjectClass *object_class = G_OBJECT_CLASS(klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-
-  object_class->constructed  = chatty_muc_info_dialog_constructed;
-
-  object_class->set_property = chatty_muc_info_dialog_set_property;
-  object_class->get_property = chatty_muc_info_dialog_get_property;
-
-  props[PROP_CHATTY_CONV] =
-    g_param_spec_pointer ("chatty-conv",
-                          "CHATTY_CONVERSATION",
-                          "A Chatty conversation",
-                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
-
-  g_object_class_install_properties (object_class, PROP_LAST, props);
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/chatty/"
@@ -445,14 +382,28 @@ chatty_muc_info_dialog_init (ChattyMucInfoDialog *self)
 
 
 GtkWidget *
-chatty_muc_info_dialog_new (GtkWindow *parent_window,
-                            gpointer   chatty_conv)
+chatty_muc_info_dialog_new (GtkWindow *parent_window)
 {
-  g_return_val_if_fail (chatty_conv != NULL, NULL);
+  g_return_val_if_fail (GTK_IS_WINDOW (parent_window), NULL);
 
   return g_object_new (CHATTY_TYPE_MUC_INFO_DIALOG,
                        "transient-for", parent_window,
-                       "chatty-conv", chatty_conv,
                        "use-header-bar", 1,
                        NULL);
+}
+
+void
+chatty_muc_info_dialog_set_chat (ChattyMucInfoDialog *self,
+                                 ChattyChat          *chat)
+{
+  PurpleConversation *conv;
+
+  g_return_if_fail (CHATTY_IS_MUC_INFO_DIALOG (self));
+  g_return_if_fail (CHATTY_IS_CHAT (chat));
+
+  conv = chatty_chat_get_purple_conv (chat);
+  self->chat = chat;
+  self->chatty_conv = conv->ui_data;
+
+  chatty_muc_info_dialog_update_chat (self);
 }

@@ -20,6 +20,8 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyAvatar, chatty_avatar, CHATTY, AVATAR, GtkImage)
 
 GtkWidget *chatty_avatar_new      (ChattyItem   *item);
+void       chatty_avatar_set_title (ChattyAvatar *item,
+                                    const char   *title);
 void       chatty_avatar_set_item (ChattyAvatar *self,
                                    ChattyItem   *item);
 

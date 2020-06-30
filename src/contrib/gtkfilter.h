@@ -36,7 +36,7 @@ G_BEGIN_DECLS
  * @GTK_FILTER_MATCH_NONE: The filter does not match any item,
  *     gtk_filter_match() will always return %FALSE.
  * @GTK_FILTER_MATCH_ALL: The filter matches all items,
- *     gtk_filter_match() will alays return %TRUE.
+ *     gtk_filter_match() will always return %TRUE.
  *
  * Describes the known strictness of a filter.
  *

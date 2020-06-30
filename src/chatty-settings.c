@@ -105,7 +105,7 @@ chatty_settings_get_property (GObject    *object,
       break;
 
     case PROP_INDICATE_UNKNOWN_CONTACTS:
-      g_value_set_boolean (value, chatty_settings_get_indicate_unkown_contacts (self));
+      g_value_set_boolean (value, chatty_settings_get_indicate_unknown_contacts (self));
       break;
 
     case PROP_CONVERT_EMOTICONS:
@@ -392,7 +392,7 @@ chatty_settings_get_message_carbons (ChattySettings *self)
  * chatty_settings_get_mam_enabled:
  * @self: A #ChattySettings
  *
- * Get if the application should use Message Archive Managemnent
+ * Get if the application should use Message Archive Management
  * when its support is discovered.
  *
  * Returns: %TRUE if the MAM query should be sent.
@@ -441,7 +441,7 @@ chatty_settings_get_blur_idle_buddies (ChattySettings *self)
 }
 
 gboolean
-chatty_settings_get_indicate_unkown_contacts (ChattySettings *self)
+chatty_settings_get_indicate_unknown_contacts (ChattySettings *self)
 {
   g_return_val_if_fail (CHATTY_IS_SETTINGS (self), FALSE);
 

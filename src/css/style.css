@@ -29,10 +29,6 @@
   border-color: @theme_selected_bg_color;
 }
 
-.input_frame {
-  background-color: @theme_base_color;
-}
-
 .entry_hide {
   color: black;
   border-style: hidden;
@@ -41,10 +37,6 @@
 
 .encrypt {
   color: @theme_selected_bg_color;
-}
-
-.unencrypt {
-  color: grey;
 }
 
 .button_send_green {

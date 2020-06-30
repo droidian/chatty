@@ -11,6 +11,9 @@
         <property name="hscrollbar-policy">never</property>
         <property name="vadjustment">vadjustment</property>
         <signal name="edge-overshot" handler="chat_view_edge_overshot_cb" swapped="yes"/>
+        <style>
+         <class name="view"/>
+        </style>
         <child>
           <object class="HdyColumn">
             <property name="visible">True</property>
@@ -57,6 +60,15 @@
     </child>
 
     <child>
+      <object class="GtkSeparator">
+        <property name="visible">True</property>
+        <style>
+          <class name="sidebar"/>
+        </style>
+      </object>
+    </child>
+
+    <child>
       <object class="HdyColumn">
         <property name="visible">True</property>
         <property name="margin">6</property>
@@ -95,7 +107,8 @@
                 <property name="visible">True</property>
                 <property name="orientation">horizontal</property>
                 <style>
-                  <class name="input_frame"/>
+                  <class name="view"/>
+                  <class name="msg_entry_defocused"/>
                 </style>
                 <child>
                   <object class="GtkScrolledWindow" id="scrolled_window">
@@ -125,9 +138,6 @@
                     <property name="margin-bottom">3</property>
                     <property name="icon_name">changes-allow-symbolic</property>
                     <property name="icon-size">1</property>
-                    <style>
-                     <class name="encrypt"/>
-                    </style>
                   </object>
                 </child>
               </object>

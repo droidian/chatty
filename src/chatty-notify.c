@@ -9,6 +9,7 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 #include "purple.h"
+#include "chatty-application.h"
 #include "chatty-window.h"
 #include "chatty-notify.h"
 #include "chatty-icons.h"
@@ -35,7 +36,7 @@ cb_open_settings (GSimpleAction *action,
 {
   ChattyWindow *window;
 
-  window = chatty_utils_get_window ();
+  window = chatty_application_get_main_window (CHATTY_APPLICATION_DEFAULT ());
 
   chatty_window_change_view (window, CHATTY_VIEW_SETTINGS);
 }

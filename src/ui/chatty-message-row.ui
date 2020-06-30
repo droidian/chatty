@@ -2,6 +2,7 @@
 <interface>
   <template class="ChattyMessageRow" parent="GtkListBoxRow">
     <property name="visible">True</property>
+    <property name="can-focus">False</property>
     <property name="selectable">False</property>
     <property name="activatable">False</property>
 
@@ -20,9 +21,10 @@
 
             <!-- Avatar -->
             <child>
-              <object class="GtkImage" id="avatar_image">
+              <object class="ChattyAvatar" id="avatar_image">
                 <property name="visible">True</property>
                 <property name="valign">start</property>
+                <property name="pixel-size">36</property>
                 <property name="no-show-all">True</property>
               </object>
               <packing>
@@ -64,6 +66,7 @@
                 <property name="margin-bottom">6</property>
                 <property name="no-show-all">True</property>
                 <property name="ellipsize">end</property>
+                <property name="single-line-mode">True</property>
                 <attributes>
                   <attribute name="scale" value="0.8333"/>
                 </attributes>

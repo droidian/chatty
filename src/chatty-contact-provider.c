@@ -188,9 +188,16 @@ chatty_eds_load_contact (ChattyEds     *self,
 
   attributes = e_contact_get_attributes (contact, field_id);
 
-  for (GSList *l = (GSList *)attributes; l != NULL; l = l->next)
-    g_ptr_array_add (self->contacts_array,
-                     chatty_contact_new (contact, l->data, protocol));
+  for (GSList *l = (GSList *)attributes; l != NULL; l = l->next) {
+    g_autofree char *value = NULL;
+
+    value = e_vcard_attribute_get_value (l->data);
+
+    if (value && *value)
+      g_ptr_array_add (self->contacts_array,
+                       chatty_contact_new (contact, l->data, protocol));
+
+    }
 }
 
 static void

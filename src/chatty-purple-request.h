@@ -10,7 +10,6 @@
 
 #include <gtk/gtk.h>
 #include <gtk/gtkwidget.h>
-#include "chatty-purple-init.h"
 #include "request.h"
 
 typedef struct

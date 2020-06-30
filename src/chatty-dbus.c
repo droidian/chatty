@@ -19,7 +19,7 @@ cb_action_group (GActionGroup *action_group,
   if (g_strcmp0 (action_name, "new-contact-data") != 0)
     return;
 
-  g_debug ("Call new-contact-data action %s\n", action_name);
+  g_debug ("Call new-contact-data action %s", action_name);
 
   g_action_group_activate_action (action_group, action_name, (GVariant *) user_data);
   g_variant_unref ((GVariant *) user_data);

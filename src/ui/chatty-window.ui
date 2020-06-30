@@ -322,10 +322,11 @@
                     <property name="halign">center</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkImage" id="sub_header_icon">
+                      <object class="ChattyAvatar" id="sub_header_icon">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
+                        <property name="pixel-size">28</property>
                       </object>
                     </child>
                     <child>
@@ -543,11 +544,6 @@
                         <property name="expand">True</property>
                         <property name="selection-mode">single</property>
                         <signal name="row-activated" handler="window_chat_row_activated_cb" swapped="no"/>
-                        <!-- <signal name="add" handler="window_chat_changed_cb" swapped="yes"/>
-                             <signal name="remove" handler="window_chat_changed_cb" swapped="yes"/> -->
-                        <style>
-                          <class name="frame"/>
-                        </style>
                       </object>
                     </child>
                   </object>

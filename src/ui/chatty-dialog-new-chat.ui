@@ -144,6 +144,7 @@
                               <object class="GtkSearchEntry" id="contacts_search_entry">
                                 <property name="visible">True</property>
                                 <property name="hexpand">True</property>
+                                <property name="has_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="placeholder-text" translatable="yes">Send To:</property>
                                 <signal name="search-changed" handler="contact_search_entry_changed_cb" swapped="yes"/>
@@ -296,6 +297,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <signal name="changed" handler="contact_name_text_changed_cb" after="yes" swapped="yes" />
+                                    <signal name="activate" handler="add_contact_button_clicked_cb" swapped="yes"/>
                                   </object>
                                   <packing>
                                     <property name="left_attach">1</property>
@@ -306,6 +308,7 @@
                                   <object class="GtkEntry" id="contact_alias_entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
+                                    <signal name="activate" handler="add_contact_button_clicked_cb" swapped="yes"/>
                                   </object>
                                   <packing>
                                     <property name="left_attach">1</property>

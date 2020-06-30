@@ -7,6 +7,7 @@
 
 #include <glib/gi18n.h>
 #include "chatty-purple-request.h"
+#include "chatty-manager.h"
 
 
 static void

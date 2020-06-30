@@ -22,6 +22,8 @@ libsrc = [
   'chatty-contact-provider.c',
   'chatty-settings.c',
   'chatty-icons.c',
+  'chatty-history.c',
+  'chatty-utils.c',
 ]
 
 chatty_sources = [
@@ -36,15 +38,14 @@ chatty_sources = [
   'dialogs/chatty-new-muc-dialog.c',
   'dialogs/chatty-user-info-dialog.c',
   'dialogs/chatty-muc-info-dialog.c',
+  'chatty-message.c',
   'chatty-message-row.c',
   'chatty-conversation.c',
   './xeps/xeps.c',
   './xeps/chatty-xep-0184.c',
   './xeps/chatty-xep-0313.c',
-  'chatty-purple-init.c',
-  'chatty-history.c',
+  './xeps/chatty-xep-0352.c',
   'chatty-dbus.c',
-  'chatty-utils.c',
   'chatty-notify.c',
   'chatty-purple-request.c',
   'chatty-purple-notify.c',

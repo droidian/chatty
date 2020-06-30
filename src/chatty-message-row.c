@@ -12,8 +12,12 @@
 
 #include <glib/gi18n.h>
 
+#include "chatty-avatar.h"
+#include "chatty-utils.h"
 #include "chatty-message-row.h"
 
+
+#define MAX_GMT_ISO_SIZE 256
 
 struct _ChattyMessageRow
 {
@@ -29,10 +33,32 @@ struct _ChattyMessageRow
   GtkWidget  *popover;
   GtkGesture *multipress_gesture;
   GtkGesture *longpress_gesture;
+
+  ChattyMessage *message;
+  gboolean       is_im;
 };
 
 G_DEFINE_TYPE (ChattyMessageRow, chatty_message_row, GTK_TYPE_LIST_BOX_ROW)
 
+
+static gchar *
+chatty_msg_list_escape_message (const char *message)
+{
+  g_autofree char *nl_2_br;
+  g_autofree char *striped;
+  g_autofree char *escaped;
+  g_autofree char *linkified;
+  char *result;
+
+  nl_2_br = purple_strdup_withhtml (message);
+  striped = purple_markup_strip_html (nl_2_br);
+  escaped = purple_markup_escape_text (striped, -1);
+  linkified = purple_markup_linkify (escaped);
+  // convert all tags to lowercase for GtkLabel markup parser
+  purple_markup_html_to_xhtml (linkified, &result, NULL);
+
+  return result;
+}
 
 static void
 copy_clicked_cb (ChattyMessageRow *self)
@@ -82,14 +108,75 @@ message_row_hold_cb (ChattyMessageRow *self)
 }
 
 static void
-chatty_message_row_finalize (GObject *object)
+message_row_update_message (ChattyMessageRow *self)
+{
+  g_autofree char *message = NULL;
+  g_autofree char *footer = NULL;
+  const char *status_str = "";
+  ChattyMsgStatus status;
+
+  g_assert (CHATTY_IS_MESSAGE_ROW (self));
+  g_assert (self->message);
+
+  status = chatty_message_get_status (self->message);
+
+  if (status == CHATTY_STATUS_SENDING_FAILED)
+    status_str = "<span color='red'> x</span>";
+  else if (status == CHATTY_STATUS_SENT)
+    status_str = "<span color='grey'> ✓</span>";
+  else if (status == CHATTY_STATUS_DELIVERED)
+    status_str = "<span color='#6cba3d'> ✓</span>";
+
+  if (self->is_im) {
+    g_autofree char *time_str = NULL;
+    time_t time_stamp;
+
+    time_stamp = chatty_message_get_time (self->message);
+    time_str = chatty_utils_get_human_time (time_stamp);
+
+    footer = g_strconcat ("<span color='grey'>",
+                          time_str,
+                          "</span>",
+                          status_str,
+                          NULL);
+  } else {
+    const char *alias;
+
+    alias = chatty_message_get_user_alias (self->message);
+
+    if (alias)
+      footer = g_strconcat ("<span color='grey'>",
+                            alias,
+                            "</span>",
+                            NULL);
+  }
+
+  message = chatty_msg_list_escape_message (chatty_message_get_text (self->message));
+  gtk_label_set_markup (GTK_LABEL (self->message_label), message);
+  gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
+  gtk_widget_set_visible (self->footer_label, footer && *footer);
+}
+
+static gboolean
+message_row_show_revealer (ChattyMessageRow *self)
+{
+  g_assert (CHATTY_IS_MESSAGE_ROW (self));
+
+  gtk_revealer_set_reveal_child (GTK_REVEALER (self->revealer), TRUE);
+
+  return G_SOURCE_REMOVE;
+}
+
+static void
+chatty_message_row_dispose (GObject *object)
 {
   ChattyMessageRow *self = (ChattyMessageRow *)object;
 
+  g_clear_object (&self->message);
   g_clear_object (&self->multipress_gesture);
   g_clear_object (&self->longpress_gesture);
 
-  G_OBJECT_CLASS (chatty_message_row_parent_class)->finalize (object);
+  G_OBJECT_CLASS (chatty_message_row_parent_class)->dispose (object);
 }
 
 static void
@@ -98,7 +185,7 @@ chatty_message_row_class_init (ChattyMessageRowClass *klass)
   GObjectClass   *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->finalize = chatty_message_row_finalize;
+  object_class->dispose = chatty_message_row_dispose;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/chatty/"
@@ -128,9 +215,72 @@ chatty_message_row_init (ChattyMessageRow *self)
 }
 
 GtkWidget *
-chatty_message_row_new (void)
+chatty_message_row_new (ChattyMessage  *message,
+                        ChattyProtocol  protocol,
+                        gboolean        is_im)
 {
-  return g_object_new (CHATTY_TYPE_MESSAGE_ROW, NULL);
+  ChattyMessageRow *self;
+  GtkStyleContext *sc;
+  ChattyMsgDirection direction;
+
+  self = g_object_new (CHATTY_TYPE_MESSAGE_ROW, NULL);
+  sc = gtk_widget_get_style_context (self->message_label);
+
+  if (!message)
+    return GTK_WIDGET (self);
+
+  self->message = g_object_ref (message);
+  self->is_im = !!is_im;
+  direction = chatty_message_get_msg_direction (message);
+
+  if (direction == CHATTY_DIRECTION_IN) {
+    gtk_style_context_add_class (sc, "bubble_white");
+    gtk_widget_set_halign (self->content_grid, GTK_ALIGN_START);
+    gtk_widget_set_halign (self->message_label, GTK_ALIGN_START);
+  } else if (direction == CHATTY_DIRECTION_OUT && protocol == CHATTY_PROTOCOL_SMS) {
+    gtk_style_context_add_class (sc, "bubble_green");
+  } else if (direction == CHATTY_DIRECTION_OUT) {
+    gtk_style_context_add_class (sc, "bubble_blue");
+  } else { /* System message */
+    gtk_style_context_add_class (sc, "bubble_purple");
+    gtk_widget_set_hexpand (self->message_label, TRUE);
+  }
+
+  if (direction == CHATTY_DIRECTION_OUT) {
+    gtk_label_set_xalign (GTK_LABEL (self->footer_label), 1);
+    gtk_widget_set_halign (self->content_grid, GTK_ALIGN_END);
+    gtk_widget_set_halign (self->message_label, GTK_ALIGN_END);
+  } else {
+    gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
+  }
+
+  if (is_im || direction == CHATTY_DIRECTION_SYSTEM)
+    gtk_widget_hide (self->avatar_image);
+  else
+    chatty_avatar_set_item (CHATTY_AVATAR (self->avatar_image),
+                            chatty_message_get_user (message));
+
+  g_signal_connect_object (message, "updated",
+                           G_CALLBACK (message_row_update_message),
+                           self, G_CONNECT_SWAPPED);
+  message_row_update_message (self);
+
+  /*
+   * HACK: This is to delay showing the revealer child, so that it
+   * is revealed after @self is added to some container.  Otherwise,
+   * the child revealing won’t be animated.
+   */
+  g_idle_add (G_SOURCE_FUNC (message_row_show_revealer), self);
+
+  return GTK_WIDGET (self);
+}
+
+ChattyMessage *
+chatty_message_row_get_item (ChattyMessageRow *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE_ROW (self), NULL);
+
+  return self->message;
 }
 
 
@@ -150,47 +300,18 @@ chatty_message_row_set_footer (ChattyMessageRow *self,
 }
 
 void
-chatty_message_row_set_item (ChattyMessageRow *self,
-                             guint             message_dir,
-                             e_msg_type        message_type,
-                             const char       *message,
-                             const char       *footer,
-                             GdkPixbuf        *avatar)
+chatty_message_row_hide_footer (ChattyMessageRow *self)
 {
-  GtkStyleContext *sc;
-
   g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
 
-  gtk_label_set_markup (GTK_LABEL (self->message_label), message);
-  gtk_widget_set_visible (self->footer_label, footer && *footer);
-  gtk_widget_set_visible (self->avatar_image, avatar != NULL);
+  gtk_widget_hide (self->footer_label);
+}
 
-  if (footer)
-    gtk_label_set_text (GTK_LABEL (self->footer_label), footer);
+void
+chatty_message_row_set_alias (ChattyMessageRow *self,
+                              const char       *alias)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
 
-  sc = gtk_widget_get_style_context (self->message_label);
-
-  if (message_dir == MSG_IS_INCOMING) {
-    gtk_style_context_add_class (sc, "bubble_white");
-    gtk_image_set_from_pixbuf (GTK_IMAGE (self->avatar_image), avatar);
-    gtk_widget_set_halign (self->content_grid, GTK_ALIGN_START);
-  } else if (message_dir == MSG_IS_OUTGOING && message_type == CHATTY_MSG_TYPE_SMS) {
-    gtk_style_context_add_class (sc, "bubble_green");
-  } else if (message_dir == MSG_IS_OUTGOING) {
-    gtk_style_context_add_class (sc, "bubble_blue");
-  } else { /* System message */
-    gtk_style_context_add_class (sc, "bubble_purple");
-    gtk_widget_set_hexpand (self->message_label, TRUE);
-    gtk_widget_hide (self->avatar_image);
-  }
-
-  if (message_dir == MSG_IS_OUTGOING) {
-    gtk_label_set_xalign (GTK_LABEL (self->footer_label), 1);
-    gtk_widget_set_halign (self->content_grid, GTK_ALIGN_END);
-  } else {
-    gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
-  }
-
-  gtk_widget_show_all (GTK_WIDGET (self));
-  gtk_revealer_set_reveal_child (GTK_REVEALER (self->revealer), TRUE);
+  chatty_avatar_set_title (CHATTY_AVATAR (self->avatar_image), alias);
 }

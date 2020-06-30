@@ -15,6 +15,8 @@
 #include <purple.h>
 
 #include "users/chatty-item.h"
+#include "users/chatty-pp-buddy.h"
+#include "chatty-message.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS
@@ -36,6 +38,7 @@ ChattyChat         *chatty_chat_new_purple_chat       (PurpleChat         *pp_ch
 ChattyChat         *chatty_chat_new_purple_conv       (PurpleConversation *conv);
 void                chatty_chat_set_purple_conv       (ChattyChat         *self,
                                                        PurpleConversation *conv);
+ChattyProtocol      chatty_chat_get_protocol          (ChattyChat         *self);
 PurpleChat         *chatty_chat_get_purple_chat       (ChattyChat         *self);
 PurpleBuddy        *chatty_chat_get_purple_buddy      (ChattyChat         *self);
 PurpleConversation *chatty_chat_get_purple_conv       (ChattyChat         *self);
@@ -44,25 +47,30 @@ gboolean            chatty_chat_are_same              (ChattyChat         *a,
                                                        ChattyChat         *b);
 gboolean            chatty_chat_match_purple_conv     (ChattyChat         *self,
                                                        PurpleConversation *conv);
+GListModel         *chatty_chat_get_messages          (ChattyChat         *self);
+ChattyMessage      *chatty_chat_find_message_with_id  (ChattyChat         *self,
+                                                       const char         *id);
+void                chatty_chat_append_message       (ChattyChat         *self,
+                                                       ChattyMessage      *message);
+void                chatty_chat_prepend_message       (ChattyChat         *self,
+                                                       ChattyMessage      *message);
 void                chatty_chat_add_users             (ChattyChat         *self,
                                                        GList              *users);
 void                chatty_chat_remove_user           (ChattyChat         *self,
                                                        const char         *user);
 GListModel         *chatty_chat_get_users             (ChattyChat         *self);
+ChattyPpBuddy      *chatty_chat_find_user             (ChattyChat         *self,
+                                                       const char         *username);
 void                chatty_chat_emit_user_changed     (ChattyChat         *self,
                                                        const char         *user);
 const char         *chatty_chat_get_last_message      (ChattyChat         *self);
-void                chatty_chat_set_last_message      (ChattyChat         *self,
-                                                       const char         *message);
 guint               chatty_chat_get_unread_count      (ChattyChat         *self);
 void                chatty_chat_set_unread_count      (ChattyChat         *self,
                                                        guint               unread_count);
-e_msg_dir           chatty_chat_get_last_msg_direction (ChattyChat        *self);
-void                chatty_chat_set_last_msg_direction (ChattyChat        *self,
-                                                        e_msg_dir          direction);
 time_t              chatty_chat_get_last_msg_time      (ChattyChat        *self);
-void                chatty_chat_set_last_msg_time      (ChattyChat        *self,
-                                                        time_t             msg_time);
-
+ChattyEncryption    chatty_chat_get_encryption_status  (ChattyChat        *self);
+void                chatty_chat_load_encryption_status (ChattyChat        *self);
+void                chatty_chat_set_encryption         (ChattyChat        *self,
+                                                        gboolean           enable);
 
 G_END_DECLS

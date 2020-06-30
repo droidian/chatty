@@ -16,12 +16,11 @@
 #include "users/chatty-contact.h"
 #include "chatty-chat.h"
 #include "chatty-avatar.h"
+#include "chatty-utils.h"
 #include "chatty-list-row.h"
 
-#define MAX_GMT_ISO_SIZE 256
 #define SECONDS_PER_MINUTE 60.0
 #define SECONDS_PER_HOUR   3600.0
-#define SECONDS_PER_DAY    86400.0
 #define SECONDS_PER_MONTH  2592000.0
 #define SECONDS_PER_YEAR   31536000.0
 
@@ -249,8 +248,7 @@ chatty_list_row_update (ChattyListRow *self)
     if (chatty_contact_is_dummy (CHATTY_CONTACT (self->item)))
       type = g_strdup (number);
     else
-      type = g_strconcat (chatty_contact_get_value_type (CHATTY_CONTACT (self->item)),
-                          ": ", number, NULL);
+      type = g_strconcat (chatty_contact_get_value_type (CHATTY_CONTACT (self->item)), number, NULL);
     gtk_label_set_label (GTK_LABEL (self->subtitle), type);
     chatty_item_get_avatar (self->item);
   } else if (CHATTY_IS_CHAT (self->item) && !self->hide_chat_details) {

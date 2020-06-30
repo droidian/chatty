@@ -131,7 +131,7 @@ chatty_icon_get_buddy_icon (PurpleBlistNode *node,
   PurpleContact             *contact = NULL;
   PurpleStoredImage         *custom_img;
   PurplePluginProtocolInfo  *prpl_info = NULL;
-  const char                *symbol;
+  const char                *symbol = NULL;
   gint                       orig_width,
                              orig_height,
                              scale_width,
@@ -141,6 +141,8 @@ chatty_icon_get_buddy_icon (PurpleBlistNode *node,
   gdouble                    color_r;
   gdouble                    color_g;
   gdouble                    color_b;
+
+  g_return_val_if_fail (color, NULL);
 
   // convert colors for drawing the cairo background
   if (color) {

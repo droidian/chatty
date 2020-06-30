@@ -1,0 +1,6 @@
+src/contrib/gtkfilter.c
+src/contrib/gtkfilterlistmodel.c
+src/contrib/gtkflattenlistmodel.c
+src/contrib/gtkslicelistmodel.c
+src/contrib/gtksorter.c
+src/contrib/gtksortlistmodel.c

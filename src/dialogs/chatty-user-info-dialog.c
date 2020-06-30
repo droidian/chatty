@@ -11,13 +11,15 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <glib-object.h>
+#include "chatty-avatar.h"
 #include "chatty-window.h"
 #include "chatty-manager.h"
 #include "users/chatty-pp-account.h"
 #include "chatty-utils.h"
 #include "chatty-conversation.h"
 #include "chatty-icons.h"
-#include "chatty-purple-init.h"
+#include "chatty-enums.h"
+#include "chatty-chat.h"
 #include "chatty-user-info-dialog.h"
 
 
@@ -33,31 +35,20 @@ struct _ChattyUserInfoDialog
   GtkWidget *switch_notify;
   GtkWidget *listbox_prefs;
   GtkWidget *button_avatar;
+  GtkWidget *avatar;
   GtkWidget *switch_encrypt;
   GtkWidget *label_encrypt;
   GtkWidget *label_encrypt_status;
   GtkWidget *listbox_fps;
 
+  ChattyChat *chat;
   ChattyConversation *chatty_conv;
   PurpleBuddy        *buddy;
   const char         *alias;
 };
 
 
-enum {
-  PROP_0,
-  PROP_CHATTY_CONV,
-  PROP_LAST
-};
-
-static GParamSpec *props[PROP_LAST];
-
 G_DEFINE_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, HDY_TYPE_DIALOG)
-
-
-static void chatty_user_info_dialog_update_avatar (ChattyUserInfoDialog *self, const char *color);
-static void chatty_user_info_dialog_set_encrypt (ChattyUserInfoDialog *self, gboolean active);
-static void chatty_info_dialog_get_encrypt_status (ChattyUserInfoDialog *self);
 
 
 /* Copied from chatty-dialogs.c written by Andrea Schäfer <mosibasu@me.com> */
@@ -97,15 +88,13 @@ button_avatar_clicked_cb (ChattyUserInfoDialog *self)
 {
   PurpleContact *contact;
   char          *file_name = NULL;
-  
+
   file_name = show_select_avatar_dialog (self);
 
   if (file_name) {
     contact = purple_buddy_get_contact (self->buddy);
 
     purple_buddy_icons_node_set_custom_icon_from_file ((PurpleBlistNode*)contact, file_name);
-
-    chatty_user_info_dialog_update_avatar (self, CHATTY_COLOR_BLUE);
   }
 
   g_free (file_name);
@@ -121,8 +110,8 @@ switch_notify_changed_cb (ChattyUserInfoDialog *self)
 
   active = gtk_switch_get_active (GTK_SWITCH(self->switch_notify));
 
-  purple_blist_node_set_bool (PURPLE_BLIST_NODE(self->buddy), 
-                              "chatty-notifications", 
+  purple_blist_node_set_bool (PURPLE_BLIST_NODE(self->buddy),
+                              "chatty-notifications",
                               active);
 }
 
@@ -137,56 +126,6 @@ list_fps_changed_cb (ChattyUserInfoDialog *self)
     gtk_widget_hide (GTK_WIDGET(self->listbox_fps));
   }
 }
-
-
-static void
-switch_encryption_changed_cb (ChattyUserInfoDialog *self)
-{
-  gboolean active;
-
-  g_assert (CHATTY_IS_USER_INFO_DIALOG (self));
-
-  active = gtk_switch_get_active (GTK_SWITCH(self->switch_encrypt));
-
-  chatty_user_info_dialog_set_encrypt (self, active ? TRUE : FALSE);
-
-  chatty_info_dialog_get_encrypt_status (self);
-}
-
-
-static void
-encrypt_set_enable_cb (int      err,
-                       gpointer user_data)
-{
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)user_data;
-
-  if (err) {
-    g_debug ("Failed to enable OMEMO for this conversation.");
-    return;
-  }
-
-  gtk_switch_set_state (GTK_SWITCH(self->switch_encrypt), TRUE);
-
-  self->chatty_conv->omemo.enabled = TRUE;
-}
-
-
-static void
-encrypt_set_disable_cb (int      err,
-                        gpointer user_data)
-{
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)user_data;
-
-  if (err) {
-    g_debug ("Failed to disable OMEMO for this conversation.");
-    return;
-  }
-
-  gtk_switch_set_state (GTK_SWITCH(self->switch_encrypt), FALSE);
-  
-  self->chatty_conv->omemo.enabled = FALSE;
-}
-
 
 static void
 encrypt_fp_list_cb (int         err,
@@ -229,75 +168,27 @@ encrypt_fp_list_cb (int         err,
 
 
 static void
-encrypt_status_cb (int      err,
-                   int      status,
-                   gpointer user_data)
+user_info_dialog_encrypt_changed_cb (ChattyUserInfoDialog *self)
 {
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)user_data;
-  GtkStyleContext      *sc;
-  const char           *status_msg;
+  const char *status_msg;
+  ChattyEncryption encryption;
 
-  if (err) {
-    g_debug ("Failed to get the OMEMO status.");
-    return;
-  }
+  g_assert (CHATTY_IS_USER_INFO_DIALOG (self));
 
-  sc = gtk_widget_get_style_context (GTK_WIDGET(self->chatty_conv->omemo.symbol_encrypt));
+  encryption = chatty_chat_get_encryption_status (self->chat);
 
-  switch (status) {
-    case LURCH_STATUS_DISABLED:
-      status_msg = _("This chat is not encrypted");
-      break;
-    case LURCH_STATUS_NOT_SUPPORTED:
-      status_msg = _("Encryption is not available");
-      break;
-    case LURCH_STATUS_NO_SESSION:
-      status_msg = _("This chat is not encrypted");
-      self->chatty_conv->omemo.enabled = FALSE;
-      break;
-    case LURCH_STATUS_OK:
-      status_msg = _("This chat is encrypted");
-      self->chatty_conv->omemo.enabled = TRUE;
-      break;
-    default:
-      g_warning ("Received unknown status code.");
-      return;
-  }
-
-  gtk_image_set_from_icon_name (self->chatty_conv->omemo.symbol_encrypt,
-                                self->chatty_conv->omemo.enabled ? "changes-prevent-symbolic" :
-                                                             "changes-allow-symbolic",
-                                1);
-
-  gtk_style_context_remove_class (sc, self->chatty_conv->omemo.enabled ? "unencrypt" : "encrypt");
-  gtk_style_context_add_class (sc, self->chatty_conv->omemo.enabled ? "encrypt" : "unencrypt");
+  if (encryption == CHATTY_ENCRYPTION_UNSUPPORTED ||
+      encryption == CHATTY_ENCRYPTION_UNKNOWN)
+    status_msg = _("Encryption is not available");
+  else if (encryption == CHATTY_ENCRYPTION_ENABLED)
+    status_msg = _("This chat is encrypted");
+  else if (encryption == CHATTY_ENCRYPTION_DISABLED)
+    status_msg = _("This chat is not encrypted");
+  else
+    g_return_if_reached ();
 
   gtk_label_set_text (GTK_LABEL(self->label_encrypt_status), status_msg);
 }
-
-
-static void
-chatty_user_info_dialog_set_encrypt (ChattyUserInfoDialog *self,
-                                     gboolean              active)
-{
-  PurpleAccount          *account;
-  PurpleConversationType  type;
-  const char             *name;
-
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-  type = purple_conversation_get_type (self->chatty_conv->conv);
-  name = purple_conversation_get_name (self->chatty_conv->conv);
-
-  if (type == PURPLE_CONV_TYPE_IM) {
-    purple_signal_emit (purple_plugins_get_handle(),
-                        active ? "lurch-enable-im" : "lurch-disable-im",
-                        account,
-                        chatty_utils_jabber_id_strip (name),
-                        active ? encrypt_set_enable_cb : encrypt_set_disable_cb,
-                        self);
-  }
-}
-
 
 static void
 chatty_user_info_dialog_request_fps (ChattyUserInfoDialog *self)
@@ -313,166 +204,59 @@ chatty_user_info_dialog_request_fps (ChattyUserInfoDialog *self)
   name = purple_conversation_get_name (self->chatty_conv->conv);
 
   if (type == PURPLE_CONV_TYPE_IM) {
+    g_autofree gchar *stripped = chatty_utils_jabber_id_strip (name);
+
     purple_signal_emit (plugins_handle,
                         "lurch-fp-other",
                         account,
-                        chatty_utils_jabber_id_strip (name),
+                        stripped,
                         encrypt_fp_list_cb,
                         self);
   }
 }
 
-
 static void
-chatty_info_dialog_get_encrypt_status (ChattyUserInfoDialog *self)
+chatty_user_info_dialog_update_chat (ChattyUserInfoDialog *self)
 {
-  PurpleAccount          *account;
-  PurpleConversationType  type;
-  const char             *name;
+  ChattyManager    *manager;
+  PurplePresence   *presence;
+  PurpleStatus     *status;
+  g_autofree gchar *alias = NULL;
+  ChattyProtocol    protocol;
 
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-  type = purple_conversation_get_type (self->chatty_conv->conv);
-  name = purple_conversation_get_name (self->chatty_conv->conv);
+  g_assert (CHATTY_IS_USER_INFO_DIALOG (self));
 
-  if (type == PURPLE_CONV_TYPE_IM) {
-    g_autofree char *stripped = chatty_utils_jabber_id_strip (name);
-    purple_signal_emit (purple_plugins_get_handle(),
-                        "lurch-status-im",
-                        account,
-                        stripped,
-                        encrypt_status_cb,
-                        self);
-  }
-}
-
-
-static void 
-chatty_user_info_dialog_update_avatar (ChattyUserInfoDialog *self,
-                                       const char           *color)
-{
-  GtkWindow     *window;
-  PurpleContact *contact;
-  GdkPixbuf     *icon;
-  GtkWidget     *avatar;
-  const char    *buddy_alias;
-  const char    *contact_alias;
-
-  icon = chatty_icon_get_buddy_icon (PURPLE_BLIST_NODE(self->buddy),
-                                     self->alias,
-                                     CHATTY_ICON_SIZE_LARGE,
-                                     color,
-                                     FALSE);
-  
-  if (icon != NULL) {
-    avatar = gtk_image_new ();
-    gtk_image_set_from_pixbuf (GTK_IMAGE(avatar), icon);
-    gtk_button_set_image (GTK_BUTTON(self->button_avatar), GTK_WIDGET(avatar));
-  }
-
-  g_object_unref (icon);
-
-  contact = purple_buddy_get_contact (self->buddy);
-  buddy_alias = purple_buddy_get_alias (self->buddy);
-  contact_alias = purple_contact_get_alias (contact);
-
-  icon = chatty_icon_get_buddy_icon (PURPLE_BLIST_NODE(self->buddy),
-                                     self->alias,
-                                     CHATTY_ICON_SIZE_SMALL,
-                                     color,
-                                     FALSE);
-
-  window = gtk_window_get_transient_for (GTK_WINDOW (self));
-
-  chatty_window_update_sub_header_titlebar ((ChattyWindow *)window,
-                                            icon, 
-                                            contact_alias ? contact_alias : buddy_alias);
-
-  g_object_unref (icon);
-}
-
-
-static void
-chatty_user_info_dialog_set_property (GObject      *object,
-                                      guint         property_id,
-                                      const GValue *value,
-                                      GParamSpec   *pspec)
-{
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)object;
-
-  switch (property_id) {
-    case PROP_CHATTY_CONV:
-      self->chatty_conv = g_value_get_pointer (value);
-      break;
-
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
-  }
-}
-
-
-static void
-chatty_user_info_dialog_get_property (GObject      *object,
-                                      guint         property_id,
-                                      GValue       *value,
-                                      GParamSpec   *pspec)
-{
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)object;
-
-  switch (property_id) {
-    case PROP_CHATTY_CONV:
-      g_value_set_pointer (value, self->chatty_conv);
-      break;
-
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-      break;
-  }
-}
-
-
-static void
-chatty_user_info_dialog_constructed (GObject *object)
-{
-  ChattyManager  *manager;
-  PurpleAccount  *account;
-  PurplePresence *presence;
-  PurpleStatus   *status;
-  const char     *protocol_id;
-
-  ChattyUserInfoDialog *self = (ChattyUserInfoDialog *)object;
-
-  G_OBJECT_CLASS (chatty_user_info_dialog_parent_class)->constructed (object);
-
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-  protocol_id = purple_account_get_protocol_id (account);
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
 
   manager = chatty_manager_get_default ();
+  chatty_avatar_set_item (CHATTY_AVATAR (self->avatar), CHATTY_ITEM (self->chat));
 
-  if (chatty_manager_lurch_plugin_is_loaded (manager) && (!g_strcmp0 (protocol_id, "prpl-jabber"))) {
+  g_object_bind_property (self->chat, "encrypt",
+                          self->switch_encrypt, "active",
+                          G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
+  g_signal_connect_object (self->chat, "notify::encrypt",
+                           G_CALLBACK (user_info_dialog_encrypt_changed_cb),
+                           self,
+                           G_CONNECT_SWAPPED);
+
+  if (chatty_manager_lurch_plugin_is_loaded (manager) && protocol == CHATTY_PROTOCOL_XMPP) {
 
     gtk_widget_show (GTK_WIDGET(self->label_status_msg));
     gtk_widget_show (GTK_WIDGET(self->label_encrypt));
     gtk_widget_show (GTK_WIDGET(self->label_encrypt_status));
 
-    chatty_info_dialog_get_encrypt_status (self);
+    chatty_chat_load_encryption_status (self->chat);
     chatty_user_info_dialog_request_fps (self);
-    gtk_switch_set_state (GTK_SWITCH(self->switch_encrypt), self->chatty_conv->omemo.enabled);
   }
 
   self->buddy = purple_find_buddy (self->chatty_conv->conv->account, self->chatty_conv->conv->name);
   self->alias = purple_buddy_get_alias (self->buddy);
 
-  if (chatty_blist_protocol_is_sms (account)) {
-    chatty_user_info_dialog_update_avatar (self, CHATTY_COLOR_GREEN);
-
+  if (protocol == CHATTY_PROTOCOL_SMS) {
     gtk_label_set_text (GTK_LABEL(self->label_user_id), _("Phone Number:"));
-  } else {
-    chatty_user_info_dialog_update_avatar (self, CHATTY_COLOR_BLUE);
   }
 
-  if (!g_strcmp0 (protocol_id, "prpl-jabber")) {
-
+  if (protocol == CHATTY_PROTOCOL_XMPP) {
     gtk_widget_show (GTK_WIDGET(self->label_user_status));
     gtk_widget_show (GTK_WIDGET(self->label_status_msg));
 
@@ -487,7 +271,8 @@ chatty_user_info_dialog_constructed (GObject *object)
                         purple_blist_node_get_bool (PURPLE_BLIST_NODE(self->buddy),
                         "chatty-notifications"));
 
-  gtk_label_set_text (GTK_LABEL(self->label_alias), chatty_utils_jabber_id_strip (self->alias));
+  alias = self->alias ? chatty_utils_jabber_id_strip (self->alias) : g_strdup ("");
+  gtk_label_set_text (GTK_LABEL(self->label_alias), alias);
   gtk_label_set_text (GTK_LABEL(self->label_jid), self->chatty_conv->conv->name);
 }
 
@@ -495,27 +280,14 @@ chatty_user_info_dialog_constructed (GObject *object)
 static void
 chatty_user_info_dialog_class_init (ChattyUserInfoDialogClass *klass)
 {
-  GObjectClass *object_class = G_OBJECT_CLASS(klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-
-  object_class->constructed  = chatty_user_info_dialog_constructed;
-
-  object_class->set_property = chatty_user_info_dialog_set_property;
-  object_class->get_property = chatty_user_info_dialog_get_property;
-
-  props[PROP_CHATTY_CONV] =
-    g_param_spec_pointer ("chatty-conv",
-                          "CHATTY_CONVERSATION",
-                          "A Chatty conversation",
-                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
-
-  g_object_class_install_properties (object_class, PROP_LAST, props);
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/chatty/"
                                                "ui/chatty-dialog-user-info.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, button_avatar);
+  gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, avatar);
   gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, label_user_id);
   gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, label_alias);
   gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, label_jid);
@@ -530,7 +302,6 @@ chatty_user_info_dialog_class_init (ChattyUserInfoDialogClass *klass)
 
   gtk_widget_class_bind_template_callback (widget_class, button_avatar_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, switch_notify_changed_cb);
-  gtk_widget_class_bind_template_callback (widget_class, switch_encryption_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, list_fps_changed_cb);
 }
 
@@ -551,14 +322,28 @@ chatty_user_info_dialog_init (ChattyUserInfoDialog *self)
 
 
 GtkWidget *
-chatty_user_info_dialog_new (GtkWindow *parent_window,
-                             gpointer   chatty_conv)
+chatty_user_info_dialog_new (GtkWindow *parent_window)
 {
-  g_return_val_if_fail (chatty_conv != NULL, NULL);
+  g_return_val_if_fail (GTK_IS_WINDOW (parent_window), NULL);
 
   return g_object_new (CHATTY_TYPE_USER_INFO_DIALOG,
                        "transient-for", parent_window,
-                       "chatty-conv", chatty_conv,
                        "use-header-bar", 1,
                        NULL);
+}
+
+void
+chatty_user_info_dialog_set_chat (ChattyUserInfoDialog *self,
+                                  ChattyChat           *chat)
+{
+  PurpleConversation *conv;
+
+  g_return_if_fail (CHATTY_IS_USER_INFO_DIALOG (self));
+  g_return_if_fail (CHATTY_IS_CHAT (chat));
+
+  conv = chatty_chat_get_purple_conv (chat);
+  self->chat = chat;
+  self->chatty_conv = conv->ui_data;
+
+  chatty_user_info_dialog_update_chat (self);
 }

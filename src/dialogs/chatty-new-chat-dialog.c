@@ -55,7 +55,6 @@ struct _ChattyNewChatDialog
   GtkWidget *dummy_prefix_radio;
 
   GtkSliceListModel  *slice_model;
-  GtkFilterListModel *filter_model;
   GtkFilter *filter;
   char      *search_str;
 
@@ -254,6 +253,9 @@ add_contact_button_clicked_cb (ChattyNewChatDialog *self)
   g_autoptr(GError)  err = NULL;
 
   g_assert (CHATTY_IS_NEW_CHAT_DIALOG (self));
+
+  if (!gtk_widget_get_sensitive (self->add_contact_button))
+    return;
 
   account = chatty_pp_account_get_account (self->selected_account);
 
@@ -461,6 +463,7 @@ chatty_new_chat_dialog_update (ChattyNewChatDialog *self)
 
   gtk_entry_set_text (GTK_ENTRY (self->contact_name_entry), "");
   gtk_entry_set_text (GTK_ENTRY (self->contact_alias_entry), "");
+  gtk_widget_grab_focus (self->contact_name_entry);
 
   chatty_new_chat_populate_account_list (self);
 }
@@ -474,18 +477,22 @@ chatty_new_chat_dialog_show (GtkWidget *widget)
   /* Reset selection list */
   g_clear_pointer (&self->phone_number, g_free);
   self->selected_item = NULL;
+  gtk_entry_set_text (GTK_ENTRY (self->contacts_search_entry), "");
 
   GTK_WIDGET_CLASS (chatty_new_chat_dialog_parent_class)->show (widget);
 }
 
 static void
-chatty_new_chat_dialog_finalize (GObject *object)
+chatty_new_chat_dialog_dispose (GObject *object)
 {
   ChattyNewChatDialog *self = (ChattyNewChatDialog *)object;
 
   g_clear_object (&self->manager);
+  g_clear_object (&self->slice_model);
+  g_clear_object (&self->filter);
+  g_clear_pointer (&self->phone_number, g_free);
 
-  G_OBJECT_CLASS (chatty_new_chat_dialog_parent_class)->finalize (object);
+  G_OBJECT_CLASS (chatty_new_chat_dialog_parent_class)->dispose (object);
 }
 
 static void
@@ -494,7 +501,7 @@ chatty_new_chat_dialog_class_init (ChattyNewChatDialogClass *klass)
   GObjectClass   *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->finalize = chatty_new_chat_dialog_finalize;
+  object_class->dispose = chatty_new_chat_dialog_dispose;
 
   widget_class->show = chatty_new_chat_dialog_show;
 
@@ -530,6 +537,7 @@ chatty_new_chat_dialog_class_init (ChattyNewChatDialogClass *klass)
 static void
 chatty_new_chat_dialog_init (ChattyNewChatDialog *self)
 {
+  g_autoptr(GtkFilterListModel) filter_model = NULL;
   g_autoptr(GtkSortListModel) sort_model = NULL;
   g_autoptr(GtkSorter) sorter = NULL;
 
@@ -542,16 +550,15 @@ chatty_new_chat_dialog_init (ChattyNewChatDialog *self)
   self->dummy_prefix_radio = gtk_radio_button_new_from_widget (GTK_RADIO_BUTTON (NULL));
 
   self->manager = g_object_ref (chatty_manager_get_default ());
-  self->filter = gtk_custom_filter_new ((GtkCustomFilterFunc)dialog_filter_item_cb,
-                                        self, NULL);
+  self->filter = gtk_custom_filter_new ((GtkCustomFilterFunc)dialog_filter_item_cb, self, NULL);
   g_signal_connect_object (self->manager, "notify::active-protocols",
                            G_CALLBACK (dialog_active_protocols_changed_cb), self, G_CONNECT_SWAPPED);
   dialog_active_protocols_changed_cb (self);
 
   sorter = gtk_custom_sorter_new ((GCompareDataFunc)chatty_item_compare, NULL, NULL);
   sort_model = gtk_sort_list_model_new (chatty_manager_get_contact_list (self->manager), sorter);
-  self->filter_model = gtk_filter_list_model_new (G_LIST_MODEL (sort_model), self->filter);
-  self->slice_model = gtk_slice_list_model_new (G_LIST_MODEL (self->filter_model), 0, ITEMS_COUNT);
+  filter_model = gtk_filter_list_model_new (G_LIST_MODEL (sort_model), self->filter);
+  self->slice_model = gtk_slice_list_model_new (G_LIST_MODEL (filter_model), 0, ITEMS_COUNT);
   gtk_list_box_bind_model (GTK_LIST_BOX (self->chats_listbox),
                            G_LIST_MODEL (self->slice_model),
                            (GtkListBoxCreateWidgetFunc)chatty_list_contact_row_new,

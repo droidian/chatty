@@ -76,7 +76,7 @@ void jabber_caps_uninit(void);
 gboolean jabber_caps_exts_known(const JabberCapsClientInfo *info, char **exts);
 
 /**
- * Main entity capabilites function to get the capabilities of a contact.
+ * Main entity capabilities function to get the capabilities of a contact.
  *
  * The callback will be called synchronously if we already have the
  * capabilities for the specified (node,ver,hash) (and, if exts are specified,

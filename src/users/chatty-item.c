@@ -236,14 +236,15 @@ chatty_item_class_init (ChattyItemClass *klass)
    * ChattyItem:protocols:
    *
    * Protocols supported by the Item.  An item may
-   * support more than one protocol.
+   * support more than one protocol.  Currently only
+   * #ChattyContact supports more than one protocol.
    */
   properties[PROP_PROTOCOLS] =
     g_param_spec_int ("protocols",
                       "Protocols",
                       "Protocols supported by item",
                       CHATTY_PROTOCOL_NONE,
-                      CHATTY_PROTOCOL_TELEGRAM,
+                      CHATTY_PROTOCOL_LAST,
                       CHATTY_PROTOCOL_NONE,
                       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
 
@@ -289,7 +290,8 @@ chatty_item_init (ChattyItem *self)
  *
  * Get the protocols supported/implemented by @self.
  * There can be more than one protocol supported by
- * @self.
+ * @self.  Currently only #ChattyContact supports
+ * more than one protocol.
  *
  * Returns: %ChattyProtocol flag
  */
@@ -372,7 +374,11 @@ chatty_item_compare (ChattyItem *a,
  * @self: a #ChattyItem
  *
  * Get the name of Item.  In purple/pidgin it’s
- * termed as ‘alias.’
+ * termed as ‘alias.’ If real name is empty,
+ * it fallbacks to the user id.  The user id
+ * may have the resource stripped (eg: For the
+ * user id xmpp@example.com/someclient.6 you shall
+ * get xmpp@example.com)
  *
  * Returns: (transfer none): the name of Item.
  */

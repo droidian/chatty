@@ -47,16 +47,7 @@ void        chatty_chat_view_load     (ChattyChatView *self,
                                        guint           limit);
 void        chatty_chat_view_remove_footer (ChattyChatView *self);
 void        chatty_chat_view_focus_entry   (ChattyChatView *self);
-void        chatty_chat_view_set_conv      (ChattyChatView *self,
-                                            ChattyConversation *chatty_conv);
-ChattyConversation *chatty_chat_view_get_conv (ChattyChatView *self);
 void        chatty_chat_view_show_typing_indicator (ChattyChatView *self);
 void        chatty_chat_view_hide_typing_indicator (ChattyChatView *self);
-void        chatty_chat_view_add_message_at        (ChattyChatView *self,
-                                                    guint           message_dir,
-                                                    const gchar    *html_message,
-                                                    const gchar    *footer,
-                                                    GdkPixbuf      *avatar,
-                                                    guint           position);
 
 G_END_DECLS

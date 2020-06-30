@@ -25,6 +25,8 @@
 
 #include <gtk/gtk.h>
 
+#include "chatty-window.h"
+
 G_BEGIN_DECLS
 
 #define CHATTY_APPLICATION_DEFAULT() ((ChattyApplication *)g_application_get_default ())
@@ -33,5 +35,6 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyApplication, chatty_application, CHATTY, APPLICATION, GtkApplication)
 
 ChattyApplication *chatty_application_new (void);
+ChattyWindow      *chatty_application_get_main_window (ChattyApplication *self);
 
 G_END_DECLS

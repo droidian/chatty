@@ -8,13 +8,6 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 override_dh_shlibdeps:
 	dh_shlibdeps -l/usr/lib/purple-2
 
-override_dh_install:
-	dh_install
-# Install metadata in correct location
-	mv debian/chatty/usr/share/appdata debian/chatty/usr/share/metainfo
-	mv debian/chatty/usr/share/metainfo/sm.puri.Chatty.appdata.xml \
-                debian/chatty/usr/share/metainfo/sm.puri.Chatty.metainfo.xml
-
 # Generate manpage with help2man
 override_dh_installman:
 	mkdir -p debian/chatty/usr/share/man/man1

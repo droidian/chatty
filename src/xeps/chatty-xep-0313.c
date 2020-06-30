@@ -20,7 +20,6 @@
 #include "chatty-history.h"
 #include "chatty-conversation.h"
 #include "chatty-manager.h"
-#include "chatty-purple-init.h"
 #include "chatty-settings.h"
 
 #define NS_FWDv0 "urn:xmpp:forward:0"
@@ -207,7 +206,8 @@ chatty_mam_get_chat_prefs(PurpleAccount *pa, const char *room, const char *def)
     return def;
   } else
     // Get per-account setting
-    return purple_account_get_ui_string(pa, CHATTY_UI, MAM_PREFS_DEF, def);
+    return purple_account_get_ui_string(pa, purple_core_get_ui (),
+                                        MAM_PREFS_DEF, def);
 
 }
 
@@ -285,7 +285,7 @@ static void chatty_mam_query_archive (MAMQuery *mamq);
  * @res: the response xmlnode
  *
  * The callback for mam archive query set in chatty_mam_query_archive
- * Parses reponse and either finalizes it or pages through
+ * Parses response and either finalizes it or pages through
  * remaining set.
  */
 static void
@@ -559,7 +559,7 @@ cb_chatty_mam_enabled_notify (GObject *obj,
  *
  * The callback for message archive signal "conversation-write", the cb is
  * supposed to populate inflight message with body and flags, give back uuid
- * and have NO_LOG flag set to suppress archiving for incomin messages.
+ * and have NO_LOG flag set to suppress archiving for incoming messages.
  *
  */
 static void
@@ -654,6 +654,8 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     return FALSE;
   }
 
+  user = purple_account_get_username (pa);
+
   if(node_result != NULL || node_sid != NULL) {
     int dts;
     const char *msg_type;
@@ -662,7 +664,6 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
       xmlnode    *node_delay;
       query_id = xmlnode_get_attrib (node_result, "queryid");
       stanza_id = xmlnode_get_attrib (node_result, "id");
-      user = purple_account_get_username(pa);
 
       // Check result and query-id are valid
       if(query_id == NULL) {

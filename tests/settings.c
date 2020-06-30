@@ -60,7 +60,7 @@ check_settings_true (ChattySettings *settings)
   g_assert_true (chatty_settings_get_send_typing (settings));
   g_assert_true (chatty_settings_get_greyout_offline_buddies (settings));
   g_assert_true (chatty_settings_get_blur_idle_buddies (settings));
-  g_assert_true (chatty_settings_get_indicate_unkown_contacts (settings));
+  g_assert_true (chatty_settings_get_indicate_unknown_contacts (settings));
   g_assert_true (chatty_settings_get_return_sends_message (settings));
 }
 
@@ -76,7 +76,7 @@ check_settings_false (ChattySettings *settings)
   g_assert_false (chatty_settings_get_send_typing (settings));
   g_assert_false (chatty_settings_get_greyout_offline_buddies (settings));
   g_assert_false (chatty_settings_get_blur_idle_buddies (settings));
-  g_assert_false (chatty_settings_get_indicate_unkown_contacts (settings));
+  g_assert_false (chatty_settings_get_indicate_unknown_contacts (settings));
   g_assert_false (chatty_settings_get_return_sends_message (settings));
 }
 

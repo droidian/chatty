@@ -163,6 +163,8 @@
                               <object class="GtkEntry" id="entry_group_chat_id">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="activates-default">True</property>
+                                <property name="has_focus">True</property>
                                 <property name="input_purpose">email</property>
                                 <signal name="changed" handler="chat_name_changed_cb" after="yes" swapped="yes"/>
                               </object>
@@ -175,6 +177,7 @@
                               <object class="GtkEntry" id="entry_group_chat_room_alias">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="activates-default">True</property>
                                 <property name="input_purpose">email</property>
                               </object>
                               <packing>
@@ -186,6 +189,7 @@
                               <object class="GtkEntry" id="entry_group_chat_user_alias">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="activates-default">True</property>
                                 <property name="input_purpose">email</property>
                               </object>
                               <packing>
@@ -199,6 +203,7 @@
                                 <property name="can_focus">True</property>
                                 <property name="input_purpose">password</property>
                                 <property name="visibility">False</property>
+                                <property name="activates-default">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -223,7 +228,7 @@
     </child>
     <action-widgets>
       <action-widget response="cancel">cancel_button</action-widget>
-      <action-widget response="ok">button_join_chat</action-widget>
+      <action-widget response="ok" default="true">button_join_chat</action-widget>
     </action-widgets>
   </template>
 </interface>

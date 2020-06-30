@@ -177,15 +177,16 @@ chatty_contact_get_avatar_async (ChattyItem          *item,
 }
 
 static void
-chatty_contact_finalize (GObject *object)
+chatty_contact_dispose (GObject *object)
 {
   ChattyContact *self = (ChattyContact *)object;
 
   g_clear_object (&self->avatar);
-  g_free (self->name);
-  g_free (self->value);
+  g_clear_pointer (&self->attribute, e_vcard_attribute_free);
+  g_clear_pointer (&self->name, g_free);
+  g_clear_pointer (&self->value, g_free);
 
-  G_OBJECT_CLASS (chatty_contact_parent_class)->finalize (object);
+  G_OBJECT_CLASS (chatty_contact_parent_class)->dispose (object);
 }
 
 
@@ -195,7 +196,7 @@ chatty_contact_class_init (ChattyContactClass *klass)
   GObjectClass *object_class  = G_OBJECT_CLASS (klass);
   ChattyItemClass *item_class = CHATTY_ITEM_CLASS (klass);
 
-  object_class->finalize = chatty_contact_finalize;
+  object_class->dispose = chatty_contact_dispose;
 
   item_class->get_protocols = chatty_contact_get_protocols;
   item_class->matches  = chatty_contact_matches;
@@ -264,18 +265,13 @@ chatty_contact_set_name (ChattyContact *self,
 const char *
 chatty_contact_get_value (ChattyContact *self)
 {
-  const char *value = NULL;
-
   g_return_val_if_fail (CHATTY_IS_CONTACT (self), NULL);
+
+  if (!self->value && self->attribute)
+    self->value = e_vcard_attribute_get_value (self->attribute);
 
   if (self->value)
     return self->value;
-
-  if (self->attribute)
-    value = e_vcard_attribute_get_value (self->attribute);
-
-  if (value)
-    return value;
 
   return "";
 }
@@ -298,7 +294,7 @@ chatty_contact_set_value (ChattyContact *self,
  * Eg: “Mobile”, “Work”, etc. translated to
  * the current locale.
  *
- * Returns: (transfer none) (nullable): The value type of @self.
+ * Returns: (transfer none): The value type of @self.
  */
 const char *
 chatty_contact_get_value_type (ChattyContact *self)
@@ -309,13 +305,13 @@ chatty_contact_get_value_type (ChattyContact *self)
     return "";
 
   if (e_vcard_attribute_has_type (self->attribute, "cell"))
-    return _("Mobile");
+    return _("Mobile: ");
   if (e_vcard_attribute_has_type (self->attribute, "work"))
-    return _("Work");
+    return _("Work: ");
   if (e_vcard_attribute_has_type (self->attribute, "other"))
-    return _("Other");
+    return _("Other: ");
 
-  return NULL;
+  return "";
 }
 
 

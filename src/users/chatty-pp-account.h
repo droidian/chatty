@@ -21,6 +21,11 @@
 
 G_BEGIN_DECLS
 
+typedef enum _ChattyPpAccountFeatures {
+  CHATTY_PP_ACCOUNT_FEATURES_NONE = 0,
+  CHATTY_PP_ACCOUNT_FEATURES_CSI  = 1 << 0,
+} ChattyPpAccountFeatures;
+
 #define CHATTY_TYPE_PP_ACCOUNT (chatty_pp_account_get_type ())
 
 G_DECLARE_FINAL_TYPE (ChattyPpAccount, chatty_pp_account, CHATTY, PP_ACCOUNT, ChattyAccount)
@@ -52,5 +57,13 @@ const char      *chatty_pp_account_get_username       (ChattyPpAccount *self);
 void             chatty_pp_account_connect              (ChattyPpAccount *self,
                                                          gboolean          delay);
 void             chatty_pp_account_disconnect           (ChattyPpAccount *self);
+
+void             chatty_pp_account_set_features         (ChattyPpAccount *self,
+                                                         ChattyPpAccountFeatures features);
+void             chatty_pp_account_update_features      (ChattyPpAccount *self,
+                                                         ChattyPpAccountFeatures features);
+gboolean         chatty_pp_account_has_features         (ChattyPpAccount *self,
+                                                         ChattyPpAccountFeatures features);
+ChattyPpAccountFeatures chatty_pp_account_get_features  (ChattyPpAccount *self);
 
 G_END_DECLS

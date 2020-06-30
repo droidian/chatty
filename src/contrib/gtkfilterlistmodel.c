@@ -274,7 +274,7 @@ gtk_filter_list_model_run_filter (GtkFilterListModel *self,
   gpointer item;
   gboolean visible;
 
-  /* all other cases should have beeen optimized away */
+  /* all other cases should have been optimized away */
   g_assert (self->strictness == GTK_FILTER_MATCH_SOME);
 
   item = g_list_model_get_item (self->model, position);

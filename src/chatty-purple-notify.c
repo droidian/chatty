@@ -8,6 +8,7 @@
 
 #include <glib/gi18n.h>
 #include "chatty-purple-notify.h"
+#include "chatty-application.h"
 #include "chatty-utils.h"
 
 
@@ -29,7 +30,7 @@ chatty_notify_message (PurpleNotifyMsgType  type,
   ChattyWindow *window;
   GtkWidget    *dialog;
 
-  window = chatty_utils_get_window ();
+  window = chatty_application_get_main_window (CHATTY_APPLICATION_DEFAULT ());
 
   dialog = gtk_message_dialog_new (GTK_WINDOW(window),
                                    GTK_DIALOG_MODAL,

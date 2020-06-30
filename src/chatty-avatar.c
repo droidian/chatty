@@ -34,6 +34,7 @@ struct _ChattyAvatar
 {
   GtkImage    parent_instance;
 
+  char       *title;
   ChattyItem *item;
 };
 
@@ -227,12 +228,13 @@ chatty_avatar_draw (GtkWidget *widget,
   size = MIN (width, height);
 
   if (self->item)
-    {
-      avatar = chatty_item_get_avatar (self->item);
+    avatar = chatty_item_get_avatar (self->item);
 
-      if (!avatar)
-        name = chatty_item_get_name (self->item);
-    }
+  /* Prefer the custom title over user’s name */
+  if (!avatar && self->title)
+    name = self->title;
+  else if (self->item)
+    name = chatty_item_get_name (self->item);
 
   if (avatar)
     chatty_avatar_draw_pixbuf (cr, avatar, size);
@@ -267,6 +269,7 @@ chatty_avatar_dispose (GObject *object)
   ChattyAvatar *self = (ChattyAvatar *)object;
 
   g_clear_object (&self->item);
+  g_clear_pointer (&self->title, g_free);
 
   G_OBJECT_CLASS (chatty_avatar_parent_class)->dispose (object);
 }
@@ -305,6 +308,28 @@ chatty_avatar_new (ChattyItem *item)
   return g_object_new (CHATTY_TYPE_AVATAR,
                        "item", item,
                        NULL);
+}
+
+/**
+ * chatty_avatar_set_title:
+ * @self: A #ChattyManager
+ * @title: The title to be used to create avatar
+ *
+ * If @title is a non-empty string, it will be preferred
+ * as the name to create avatar if a #ChattyItem isn’t
+ * set, or the item doesn’t have an avatar set.
+ */
+void
+chatty_avatar_set_title (ChattyAvatar *self,
+                         const char   *title)
+{
+  g_return_if_fail (CHATTY_IS_AVATAR (self));
+
+  if (title && !*title)
+    title = NULL;
+
+  g_free (self->title);
+  self->title = g_strdup (title);
 }
 
 void
