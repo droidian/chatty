@@ -121,6 +121,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Message Receipts</property>
                         <property name="subtitle" translatable="yes">Confirm received messages</property>
+                        <property name="activatable-widget">send_receipts_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="send_receipts_switch">
                             <property name="visible">True</property>
@@ -135,6 +136,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Message Archive Management</property>
                         <property name="subtitle" translatable="yes">Sync conversations with chat server</property>
+                        <property name="activatable-widget">message_archive_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="message_archive_switch">
                             <property name="visible">True</property>
@@ -149,6 +151,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Message Carbon Copies</property>
                         <property name="subtitle" translatable="yes">Share chat history among devices</property>
+                        <property name="activatable-widget">message_carbons_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="message_carbons_switch">
                             <property name="visible">True</property>
@@ -163,6 +166,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Typing Notification</property>
                         <property name="subtitle" translatable="yes">Send typing messages</property>
+                        <property name="activatable-widget">typing_notification_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="typing_notification_switch">
                             <property name="visible">True</property>
@@ -185,6 +189,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Indicate Offline Contacts</property>
                         <property name="subtitle" translatable="yes">Grey out avatars from offline contacts</property>
+                        <property name="activatable-widget">indicate_offline_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="indicate_offline_switch">
                             <property name="visible">True</property>
@@ -199,6 +204,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Indicate Idle Contacts</property>
                         <property name="subtitle" translatable="yes">Blur avatars from idle contacts</property>
+                        <property name="activatable-widget">indicate_idle_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="indicate_idle_switch">
                             <property name="visible">True</property>
@@ -213,6 +219,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Indicate Unknown Contacts</property>
                         <property name="subtitle" translatable="yes">Color unknown contact ID red</property>
+                        <property name="activatable-widget">indicate_unknown_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="indicate_unknown_switch">
                             <property name="visible">True</property>
@@ -235,6 +242,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Graphical Emoticons</property>
                         <property name="subtitle" translatable="yes">Convert ASCII emoticons</property>
+                        <property name="activatable-widget">convert_smileys_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="convert_smileys_switch">
                             <property name="visible">True</property>
@@ -249,6 +257,7 @@
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Return = Send Message</property>
                         <property name="subtitle" translatable="yes">Send message with return key</property>
+                        <property name="activatable-widget">return_sends_switch</property>
                         <child type="action">
                           <object class="GtkSwitch" id="return_sends_switch">
                             <property name="visible">True</property>

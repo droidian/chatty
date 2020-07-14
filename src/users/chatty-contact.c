@@ -20,6 +20,7 @@
 #include <libebook-contacts/libebook-contacts.h>
 
 #include "chatty-icons.h"
+#include "chatty-settings.h"
 #include "chatty-contact.h"
 #include "chatty-contact-private.h"
 
@@ -77,9 +78,13 @@ chatty_contact_matches (ChattyItem     *item,
 
   if (protocol == CHATTY_PROTOCOL_SMS &&
       protocols & CHATTY_PROTOCOL_SMS) {
+    ChattySettings *settings;
+    const char *country;
     EPhoneNumberMatch match;
 
-    match = e_phone_number_compare_strings (value, needle, NULL);
+    settings = chatty_settings_get_default ();
+    country = chatty_settings_get_country_iso_code (settings);
+    match = e_phone_number_compare_strings_with_region (value, needle, country, NULL);
 
     if (match == E_PHONE_NUMBER_MATCH_EXACT ||
         match == E_PHONE_NUMBER_MATCH_NATIONAL)

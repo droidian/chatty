@@ -6,10 +6,10 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: chatty master\n"
-"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2020-05-29 12:42+0000\n"
-"PO-Revision-Date: 2020-05-29 16:31+0300\n"
-"Last-Translator: Florentina Mușat <emryslokadottir [at] gmail [dot] com>\n"
+"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/phosh/issues\n"
+"POT-Creation-Date: 2020-07-02 03:25+0000\n"
+"PO-Revision-Date: 2020-07-02 12:43+0300\n"
+"Last-Translator: Florentina Mușat <florentina.musat.28@gmail.com>\n"
 "Language-Team: Romanian <gnomero-list@lists.sourceforge.net>\n"
 "Language: ro\n"
 "MIME-Version: 1.0\n"
@@ -19,22 +19,10 @@ msgstr ""
 "20)) ? 1 : 2);;\n"
 "X-Generator: Poedit 2.3.1\n"
 
-#: data/sm.puri.Chatty.appdata.xml.in:6 data/sm.puri.Chatty.desktop.in:3
-#: src/chatty-application.c:264 src/ui/chatty-window.ui:224
+#: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
+#: src/chatty-application.c:273 src/ui/chatty-window.ui:224
 msgid "Chats"
 msgstr "Chat-uri"
-
-#: data/sm.puri.Chatty.appdata.xml.in:7
-msgid "A messaging application"
-msgstr "O aplicație de mesagerie"
-
-#: data/sm.puri.Chatty.appdata.xml.in:9
-msgid "Chats is a messaging application supporting XMPP and SMS."
-msgstr "Chat-uri este o aplicație de mesagerie care suportă XMPP și SMS."
-
-#: data/sm.puri.Chatty.appdata.xml.in:16
-msgid "Chats message window"
-msgstr "Fereastra de mesaj a Chat-uri"
 
 #: data/sm.puri.Chatty.desktop.in:5
 msgid "sm.puri.Chatty"
@@ -46,7 +34,7 @@ msgstr "Aplicație de chat XMPP și SMS"
 
 #: data/sm.puri.Chatty.desktop.in:7
 msgid "XMPP;SMS;chat;jabber;messaging;modem"
-msgstr "XMPP;SMS;chat;jabber;messaging;modem;mesagerie;"
+msgstr "XMPP;SMS;chat;jabber;messaging;modem;mesagerie"
 
 #: data/sm.puri.Chatty.gschema.xml:7 data/sm.puri.Chatty.gschema.xml:8
 msgid "Whether the application is launching the first time"
@@ -129,58 +117,70 @@ msgstr "Dimensiune fereastră"
 msgid "Window size (width, height)."
 msgstr "Dimensiune fereastră (lățime, înălțime)."
 
-#: src/chatty-application.c:63
+#: data/sm.puri.Chatty.metainfo.xml.in:7
+msgid "A messaging application"
+msgstr "O aplicație de mesagerie"
+
+#: data/sm.puri.Chatty.metainfo.xml.in:9
+msgid "Chats is a messaging application supporting XMPP and SMS."
+msgstr "Chat-uri este o aplicație de mesagerie care suportă XMPP și SMS."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:16
+msgid "Chats message window"
+msgstr "Fereastra de mesaj a Chat-uri"
+
+#: src/chatty-application.c:68
 msgid "Show release version"
 msgstr "Arată versiunea de lansare"
 
-#: src/chatty-application.c:64
+#: src/chatty-application.c:69
 msgid "Start in daemon mode"
 msgstr "Pornește în modul serviciu"
 
-#: src/chatty-application.c:65
+#: src/chatty-application.c:70
 msgid "Disable all accounts"
 msgstr "Dezactivează toate conturile"
 
-#: src/chatty-application.c:66
+#: src/chatty-application.c:71
 msgid "Enable libpurple debug messages"
 msgstr "Activează mesajele de depanare libpurple"
 
-#: src/chatty-application.c:67
+#: src/chatty-application.c:72
 msgid "Enable verbose libpurple debug messages"
-msgstr "Activează mesajele de depanare detaliate libpurple "
+msgstr "Activează mesajele de depanare detaliate libpurple"
 
-#: src/chatty-application.c:103
+#: src/chatty-application.c:108
 #, c-format
 msgid "Authorize %s?"
 msgstr "Autorizați %s?"
 
-#: src/chatty-application.c:107
+#: src/chatty-application.c:112
 msgid "Reject"
 msgstr "Respinge"
 
-#: src/chatty-application.c:109
+#: src/chatty-application.c:114
 msgid "Accept"
 msgstr "Acceptă"
 
-#: src/chatty-application.c:114
+#: src/chatty-application.c:119
 #, c-format
 msgid "Add %s to contact list"
 msgstr "Adaugă %s la lista de contacte"
 
-#: src/chatty-application.c:137
+#: src/chatty-application.c:142
 msgid "Contact added"
 msgstr "Contact adăugat"
 
-#: src/chatty-application.c:140
+#: src/chatty-application.c:145
 #, c-format
 msgid "User %s has added %s to the contacts"
 msgstr "Utilizatorul %s a adăugat %s la contacte"
 
-#: src/chatty-application.c:160
+#: src/chatty-application.c:165
 msgid "Login failed"
 msgstr "Autentificarea a eșuat"
 
-#: src/chatty-application.c:166
+#: src/chatty-application.c:171
 msgid "Please check ID and password"
 msgstr "Verificați ID-ul și parola"
 
@@ -260,7 +260,7 @@ msgstr "Moderator"
 msgid "Member"
 msgstr "Membru"
 
-#: src/chatty-manager.c:975
+#: src/chatty-manager.c:991
 #, c-format
 msgid "New message from %s"
 msgstr "Mesaj nou de la %s"
@@ -406,7 +406,8 @@ msgstr "Un client de mesagerie SMS și XMPP"
 
 #: src/chatty-window.c:917
 msgid "translator-credits"
-msgstr "Florentina Mușat <emryslokadottir [at] gmail [dot] com>, 2020"
+msgstr ""
+"Florentina Mușat <florentina [dot] musat [dot] 28 [at] gmail [dot] com>, 2020"
 
 #: src/dialogs/chatty-muc-info-dialog.c:324
 msgid "members"
@@ -467,7 +468,7 @@ msgstr "Acest chat este criptat"
 msgid "This chat is not encrypted"
 msgstr "Acest chat nu este criptat"
 
-#: src/dialogs/chatty-user-info-dialog.c:258
+#: src/dialogs/chatty-user-info-dialog.c:256
 msgid "Phone Number:"
 msgstr "Număr de telefon:"
 
@@ -652,7 +653,7 @@ msgid "Indicate Idle Contacts"
 msgstr "Indică contactele în așteptare"
 
 #: src/ui/chatty-settings-dialog.ui:201
-msgid "Blur avatars from offline contacts"
+msgid "Blur avatars from idle contacts"
 msgstr "Estompează avatarurile de la contactele în așteptare"
 
 #: src/ui/chatty-settings-dialog.ui:214
@@ -743,14 +744,14 @@ msgstr "Părăsește chat-ul"
 msgid "Delete Chat"
 msgstr "Șterge chat-ul"
 
-#: src/users/chatty-contact.c:313
-msgid "Mobile"
-msgstr "Mobil"
+#: src/users/chatty-contact.c:308
+msgid "Mobile: "
+msgstr "Mobil: "
 
-#: src/users/chatty-contact.c:315
-msgid "Work"
-msgstr "Serviciu"
+#: src/users/chatty-contact.c:310
+msgid "Work: "
+msgstr "Serviciu: "
 
-#: src/users/chatty-contact.c:317
-msgid "Other"
-msgstr "Altele"
+#: src/users/chatty-contact.c:312
+msgid "Other: "
+msgstr "Altele: "

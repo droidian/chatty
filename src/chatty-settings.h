@@ -49,5 +49,8 @@ void            chatty_settings_get_window_geometry          (ChattySettings *se
                                                               GdkRectangle   *geometry);
 void            chatty_settings_set_window_geometry          (ChattySettings *self,
                                                               GdkRectangle   *geometry);
+const char     *chatty_settings_get_country_iso_code         (ChattySettings *self);
+void            chatty_settings_set_country_iso_code         (ChattySettings *self,
+                                                              const char     *iso_code);
 
 G_END_DECLS

@@ -536,6 +536,9 @@ chatty_pp_buddy_get_id (ChattyPpBuddy *self)
 
   g_return_val_if_fail (CHATTY_IS_PP_BUDDY (self), "");
 
+  if (self->contact)
+    return chatty_contact_get_value (self->contact);
+
   if (self->chat_buddy && self->chat_buddy->name)
     return self->chat_buddy->name;
 

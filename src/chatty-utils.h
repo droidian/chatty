@@ -18,7 +18,6 @@
 #define SECONDS_PER_DAY    86400.0
 
 char *chatty_utils_jabber_id_strip (const char *name);
-char *chatty_utils_strip_blanks (const char *string);
 char *chatty_utils_check_phonenumber (const char *phone_number);
 gboolean chatty_utils_get_item_position (GListModel *list,
                                          gpointer    item,

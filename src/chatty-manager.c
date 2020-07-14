@@ -1590,6 +1590,18 @@ manager_sms_state_changed_cb (int            state,
 }
 
 static void
+manager_sms_get_country_cb (const char    *country_code,
+                            ChattyManager *self)
+{
+  ChattySettings *settings;
+
+  g_assert (CHATTY_IS_MANAGER (self));
+
+  settings = chatty_settings_get_default ();
+  chatty_settings_set_country_iso_code (settings, country_code);
+}
+
+static void
 manager_network_changed_cb (GNetworkMonitor *network_monitor,
                             gboolean         network_available,
                             ChattyManager   *self)
@@ -1803,6 +1815,10 @@ chatty_manager_initialize_libpurple (ChattyManager *self)
   purple_signal_connect (purple_plugins_get_handle (),
                          "mm-sms-state", self,
                          PURPLE_CALLBACK (manager_sms_state_changed_cb), self);
+
+  purple_signal_connect (purple_plugins_get_handle (),
+                         "mm-sms-country-code", self,
+                         PURPLE_CALLBACK (manager_sms_get_country_cb), self);
 
   g_signal_connect_object (network_monitor, "network-changed",
                            G_CALLBACK (manager_network_changed_cb), self,

@@ -1,4 +1,4 @@
-project('chatty', 'c',        version: '0.1.13',
+project('chatty', 'c',        version: '0.1.14',
   meson_version: '>= 0.41.0',
 )
 
@@ -88,6 +88,7 @@ libebook_dep = dependency('libebook-contacts-1.2')
 libfeedback_dep = dependency('libfeedback-0.0')
 libm_dep = cc.find_library('m')
 
+subdir('completion')
 subdir('data')
 subdir('src')
 subdir('tests')

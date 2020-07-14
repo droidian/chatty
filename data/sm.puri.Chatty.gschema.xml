@@ -8,6 +8,12 @@
       <description>Whether the application is launching the first time</description>
     </key>
 
+    <key name="country-code" type="s">
+      <default>""</default>
+      <summary>Country code in ISO 3166-1 alpha-2 format</summary>
+      <description>Two letter country code of the last available SIM/Network</description>
+    </key>
+
     <key name="send-receipts" type="b">
       <default>false</default>
       <summary>Send message read receipts</summary>
