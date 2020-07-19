@@ -6,6 +6,15 @@ It uses pristine-tar(1) to store enough information in git to generate
 bit identical tarballs when building the package without having
 downloaded an upstream tarball first.
 
+Currently, there are copyright issues with few files which led us to create
+a +dfsg variant version.  This is handled using a tag upstream/<version>+dfsg0
+which need to be set manually on the dedicated branch (upstream/dfsg-clean). 
+This setup requires few manual steps documented hereunder:
+- merging of upstream/dfsg-clean branch from upstream/latest
+- setting the tag upstream/<version>+dfsg0 from the upstream/dfsg-clean branch
+- gbp export-orig --upstream-tag=upstream/<version>+dfsg0 --no-pristine-tar
+- gbp pristine-tar commit --upstream-tag=upstream/<version>+dfsg0 ../<tarball>
+
 When working with patches it is recommended to use "gbp pq import" to
 import the patches, modify the source and then use "gbp pq export
 --commit" to commit the modifications.
