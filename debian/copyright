@@ -4,57 +4,57 @@ Upstream-Contact: Mohammed Sadiq <sadiq@sadiqpk.org>
 Source: https://code.puri.sm/Librem5/chatty
 
 Files: *
-Copyright: 2018 Andrea Schaefer <andrea.schaefer@puri.sm>
+Copyright: 2018-2020 Purism SPC
 License: GPL-3+
 
 Files: data/icons/*
 Copyright: 2018-2020 Purism SPC
-                     GNOME Design Team
+           2018 GNOME Design Team
 License: CC-BY-SA-4.0
 
 Files: debian/*
-Copyright: 2018 Andrea Schaefer <andrea.schaefer@puri.sm>
- 2020 Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
+Copyright: 2018-2020 Purism SPC
+           2020 Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>
 License: GPL-3+
 
 Files: data/sm.puri.Chatty.metainfo.xml.in
-Copyright: 2018 Andrea Schaefer <andrea.schaefer@puri.sm>
+Copyright: 2018-2020 Purism SPC
 License: CC0-1.0
 
 Files: src/contrib/*
 Copyright: 2018-2019 Benjamin Otte <otte@gnome.org>
- 2019 Matthias Clasen <mclasen@redhat.com>
- 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
- 2000 Red Hat, Inc., Jonathan Blandford <jrb@redhat.com>
+           2019 Matthias Clasen <mclasen@redhat.com>
+           1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
+           2000 Red Hat, Inc., Jonathan Blandford <jrb@redhat.com>
 License: LGPL-2+
 
 Files: po/*
 Copyright: 2018-2020 Jaroslav Svoboda <multi.flexi@seznam.cz>
- 2020 scootergrisen
- 2018 Kai Klingenhagen <kai.klingenhagen@kabelmail.de>
- 2019 Max Schmidt <grell.robing@gmail.com>
- 2019-2020 Mike Ballmann <mikeballmann@web.de>
- 2018 Daniel Brunkhorst <daniel.brunkhorst@posteo.de>
- 2019 Andrea Schaefer <andrea.schaefer@puri.sm>
- 2019 Schnee Wittchen <fru@fruweb.de>
- 2019 John Smith <gfadsgfdgas@posteo.be>
- 2019 Pan Talianos <talianos.dev@gmail.com>
- 2019-2020 JR-Fi <juho@reivo.fi>
- 2019 M J <emjay.accounts+yanata@mailbox.org>
- 2019 Csaba Fazekas <csab.faz.2@gmail.com>
- 2019 antpanlinux <ant.pandolfo@gmail.com>
- 2018-2019 Punleuk Oum <punleuk.oum@gmail.com>
- 2019 Scott <xmrscott@protonmail.com>
- 2019 Scott Anecito <scott.anecito@linux.com>
- 2019-2020 Josh <josh.public@protonmail.ch>
- 2018-2020 Luís Fernando Stürmer da Rosa <luisfsr@dismail.de>
- 2020 Rafael Fontenelle <rafaelff@gnome.org>
- 2020 Florentina Mușat <emryslokadottir@gmail.com>
- 2019 Lighting <glighting@gmail.com>
- 2019 Pavel <budanov.pavel@gmail.com>
- 2019-2020 Emin Tufan Çetin <etcetin@gmail.com>
- 2020 Roman Riabenko <roman@riabenko.com>
- 2020 Yuri Chornoivan <yurchor@ukr.net>
+           2020 scootergrisen
+           2018 Kai Klingenhagen <kai.klingenhagen@kabelmail.de>
+           2019 Max Schmidt <grell.robing@gmail.com>
+           2019-2020 Mike Ballmann <mikeballmann@web.de>
+           2018 Daniel Brunkhorst <daniel.brunkhorst@posteo.de>
+           2019 Andrea Schaefer <andrea.schaefer@puri.sm>
+           2019 Schnee Wittchen <fru@fruweb.de>
+           2019 John Smith <gfadsgfdgas@posteo.be>
+           2019 Pan Talianos <talianos.dev@gmail.com>
+           2019-2020 JR-Fi <juho@reivo.fi>
+           2019 M J <emjay.accounts+yanata@mailbox.org>
+           2019 Csaba Fazekas <csab.faz.2@gmail.com>
+           2019 antpanlinux <ant.pandolfo@gmail.com>
+           2018-2019 Punleuk Oum <punleuk.oum@gmail.com>
+           2019 Scott <xmrscott@protonmail.com>
+           2019 Scott Anecito <scott.anecito@linux.com>
+           2019-2020 Josh <josh.public@protonmail.ch>
+           2018-2020 Luís Fernando Stürmer da Rosa <luisfsr@dismail.de>
+           2020 Rafael Fontenelle <rafaelff@gnome.org>
+           2020 Florentina Mușat <emryslokadottir@gmail.com>
+           2019 Lighting <glighting@gmail.com>
+           2019 Pavel <budanov.pavel@gmail.com>
+           2019-2020 Emin Tufan Çetin <etcetin@gmail.com>
+           2020 Roman Riabenko <roman@riabenko.com>
+           2020 Yuri Chornoivan <yurchor@ukr.net>
 License: GPL-3+
 
 License: GPL-3+
