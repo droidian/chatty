@@ -1,6 +1,10 @@
 chatty (0.1.14+dfsg0-1) experimental; urgency=medium
 
+  [ Evangelos Ribeiro Tzaras]
   * Updated to latest upstream release 0.1.14
+
+  [ Henry-Nicolas Tourneur ]
+  * Removed unused icons with unclear copyright from tarball
 
  -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 14 Jul 2020 21:36:05 +0200
 
