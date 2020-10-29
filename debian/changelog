@@ -2,7 +2,12 @@ chatty (0.1.16-1) unstable; urgency=medium
 
   [ Evangelos Ribeiro Tzaras ]
   * Update to latest 0.1.16 release
-  * Remove upstreamed patches (fix missing main category in desktop file)`
+  * Remove upstreamed patches (fix missing main category in desktop file)
+
+  [ Henry-Nicolas Tourneur ]
+  * Source only upload to unstable
+  * d/copyright,watch: stop excluding protocol pictures, those are removed
+    upstream.
 
  -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Thu, 29 Oct 2020 18:06:46 +0100
 
