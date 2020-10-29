@@ -4,7 +4,6 @@ Upstream-Contact: Mohammed Sadiq <sadiq@sadiqpk.org>
 Source: https://code.puri.sm/Librem5/chatty
 Comment: The protocol icons were removed because they had unclear licenses
  and were not actually being used.
-Files-Excluded: data/icons/protocol
 
 Files: *
 Copyright: 2018-2020 Purism SPC
