@@ -17,7 +17,6 @@ Build-Depends:
  libhandy-0.0-dev (>= 0.0.10),
  libpurple-dev,
  libsqlite3-dev,
- libebook1.2-dev,
  gsettings-desktop-schemas-dev,
  meson,
 Standards-Version: 4.5.0
