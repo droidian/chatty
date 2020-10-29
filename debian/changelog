@@ -1,3 +1,11 @@
+chatty (0.1.16-1) unstable; urgency=medium
+
+  [ Evangelos Ribeiro Tzaras ]
+  * Update to latest 0.1.16 release
+  * Remove upstreamed patches (fix missing main category in desktop file)`
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Thu, 29 Oct 2020 18:06:46 +0100
+
 chatty (0.1.14+dfsg0-1) experimental; urgency=medium
 
   [ Evangelos Ribeiro Tzaras]
