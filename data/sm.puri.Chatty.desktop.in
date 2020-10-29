@@ -6,6 +6,6 @@ Comment=SMS and XMPP chat application
 Keywords=XMPP;SMS;chat;jabber;messaging;modem
 Terminal=false
 Type=Application
-Categories=GNOME;GTK;Chat;InstantMessaging
+Categories=Network;GNOME;GTK;Chat;InstantMessaging
 StartupNotify=true
 MimeType=x-scheme-handler/sms

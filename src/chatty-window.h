@@ -9,6 +9,8 @@
 
 
 #include <gtk/gtk.h>
+
+#include "chatty-chat.h"
 #include "chatty-settings.h"
 
 G_BEGIN_DECLS
@@ -35,7 +37,6 @@ typedef enum {
 typedef enum {
   CHATTY_VIEW_CHAT_LIST,
   CHATTY_VIEW_MESSAGE_LIST,
-  CHATTY_VIEW_SETTINGS,
 } ChattyWindowState;
 
 
@@ -45,10 +46,10 @@ void       chatty_window_set_uri (ChattyWindow *self,
 
 void chatty_window_change_view (ChattyWindow *self, guint state);
 
-GtkWidget *chatty_window_get_convs_notebook (ChattyWindow *self);
-
 void chatty_window_chat_list_select_first (ChattyWindow *self);
-void chatty_window_set_header_chat_info_button_visible (ChattyWindow *self, gboolean visible);
+ChattyChat *chatty_window_get_active_chat (ChattyWindow *self);
+void        chatty_window_open_chat       (ChattyWindow *self,
+                                           ChattyChat   *chat);
 
 
 G_END_DECLS

@@ -16,6 +16,7 @@
 #endif
 
 #include "chatty-message.h"
+#include "chatty-utils.h"
 
 /**
  * SECTION: chatty-message
@@ -29,6 +30,7 @@ struct _ChattyMessage
   GObject          parent_instance;
 
   ChattyItem      *user;
+  char            *user_name;
   char            *user_alias;
   char            *message;
   char            *uid;
@@ -56,6 +58,7 @@ chatty_message_finalize (GObject *object)
   g_free (self->message);
   g_free (self->uid);
   g_free (self->user_alias);
+  g_free (self->user_name);
   g_free (self->id);
 
   G_OBJECT_CLASS (chatty_message_parent_class)->finalize (object);
@@ -159,6 +162,35 @@ chatty_message_get_user (ChattyMessage *self)
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
 
   return self->user;
+}
+
+const char *
+chatty_message_get_user_name (ChattyMessage *self)
+{
+  const char *user_name = NULL;
+
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), "");
+
+  if (!self->user_name && self->user)
+    user_name = chatty_item_get_name (self->user);
+
+  if (user_name)
+    self->user_name = chatty_utils_jabber_id_strip (user_name);
+
+  if (self->user_name)
+    return self->user_name;
+
+  return "";
+}
+
+void
+chatty_message_set_user_name (ChattyMessage *self,
+                              const char    *user_name)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+
+  g_free (self->user_name);
+  self->user_name = g_strdup (user_name);
 }
 
 const char *

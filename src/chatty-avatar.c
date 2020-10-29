@@ -19,6 +19,7 @@
 #include "users/chatty-pp-buddy.h"
 #include "chatty-settings.h"
 #include "chatty-chat.h"
+#include "chatty-pp-chat.h"
 #include "chatty-avatar.h"
 
 /**
@@ -152,14 +153,14 @@ chatty_avatar_draw_label (ChattyAvatar *self,
   guint size;
   gboolean blur = FALSE;
 
-  if (CHATTY_IS_PP_BUDDY (self->item) || CHATTY_IS_CHAT (self->item)) {
+  if (CHATTY_IS_PP_BUDDY (self->item) || CHATTY_IS_PP_CHAT (self->item)) {
     PurpleBuddy *buddy;
     gboolean should_blur;
 
     if (CHATTY_IS_PP_BUDDY (self->item))
       buddy = chatty_pp_buddy_get_buddy (CHATTY_PP_BUDDY (self->item));
     else
-      buddy = chatty_chat_get_purple_buddy (CHATTY_CHAT (self->item));
+      buddy = chatty_pp_chat_get_purple_buddy (CHATTY_PP_CHAT (self->item));
 
     should_blur = chatty_settings_get_greyout_offline_buddies (chatty_settings_get_default ());
 

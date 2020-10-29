@@ -27,6 +27,12 @@ gboolean       chatty_eds_is_ready       (ChattyEds  *self);
 GListModel    *chatty_eds_get_model      (ChattyEds  *self);
 ChattyContact *chatty_eds_find_by_number (ChattyEds  *self,
                                           const char *phone_number);
-void           chatty_eds_open_contacts_app (ChattyEds *self);
+void           chatty_eds_open_contacts_app        (ChattyEds            *self,
+                                                    GCancellable         *cancellable,
+                                                    GAsyncReadyCallback   callback,
+                                                    gpointer              user_data);
+gboolean       chatty_eds_open_contacts_app_finish (ChattyEds            *self,
+                                                    GAsyncResult         *result,
+                                                    GError              **error);
 
 G_END_DECLS

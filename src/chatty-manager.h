@@ -22,6 +22,13 @@ G_BEGIN_DECLS
 #define CHATTY_APP_ID       "sm.puri.Chatty"
 #define CHATTY_PREFS_ROOT   "/chatty"
 
+typedef enum
+{
+  CHATTY_SMS_RECEIPT_NONE      = -1,
+  CHATTY_SMS_RECEIPT_MM_ACKN   =  0,
+  CHATTY_SMS_RECEIPT_SMSC_ACKN,
+} e_sms_receipt_states;
+
 #define CHATTY_TYPE_MANAGER (chatty_manager_get_type ())
 
 G_DECLARE_FINAL_TYPE (ChattyManager, chatty_manager, CHATTY, MANAGER, GObject)
@@ -47,16 +54,15 @@ ChattyProtocol  chatty_manager_get_active_protocols   (ChattyManager   *self);
 ChattyEds      *chatty_manager_get_eds                (ChattyManager   *self);
 void            chatty_manager_update_node            (ChattyManager   *self,
                                                        PurpleBlistNode *node);
-void            chatty_manager_remove_node            (ChattyManager   *self,
-                                                       PurpleBlistNode *node);
-ChattyChat     *chatty_manager_add_conversation       (ChattyManager      *self,
-                                                       PurpleConversation *conv);
 void            chatty_manager_delete_conversation    (ChattyManager      *self,
                                                        PurpleConversation *conv);
 ChattyChat     *chatty_manager_add_chat               (ChattyManager      *self,
                                                        ChattyChat         *chat);
-ChattyChat     *chatty_manager_find_purple_conv       (ChattyManager      *self,
-                                                       PurpleConversation *conv);
-gboolean        chatty_blist_protocol_is_sms          (PurpleAccount      *account);
+void            chatty_manager_load_more_chat         (ChattyManager      *self,
+                                                       ChattyChat         *chat,
+                                                       guint               limit);
+void            chatty_conv_im_with_buddy             (PurpleAccount      *account,
+                                                       const char         *username);
+void            chatty_conv_join_chat                 (PurpleChat         *chat);
 
 G_END_DECLS

@@ -13,9 +13,9 @@
 #include <glib-object.h>
 #include "chatty-window.h"
 #include "users/chatty-pp-account.h"
-#include "chatty-conversation.h"
 #include "chatty-dbus.h"
 #include "chatty-utils.h"
+#include "chatty-manager.h"
 #include "chatty-new-muc-dialog.h"
 
 
@@ -167,8 +167,8 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
                                     ChattyPpAccount    *account)
 {
   HdyActionRow *row;
-  const gchar  *protocol_id;
   GtkWidget    *prefix_radio_button;
+  ChattyProtocol protocol;
 
   g_return_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self));
 
@@ -177,16 +177,15 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
                      "row-account",
                      (gpointer) account);
 
-  protocol_id = chatty_pp_account_get_protocol_id (account);
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (account));
 
   // TODO list supported protocols here
-  if ((g_strcmp0 (protocol_id, "prpl-jabber")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-matrix")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-telegram")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-delta")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-threepl")) != 0) {
+  if (protocol & ~(CHATTY_PROTOCOL_XMPP |
+                   CHATTY_PROTOCOL_MATRIX |
+                   CHATTY_PROTOCOL_TELEGRAM |
+                   CHATTY_PROTOCOL_DELTA |
+                   CHATTY_PROTOCOL_THREEPL))
     return;
-  }
 
   if (chatty_account_get_status (CHATTY_ACCOUNT (account)) == CHATTY_DISCONNECTED) {
     return;
@@ -201,7 +200,7 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
                      (gpointer)prefix_radio_button);
 
   hdy_action_row_add_prefix (row, GTK_WIDGET(prefix_radio_button ));
-  hdy_action_row_set_title (row, chatty_pp_account_get_username (account));
+  hdy_action_row_set_title (row, chatty_account_get_username (CHATTY_ACCOUNT (account)));
 
   gtk_container_add (GTK_CONTAINER(self->accounts_list), GTK_WIDGET(row));
 
@@ -224,7 +223,7 @@ chatty_new_muc_populate_account_list (ChattyNewMucDialog *self)
 
     account = chatty_pp_account_get_object (l->data);
 
-    if (!chatty_pp_account_is_sms (account)) {
+    if (!chatty_item_is_sms (CHATTY_ITEM (account))) {
       chatty_new_muc_add_account_to_list (self, account);
     }
   }

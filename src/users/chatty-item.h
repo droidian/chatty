@@ -51,6 +51,7 @@ struct _ChattyItemClass
 };
 
 ChattyProtocol   chatty_item_get_protocols       (ChattyItem           *self);
+gboolean         chatty_item_is_sms              (ChattyItem           *self);
 gboolean         chatty_item_matches             (ChattyItem           *self,
                                                   const char           *needle,
                                                   ChattyProtocol        protocols,

@@ -42,17 +42,10 @@ ChattyPpBuddy   *chatty_pp_account_add_purple_buddy   (ChattyPpAccount *self,
                                                        PurpleBuddy     *pp_buddy);
 GListModel      *chatty_pp_account_get_buddy_list     (ChattyPpAccount *self);
 
-void             chatty_pp_account_save               (ChattyPpAccount *self);
 PurpleAccount   *chatty_pp_account_get_account        (ChattyPpAccount *self);
 PurpleStatus    *chatty_pp_account_get_active_status  (ChattyPpAccount *self);
-gboolean         chatty_pp_account_is_sms             (ChattyPpAccount *self);
 
 const char      *chatty_pp_account_get_protocol_id    (ChattyPpAccount *self);
-const char      *chatty_pp_account_get_protocol_name  (ChattyPpAccount *self);
-
-void             chatty_pp_account_set_username       (ChattyPpAccount *self,
-                                                       const char      *username);
-const char      *chatty_pp_account_get_username       (ChattyPpAccount *self);
 
 void             chatty_pp_account_connect              (ChattyPpAccount *self,
                                                          gboolean          delay);

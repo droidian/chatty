@@ -1,25 +1,27 @@
-# Turkish translation of chatty.
-# Emin Tufan Çetin <etcetin@gmail.com>, 2019, 2020.
+# Swedish translation for chatty.
+# Copyright (C) 2020 chatty's COPYRIGHT HOLDER
+# This file is distributed under the same license as the chatty package.
+# Anders Jonsson <anders.jonsson@norsjovallen.se>, 2020.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: purism-chatty\n"
+"Project-Id-Version: chatty master\n"
 "Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2020-07-31 12:56+0000\n"
-"PO-Revision-Date: 2020-08-10 14:40+0300\n"
-"Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
-"Language-Team: Turkish <gnome-turk@gnome.org>\n"
-"Language: tr\n"
+"POT-Creation-Date: 2020-09-15 15:25+0000\n"
+"PO-Revision-Date: 2020-09-18 13:26+0200\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Gtranslator 3.36.0\n"
-"Plural-Forms: nplurals=1; plural=0\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Last-Translator: Anders Jonsson <anders.jonsson@norsjovallen.se>\n"
+"X-Generator: Poedit 2.4.1\n"
 
 #: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
-#: src/chatty-application.c:273 src/ui/chatty-window.ui:224
+#: src/chatty-application.c:304 src/ui/chatty-window.ui:225
 msgid "Chats"
-msgstr "Konuşmalar"
+msgstr "Chattar"
 
 #: data/sm.puri.Chatty.desktop.in:5
 msgid "sm.puri.Chatty"
@@ -27,690 +29,722 @@ msgstr "sm.puri.Chatty"
 
 #: data/sm.puri.Chatty.desktop.in:6
 msgid "SMS and XMPP chat application"
-msgstr "SMS ve XMPP konuşma uygulaması"
+msgstr "SMS- och XMPP-chattprogram"
 
 #: data/sm.puri.Chatty.desktop.in:7
 msgid "XMPP;SMS;chat;jabber;messaging;modem"
-msgstr ""
-"XMPP;SMS;chat;jabber;mesajlaşma;iletişim;modem;ileti;kısamesaj;kısaileti;"
+msgstr "XMPP;SMS;chatt;jabber;meddelanden;modem"
 
 #: data/sm.puri.Chatty.gschema.xml:7 data/sm.puri.Chatty.gschema.xml:8
 msgid "Whether the application is launching the first time"
-msgstr "Uygulamanın ilk kez çalışıp çalışmadığı"
+msgstr "Huruvida programmet körs för första gången"
 
 #: data/sm.puri.Chatty.gschema.xml:13
 msgid "Country code in ISO 3166-1 alpha-2 format"
-msgstr "ISO 3166-1 alpha-2 biçiminde ülke kodu"
+msgstr "Landskod i formatet ISO 3166-1 alpha-2"
 
 #: data/sm.puri.Chatty.gschema.xml:14
 msgid "Two letter country code of the last available SIM/Network"
-msgstr "Son uygun SIM/Ağın iki harfli ülke kodu"
+msgstr "Tvåbokstävers landskod för senast tillgängliga SIM/Nätverk"
 
 #: data/sm.puri.Chatty.gschema.xml:19
 msgid "Send message read receipts"
-msgstr "İleti okundu bilgisi gönder"
+msgstr "Skicka läskvitton för meddelanden"
 
 #: data/sm.puri.Chatty.gschema.xml:20
 msgid "Whether to send the status of the message if read"
-msgstr "İletinin okunma durumununun gönderilip gönderilmeyeceği"
+msgstr "Huruvida status för meddelandet ska skickas om det läses"
 
 #: data/sm.puri.Chatty.gschema.xml:25
 msgid "Message carbon copies"
-msgstr "İleti karbon kopyaları"
+msgstr "Meddelandekopior"
 
 #: data/sm.puri.Chatty.gschema.xml:26 src/ui/chatty-settings-dialog.ui:153
 msgid "Share chat history among devices"
-msgstr "Konuşma geçmişini aygıtlar arası paylaş"
+msgstr "Dela chatthistorik mellan enheter"
 
 #: data/sm.puri.Chatty.gschema.xml:31
 msgid "Enable Message Archive Management"
-msgstr "İleti Arşiv Yönetimini etkinleştir"
+msgstr "Aktivera meddelandearkivhantering"
 
 #: data/sm.puri.Chatty.gschema.xml:32
 msgid "Enable MAM archive synchronization from the server"
-msgstr "Sunucudan İAY arşiv eşzamanlamasını etkinleştir"
+msgstr "Aktivera MAM-arkivsynkronisering från servern"
 
 #: data/sm.puri.Chatty.gschema.xml:37
 msgid "Send typing notifications"
-msgstr "Yazış bildirimleri gönder"
+msgstr "Skicka skrivaviseringar"
 
 #: data/sm.puri.Chatty.gschema.xml:38
 msgid "Whether to Send typing notifications"
-msgstr "Yazış bildirimlerinin gönderilip gönderilmeyeceği"
+msgstr "Huruvida skrivaviseringar ska skickas"
 
 #: data/sm.puri.Chatty.gschema.xml:43 data/sm.puri.Chatty.gschema.xml:44
 msgid "Mark offline users differently"
-msgstr "Çevrim dışı kullanıcıları başka imle"
+msgstr "Markera frånkopplade användare på annat sätt"
 
 #: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
 msgid "Mark Idle users differently"
-msgstr "Eylemsiz kullanıcıları başka imle"
+msgstr "Markera inaktiva användare på annat sätt"
 
 #: data/sm.puri.Chatty.gschema.xml:55 data/sm.puri.Chatty.gschema.xml:56
 msgid "Indicate unknown contacts"
-msgstr "Bilinmeyen kişileri imle"
+msgstr "Indikera okända kontakter"
 
 #: data/sm.puri.Chatty.gschema.xml:61
 msgid "Convert text to emoticons"
-msgstr "Metinleri yüz ifadelerine dönüştür"
+msgstr "Konvertera text till humörsymboler"
 
 #: data/sm.puri.Chatty.gschema.xml:62
 msgid "Convert text matching emoticons as real emoticons"
-msgstr "Eşleşen metin yüz ifadelerini gerçek yüz ifadelerine dönüştür"
+msgstr "Konvertera text som matchar humörsymboler till riktiga humörsymboler"
 
 #: data/sm.puri.Chatty.gschema.xml:67
 msgid "Enter key sends the message"
-msgstr "Enter tuşu iletiyi gönderir"
+msgstr "Returtangent skickar meddelandet"
 
 #: data/sm.puri.Chatty.gschema.xml:68
 msgid "Whether pressing Enter key sends the message"
-msgstr "Enter tuşunun iletiyi gönderip göndermeyeceği"
+msgstr "Huruvida tryck på returtangenten skickar meddelandet"
 
 #: data/sm.puri.Chatty.gschema.xml:73
 msgid "Window maximized"
-msgstr "Pencere ekranı kaplamış"
+msgstr "Fönster maximerat"
 
 #: data/sm.puri.Chatty.gschema.xml:74
 msgid "Window maximized state"
-msgstr "Pencerenin ekranı kaplama durumu"
+msgstr "Maximerat tillstånd för fönster"
 
 #: data/sm.puri.Chatty.gschema.xml:79
 msgid "Window size"
-msgstr "Pencere boyutu"
+msgstr "Fönsterstorlek"
 
 #: data/sm.puri.Chatty.gschema.xml:80
 msgid "Window size (width, height)."
-msgstr "Pencere boyutu (genişlik, yükseklik)."
+msgstr "Fönsterstorlek (bredd, höjd)."
 
 #: data/sm.puri.Chatty.metainfo.xml.in:7
 msgid "A messaging application"
-msgstr "Mesajlaşma uygulaması"
+msgstr "Ett meddelandeprogram"
 
 #: data/sm.puri.Chatty.metainfo.xml.in:9
 msgid "Chats is a messaging application supporting XMPP and SMS."
-msgstr "Konuşmalar, XMPP ve SMS'i destekleyen mesajlaşma uygulamasıdır."
+msgstr "Chattar är ett meddelandeprogram med stöd för XMPP och SMS."
 
 #: data/sm.puri.Chatty.metainfo.xml.in:16
 msgid "Chats message window"
-msgstr "Konuşmalar ileti penceresi"
+msgstr "Meddelandefönster för Chattar"
 
 #: src/chatty-application.c:68
 msgid "Show release version"
-msgstr "Dağıtım sürümünü göster"
+msgstr "Visa utgåvans version"
 
 #: src/chatty-application.c:69
 msgid "Start in daemon mode"
-msgstr "Artalan kipinde başlat"
+msgstr "Starta i demonläge"
 
 #: src/chatty-application.c:70
 msgid "Disable all accounts"
-msgstr "Tüm hesapları devre dışı bırak"
+msgstr "Inaktivera alla konton"
 
 #: src/chatty-application.c:71
 msgid "Enable libpurple debug messages"
-msgstr "libpurple hata ayıklama iletilerini etkinleştir"
+msgstr "Aktivera libpurple-felsökningsmeddelanden"
 
 #: src/chatty-application.c:72
 msgid "Enable verbose libpurple debug messages"
-msgstr "Ayrıntılı libpurple hata ayıklama iletilerini etkinleştir"
+msgstr "Aktivera utförliga libpurple-felsökningsmeddelanden"
 
 #: src/chatty-application.c:108
 #, c-format
 msgid "Authorize %s?"
-msgstr "Yetkilendir: %s?"
+msgstr "Auktorisera %s?"
 
 #: src/chatty-application.c:112
 msgid "Reject"
-msgstr "Reddet"
+msgstr "Avvisa"
 
 #: src/chatty-application.c:114
 msgid "Accept"
-msgstr "Kabul Et"
+msgstr "Acceptera"
 
 #: src/chatty-application.c:119
 #, c-format
 msgid "Add %s to contact list"
-msgstr "%s kişisini kişi listesine ekle"
+msgstr "Lägg till %s till kontaktlista"
 
 #: src/chatty-application.c:142
 msgid "Contact added"
-msgstr "Kişi eklendi"
+msgstr "Kontakt tillagd"
 
 #: src/chatty-application.c:145
 #, c-format
 msgid "User %s has added %s to the contacts"
-msgstr "%s kullanıcısı, %s kişisini kişilerine ekledi"
+msgstr "Användaren %s har lagt till %s till kontakterna"
 
 #: src/chatty-application.c:165
 msgid "Login failed"
-msgstr "Giriş başarısız"
+msgstr "Inloggning misslyckades"
 
 #: src/chatty-application.c:171
 msgid "Please check ID and password"
-msgstr "Lütfen kimliği ve parolayı denetleyin"
+msgstr "Kontrollera ID och lösenord"
 
 #: src/chatty-chat-view.c:70 src/chatty-chat-view.c:75
 msgid "This is an IM conversation."
-msgstr "Bu, anında mesajlaşma konuşmasıdır."
+msgstr "Detta är en snabbmeddelandekonversation."
 
 #: src/chatty-chat-view.c:71 src/chatty-chat-view.c:81
 msgid "Your messages are not encrypted,"
-msgstr "İletileriniz şifrelenmiyor,"
+msgstr "Dina meddelanden krypteras inte,"
 
 #: src/chatty-chat-view.c:72
 msgid "ask your counterpart to use E2EE."
-msgstr "Eşinize E2EE kullanmasını söyleyin."
+msgstr "be din motpart använda totalsträckskryptering."
 
 #: src/chatty-chat-view.c:76
 msgid "Your messages are secured"
-msgstr "İletileriniz uçtan uca"
+msgstr "Dina meddelanden är säkrade"
 
 #: src/chatty-chat-view.c:77
 msgid "by end-to-end encryption."
-msgstr "şifrelemeyle korunmaktadır."
+msgstr "med totalsträckskryptering."
 
 #: src/chatty-chat-view.c:80
 msgid "This is an SMS conversation."
-msgstr "Bu, SMS konuşmasıdır."
+msgstr "Detta är en SMS-konversation."
 
 #: src/chatty-chat-view.c:82
 msgid "and carrier rates may apply."
-msgstr "ve operatör tarifeleri uygulanabilir."
+msgstr "och operatörskostnader kan tillkomma."
 
-#: src/chatty-list-row.c:72
+#. Translators: Timestamp seconds suffix
+#: src/chatty-list-row.c:73
+msgctxt "timestamp-suffix-seconds"
 msgid "s"
-msgstr "sn"
-
-#: src/chatty-list-row.c:73 src/chatty-list-row.c:74
-msgid "m"
-msgstr "d"
-
-#: src/chatty-list-row.c:75 src/chatty-list-row.c:76
-msgid "h"
 msgstr "s"
 
-#: src/chatty-list-row.c:77 src/chatty-list-row.c:78
-msgid "d"
-msgstr "g"
+#. Translators: Timestamp minute suffix
+#: src/chatty-list-row.c:75
+msgctxt "timestamp-suffix-minute"
+msgid "m"
+msgstr "m"
 
+#. Translators: Timestamp minutes suffix
+#: src/chatty-list-row.c:77
+msgctxt "timestamp-suffix-minutes"
+msgid "m"
+msgstr "m"
+
+#. Translators: Timestamp hour suffix
 #: src/chatty-list-row.c:79
+msgctxt "timestamp-suffix-hour"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp hours suffix
+#: src/chatty-list-row.c:81
+msgctxt "timestamp-suffix-hours"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp day suffix
+#: src/chatty-list-row.c:83
+msgctxt "timestamp-suffix-day"
+msgid "d"
+msgstr "d"
+
+#. Translators: Timestamp days suffix
+#: src/chatty-list-row.c:85
+msgctxt "timestamp-suffix-days"
+msgid "d"
+msgstr "d"
+
+#. Translators: Timestamp month suffix
+#: src/chatty-list-row.c:87
+msgctxt "timestamp-suffix-month"
 msgid "mo"
-msgstr "a"
+msgstr "mån"
 
-#: src/chatty-list-row.c:80
+#. Translators: Timestamp months suffix
+#: src/chatty-list-row.c:89
+msgctxt "timestamp-suffix-months"
 msgid "mos"
-msgstr "a"
+msgstr "mån"
 
-#: src/chatty-list-row.c:81 src/chatty-list-row.c:82
+#. Translators: Timestamp year suffix
+#: src/chatty-list-row.c:91
+msgctxt "timestamp-suffix-year"
 msgid "y"
-msgstr "y"
+msgstr "å"
 
-#: src/chatty-list-row.c:183
+#. Translators: Timestamp years suffix
+#: src/chatty-list-row.c:93
+msgctxt "timestamp-suffix-years"
+msgid "y"
+msgstr "å"
+
+#. Translators: Timestamp prefix (e.g. Over 5h)
+#: src/chatty-list-row.c:195
 msgid "Over"
-msgstr "Geçik"
+msgstr "Över"
 
-#: src/chatty-list-row.c:187
+#. Translators: Timestamp prefix (e.g. Almost 5h)
+#: src/chatty-list-row.c:200
 msgid "Almost"
-msgstr "Neredeyse"
+msgstr "Nästan"
 
-#: src/chatty-list-row.c:204
+#: src/chatty-list-row.c:217
 msgid "Owner"
-msgstr "Sahip"
+msgstr "Ägare"
 
-#: src/chatty-list-row.c:207
+#: src/chatty-list-row.c:220
 msgid "Moderator"
-msgstr "Moderatör"
+msgstr "Moderator"
 
-#: src/chatty-list-row.c:210
+#: src/chatty-list-row.c:223
 msgid "Member"
-msgstr "Üye"
+msgstr "Medlem"
 
-#: src/chatty-manager.c:991
+#: src/chatty-manager.c:891
 #, c-format
 msgid "New message from %s"
-msgstr "%s kişisinden ileti"
+msgstr "Nytt meddelande från %s"
 
 #: src/chatty-message-row.c:89
 msgid "Copy"
-msgstr "Kopyala"
+msgstr "Kopiera"
 
-#: src/chatty-notify.c:81
+#: src/chatty-notify.c:67
 msgid "Open Message"
-msgstr "İletiyi Aç"
+msgstr "Öppna meddelande"
 
-#: src/chatty-notify.c:86
+#: src/chatty-notify.c:72
 msgid "Message Received"
-msgstr "İleti Alındı"
+msgstr "Meddelande togs emot"
 
-#: src/chatty-notify.c:92
+#: src/chatty-notify.c:78
 msgid "Message Error"
-msgstr "İleti Hatası"
+msgstr "Meddelandefel"
 
-#: src/chatty-notify.c:98
+#: src/chatty-notify.c:84
 msgid "Account Info"
-msgstr "Hesap Bilgisi"
+msgstr "Kontoinformation"
 
-#: src/chatty-notify.c:104
+#: src/chatty-notify.c:90
 msgid "Account Connected"
-msgstr "Hesap Bağlı"
+msgstr "Konto anslutet"
 
-#: src/chatty-notify.c:111
-msgid "Open Account Settings"
-msgstr "Hesap Ayarlarını Aç"
-
-#: src/chatty-notify.c:114
-msgid "Account Disconnected"
-msgstr "Hesap Bağlı Değil"
-
-#: src/chatty-purple-notify.c:42
+#: src/chatty-purple-notify.c:44
 msgid "Close"
-msgstr "Kapat"
+msgstr "Stäng"
 
 #: src/chatty-purple-request.c:186
 msgid "Save File..."
-msgstr "Dosyayı Kaydet..."
+msgstr "Spara fil…"
 
 #: src/chatty-purple-request.c:187
 msgid "Open File..."
-msgstr "Dosyayı Aç..."
+msgstr "Öppna fil…"
 
-#: src/chatty-purple-request.c:191 src/chatty-window.c:656
-#: src/dialogs/chatty-settings-dialog.c:447
+#: src/chatty-purple-request.c:191 src/chatty-window.c:587
+#: src/dialogs/chatty-settings-dialog.c:443
 #: src/dialogs/chatty-user-info-dialog.c:66 src/ui/chatty-dialog-join-muc.ui:16
 #: src/ui/chatty-dialog-muc-info.ui:56
 msgid "Cancel"
-msgstr "İptal Et"
+msgstr "Avbryt"
 
 #: src/chatty-purple-request.c:193
 msgid "Save"
-msgstr "Kaydet"
+msgstr "Spara"
 
-#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:446
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:442
 #: src/dialogs/chatty-user-info-dialog.c:65
 msgid "Open"
-msgstr "Aç"
+msgstr "Öppna"
 
-#. TRANSLATORS: Time format with time in AM/PM format
+#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
 #: src/chatty-utils.c:291
-msgid "%I:%M %p"
-msgstr "%I:%M %p"
+msgid "%A %H∶%M"
+msgstr "%A %H∶%M"
 
-#. TRANSLATORS: Time format as supported by g_date_time_format()
+#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
 #: src/chatty-utils.c:296
-msgid "%A %R"
-msgstr "%A %R"
+msgid "%A %I∶%M %p"
+msgstr "%A %I∶%M %p"
 
-#. TRANSLATORS: Time format with day and time in AM/PM format
-#: src/chatty-utils.c:299
-msgid "%A %I:%M %p"
-msgstr "%A %I:%M %p"
-
-#. TRANSLATORS: Year format as supported by g_date_time_format()
+#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
 #: src/chatty-utils.c:303
 msgid "%Y-%m-%d"
 msgstr "%Y-%m-%d"
 
-#: src/chatty-window.c:100 src/chatty-window.c:105 src/chatty-window.c:110
+#: src/chatty-window.c:104 src/chatty-window.c:109 src/chatty-window.c:114
 msgid "Choose a contact"
-msgstr "Kişi seç"
+msgstr "Välj en kontakt"
 
-#: src/chatty-window.c:101
+#: src/chatty-window.c:105
 msgid ""
 "Select an <b>SMS</b> or <b>Instant Message</b> contact with the <b>\"+\"</b> "
 "button in the titlebar."
 msgstr ""
-"Başlık çubuğundaki <b>\"+\"</b> düğmesiyle <b>SMS</b> veya <b>Anında Mesaj</"
-"b> kişisi seçin."
+"Välj en <b>SMS</b>- eller <b>Snabbmeddelande</b>-kontakt med <b>”+”</b>-"
+"knappen i namnlisten."
 
-#: src/chatty-window.c:106
+#: src/chatty-window.c:110
 msgid ""
 "Select an <b>Instant Message</b> contact with the \"+\" button in the "
 "titlebar."
-msgstr "Başlık çubuğundaki \"+\" düğmesiyle <b>Anında Mesaj</b> kişisi seçin."
+msgstr "Välj en <b>Snabbmeddelande</b>-kontakt med ”+”-knappen i namnlisten."
 
-#: src/chatty-window.c:111
+#: src/chatty-window.c:115
 msgid "Start a <b>SMS</b> chat with the \"+\" button in the titlebar."
-msgstr "Başlık çubuğundaki \"+\" düğmesiyle <b>SMS</b> konuşması başlat."
+msgstr "Starta en <b>SMS</b>-chatt med ”+”-knappen i namnlisten."
 
-#: src/chatty-window.c:112 src/chatty-window.c:116
+#: src/chatty-window.c:116 src/chatty-window.c:120
 msgid ""
 "For <b>Instant Messaging</b> add or activate an account in <i>\"preferences"
 "\"</i>."
 msgstr ""
-"<b>Anında Mesajlaşma</b> için <i>\"tercihler\"</i>de hesap ekle veya "
-"etkinleştir."
+"För <b>Snabbmeddelanden</b>, lägg till eller aktivera ett konto i "
+"<i>”inställningar”</i>."
 
-#: src/chatty-window.c:115
+#: src/chatty-window.c:119
 msgid "Start chatting"
-msgstr "Konuşma başlat"
+msgstr "Börja chatta"
 
-#: src/chatty-window.c:639
-msgid "Disconnect group chat"
-msgstr "Küme konuşmasından ayrıl"
-
-#: src/chatty-window.c:640
-msgid "This removes chat from chats list"
-msgstr "Bu, konuşmayı konuşma listesinden kaldırır"
-
-#: src/chatty-window.c:644
+#: src/chatty-window.c:572
 msgid "Delete chat with"
-msgstr "Şu konuşmayı sil:"
+msgstr "Ta bort chatt med"
 
-#: src/chatty-window.c:645
+#: src/chatty-window.c:573
 msgid "This deletes the conversation history"
-msgstr "Bu, konuşma geçmişini siler"
+msgstr "Det här tar bort meddelandehistoriken"
 
-#: src/chatty-window.c:658
+#: src/chatty-window.c:575
+msgid "Disconnect group chat"
+msgstr "Lämna gruppchatt"
+
+#: src/chatty-window.c:576
+msgid "This removes chat from chats list"
+msgstr "Detta tar bort chatten från chattlistan"
+
+#: src/chatty-window.c:589
 msgid "Delete"
-msgstr "Sil"
+msgstr "Ta bort"
 
-#: src/chatty-window.c:910
+#: src/chatty-window.c:799
 msgid "An SMS and XMPP messaging client"
-msgstr "SMS ve XMPP mesajlaşma istemcisi"
+msgstr "En SMS- och XMPP-meddelandeklient"
 
-#: src/chatty-window.c:917
+#: src/chatty-window.c:806
 msgid "translator-credits"
-msgstr "Emin Tufan Çetin <etcetin@gmail.com>"
+msgstr "Anders Jonsson <anders.jonsson@norsjovallen.se>"
 
-#: src/dialogs/chatty-muc-info-dialog.c:324
+#: src/dialogs/chatty-muc-info-dialog.c:319
 msgid "members"
-msgstr "üye"
+msgstr "medlemmar"
 
-#: src/dialogs/chatty-new-chat-dialog.c:134
+#: src/dialogs/chatty-new-chat-dialog.c:148
 msgid "Send To"
-msgstr "Şuna Gönder"
+msgstr "Skicka till"
 
-#: src/dialogs/chatty-new-chat-dialog.c:178
+#: src/dialogs/chatty-new-chat-dialog.c:192
 #, c-format
 msgid "Error opening GNOME Contacts: %s"
-msgstr "GNOME Kişiler açılırken hata: %s"
+msgstr "Fel vid öppnande av GNOME Kontakter: %s"
 
 #: src/dialogs/chatty-settings-dialog.c:319
 msgid "Select Protocol"
-msgstr "İletişim Kuralı Seç"
+msgstr "Välj protokoll"
 
 #: src/dialogs/chatty-settings-dialog.c:324
 msgid "Add XMPP account"
-msgstr "XMPP hesabı ekle"
+msgstr "Lägg till XMPP-konto"
 
 #: src/dialogs/chatty-settings-dialog.c:355
 msgid "connected"
-msgstr "bağlandı"
+msgstr "ansluten"
 
 #: src/dialogs/chatty-settings-dialog.c:357
 msgid "connecting…"
-msgstr "bağlanıyor..."
+msgstr "ansluter…"
 
 #: src/dialogs/chatty-settings-dialog.c:359
 msgid "disconnected"
-msgstr "bağlantı kesildi"
+msgstr "frånkopplad"
 
-#: src/dialogs/chatty-settings-dialog.c:443
+#: src/dialogs/chatty-settings-dialog.c:439
 #: src/dialogs/chatty-user-info-dialog.c:62
 msgid "Set Avatar"
-msgstr "Avatar Belirle"
+msgstr "Ställ in profilbild"
 
-#: src/dialogs/chatty-settings-dialog.c:513
+#: src/dialogs/chatty-settings-dialog.c:509
 #: src/ui/chatty-settings-dialog.ui:477
 msgid "Delete Account"
-msgstr "Hesabı Sil"
+msgstr "Ta bort konto"
 
-#: src/dialogs/chatty-settings-dialog.c:516
+#: src/dialogs/chatty-settings-dialog.c:512
 #, c-format
 msgid "Delete account %s?"
-msgstr "%s hesabını sil?"
+msgstr "Ta bort kontot %s?"
 
-#: src/dialogs/chatty-user-info-dialog.c:144
+#: src/dialogs/chatty-user-info-dialog.c:136
 msgid "Encryption not available"
-msgstr "Şifreleme kullanılamıyor"
+msgstr "Kryptering inte tillgänglig"
 
-#: src/dialogs/chatty-user-info-dialog.c:182
+#: src/dialogs/chatty-user-info-dialog.c:174
 msgid "Encryption is not available"
-msgstr "Şifreleme kullanılamıyor"
+msgstr "Kryptering är inte tillgänglig"
 
-#: src/dialogs/chatty-user-info-dialog.c:184
+#: src/dialogs/chatty-user-info-dialog.c:176
 msgid "This chat is encrypted"
-msgstr "Bu konuşma şifrelendi"
+msgstr "Denna chatt är krypterad"
 
-#: src/dialogs/chatty-user-info-dialog.c:186
+#: src/dialogs/chatty-user-info-dialog.c:178
 msgid "This chat is not encrypted"
-msgstr "Bu konuşma şifrelenmedi"
+msgstr "Denna chatt är inte krypterad"
 
-#: src/dialogs/chatty-user-info-dialog.c:256
+#: src/dialogs/chatty-user-info-dialog.c:246
 msgid "Phone Number:"
-msgstr "Telefon Numarası:"
+msgstr "Telefonnummer:"
 
 #: src/ui/chatty-dialog-join-muc.ui:12
 msgid "New Group Chat"
-msgstr "Yeni Küme Konuşması"
+msgstr "Ny gruppchatt"
 
 #: src/ui/chatty-dialog-join-muc.ui:28
 msgid "Join Chat"
-msgstr "Konuşmaya Katıl"
+msgstr "Gå in i chatt"
 
 #: src/ui/chatty-dialog-join-muc.ui:81 src/ui/chatty-dialog-new-chat.ui:237
 msgid "Select chat account"
-msgstr "Konuşma hesabı seç"
+msgstr "Välj chattkonto"
 
 #: src/ui/chatty-dialog-join-muc.ui:155
 msgid "Password (optional)"
-msgstr "Parola (isteğe bağlı)"
+msgstr "Lösenord (valfritt)"
 
 #: src/ui/chatty-dialog-muc-info.ui:26
 msgid "Group Details"
-msgstr "Küme Ayrıntıları"
+msgstr "Gruppdetaljer"
 
 #: src/ui/chatty-dialog-muc-info.ui:52
 msgid "Invite Contact"
-msgstr "Kişi Davet Et"
+msgstr "Bjud in kontakt"
 
 #: src/ui/chatty-dialog-muc-info.ui:69
 msgid "Invite"
-msgstr "Davet Et"
+msgstr "Bjud in"
 
 #: src/ui/chatty-dialog-muc-info.ui:166
 msgid "Room topic"
-msgstr "Oda konusu"
+msgstr "Rummets ämne"
 
 #: src/ui/chatty-dialog-muc-info.ui:225
 msgid "Room settings"
-msgstr "Oda seçenekleri"
+msgstr "Rumsinställningar"
 
 #: src/ui/chatty-dialog-muc-info.ui:248 src/ui/chatty-dialog-user-info.ui:209
 msgid "Notifications"
-msgstr "Bildirimler"
+msgstr "Aviseringar"
 
 #: src/ui/chatty-dialog-muc-info.ui:249
 msgid "Show notification badge"
-msgstr "Bildirim rozetini göster"
+msgstr "Visa aviseringsikon"
 
 #: src/ui/chatty-dialog-muc-info.ui:265
 msgid "Status Messages"
-msgstr "Durum İletileri"
+msgstr "Statusmeddelanden"
 
 #: src/ui/chatty-dialog-muc-info.ui:266
 msgid "Show status messages in chat"
-msgstr "Durum iletilerini konuşmada göster"
+msgstr "Visa statusmeddelanden i chatt"
 
 #: src/ui/chatty-dialog-muc-info.ui:289
 msgid "0 members"
-msgstr "0 üye"
+msgstr "0 medlemmar"
 
 #: src/ui/chatty-dialog-muc-info.ui:377
 msgid "Invite Message"
-msgstr "Davet İletisi"
+msgstr "Inbjudningsmeddelande"
 
 #: src/ui/chatty-dialog-new-chat.ui:26
 msgid "Start Chat"
-msgstr "Konuşma Başlat"
+msgstr "Starta chatt"
 
 #: src/ui/chatty-dialog-new-chat.ui:55
 msgid "New Contact"
-msgstr "Yeni Kişi"
+msgstr "Ny kontakt"
 
-#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:125
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:126
 msgid "Add Contact"
-msgstr "Kişi Ekle"
+msgstr "Lägg till kontakt"
 
 #: src/ui/chatty-dialog-new-chat.ui:149
 msgid "Send To:"
-msgstr "Şuna Gönder:"
+msgstr "Skicka till:"
 
 #: src/ui/chatty-dialog-new-chat.ui:288
 msgid "Name (optional)"
-msgstr "Ad (isteğe bağlı)"
+msgstr "Namn (valfritt)"
 
-#: src/ui/chatty-dialog-new-chat.ui:328 src/ui/chatty-window.ui:151
+#: src/ui/chatty-dialog-new-chat.ui:328 src/ui/chatty-window.ui:152
 msgid "Add to Contacts"
-msgstr "Kişilere Ekle"
+msgstr "Lägg till i Kontakter"
 
-#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:111
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:112
 msgid "Chat Details"
-msgstr "Konuşma Ayrıntıları"
+msgstr "Chattdetaljer"
 
 #: src/ui/chatty-dialog-user-info.ui:96
 msgid "XMPP ID"
-msgstr "XMPP Kimliği"
+msgstr "XMPP-ID"
 
 #: src/ui/chatty-dialog-user-info.ui:111 src/ui/chatty-dialog-user-info.ui:225
 msgid "Encryption"
-msgstr "Şifreleme"
+msgstr "Kryptering"
 
 #: src/ui/chatty-dialog-user-info.ui:126 src/ui/chatty-settings-dialog.ui:390
 msgid "Status"
-msgstr "Durum"
+msgstr "Status"
 
 #: src/ui/chatty-dialog-user-info.ui:226
 msgid "Secure messaging using OMEMO"
-msgstr "OMEMO kullanarak güvenli ileti gönderimi"
+msgstr "Säkra meddelanden med OMEMO"
 
 #: src/ui/chatty-dialog-user-info.ui:247
 msgid "Fingerprints"
-msgstr "Parmak İzleri"
+msgstr "Fingeravtryck"
 
 #: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:18
 msgid "Preferences"
-msgstr "Tercihler"
+msgstr "Inställningar"
 
 #: src/ui/chatty-settings-dialog.ui:21
 msgid "Back"
-msgstr "Geri"
+msgstr "Tillbaka"
 
 #: src/ui/chatty-settings-dialog.ui:41
 msgid "_Add"
-msgstr "_Ekle"
+msgstr "_Lägg till"
 
 #: src/ui/chatty-settings-dialog.ui:57
 msgid "_Save"
-msgstr "_Kaydet"
+msgstr "_Spara"
 
 #: src/ui/chatty-settings-dialog.ui:91
 msgid "Accounts"
-msgstr "Hesaplar"
+msgstr "Konton"
 
 #: src/ui/chatty-settings-dialog.ui:105
 msgid "Add new account…"
-msgstr "Yeni hesap ekle…"
+msgstr "Lägg till nytt konto…"
 
 #: src/ui/chatty-settings-dialog.ui:117
 msgid "Privacy"
-msgstr "Gizlilik"
+msgstr "Sekretess"
 
 #: src/ui/chatty-settings-dialog.ui:122
 msgid "Message Receipts"
-msgstr "İleti Okundu Bilgileri"
+msgstr "Meddelandekvitton"
 
 #: src/ui/chatty-settings-dialog.ui:123
 msgid "Confirm received messages"
-msgstr "Alınan iletileri doğrula"
+msgstr "Bekräfta mottagna meddelanden"
 
 #: src/ui/chatty-settings-dialog.ui:137
 msgid "Message Archive Management"
-msgstr "İleti Arşiv Yönetimi"
+msgstr "Meddelandearkivhantering"
 
 #: src/ui/chatty-settings-dialog.ui:138
 msgid "Sync conversations with chat server"
-msgstr "Konuşmaları konuşma sunucusuyla eşzamanlandır"
+msgstr "Synka konversationer med chattserver"
 
 #: src/ui/chatty-settings-dialog.ui:152
 msgid "Message Carbon Copies"
-msgstr "İleti Karbon Kopyaları"
+msgstr "Meddelandekopior"
 
 #: src/ui/chatty-settings-dialog.ui:167
 msgid "Typing Notification"
-msgstr "Yazış Bildirimi"
+msgstr "Inmatningsavisering"
 
 #: src/ui/chatty-settings-dialog.ui:168
 msgid "Send typing messages"
-msgstr "İleti yazışını gönder"
+msgstr "Skicka att meddelanden skrivs"
 
 #: src/ui/chatty-settings-dialog.ui:185
 msgid "Chats List"
-msgstr "Konuşma Listesi"
+msgstr "Chattlista"
 
 #: src/ui/chatty-settings-dialog.ui:190
 msgid "Indicate Offline Contacts"
-msgstr "Çevrim Dışı Kişileri İmle"
+msgstr "Indikera frånkopplade kontakter"
 
 #: src/ui/chatty-settings-dialog.ui:191
 msgid "Grey out avatars from offline contacts"
-msgstr "Çevrim dışı kişilerin avatarlarını grile"
+msgstr "Gråtona profilbilder för frånkopplade kontakter"
 
 #: src/ui/chatty-settings-dialog.ui:205
 msgid "Indicate Idle Contacts"
-msgstr "Eylemsiz Kişileri İmle"
+msgstr "Indikera inaktiva kontakter"
 
 #: src/ui/chatty-settings-dialog.ui:206
 msgid "Blur avatars from idle contacts"
-msgstr "Eylemsiz kişilerin avatarlarını bulanıklaştır"
+msgstr "Gör profilbilder för inaktiva kontakter suddiga"
 
 #: src/ui/chatty-settings-dialog.ui:220
 msgid "Indicate Unknown Contacts"
-msgstr "Bilinmeyen Kişileri İmle"
+msgstr "Indikera okända kontakter"
 
 #: src/ui/chatty-settings-dialog.ui:221
 msgid "Color unknown contact ID red"
-msgstr "Bilinmeyen kişi kimliğini kırmızı renk yap"
+msgstr "Färga okänt kontakt-ID rött"
 
 #: src/ui/chatty-settings-dialog.ui:238
 msgid "Editor"
-msgstr "Düzenleyici"
+msgstr "Redigerare"
 
 #: src/ui/chatty-settings-dialog.ui:243
 msgid "Graphical Emoticons"
-msgstr "Grafiksel Yüz İfadeleri"
+msgstr "Grafiska humörsymboler"
 
 #: src/ui/chatty-settings-dialog.ui:244
 msgid "Convert ASCII emoticons"
-msgstr "ASCII yüz ifadelerini dönüştür"
+msgstr "Konvertera ASCII-humörsymboler"
 
 #: src/ui/chatty-settings-dialog.ui:258
 msgid "Return = Send Message"
-msgstr "Dönüş = İletiyi Gönder"
+msgstr "Retur = Skicka meddelande"
 
 #: src/ui/chatty-settings-dialog.ui:259
 msgid "Send message with return key"
-msgstr "Dönüş (return) tuşuyla iletiyi gönder"
+msgstr "Skicka meddelande med returtangenten"
 
 #: src/ui/chatty-settings-dialog.ui:328
 msgid "Account ID"
-msgstr "Kullanıcı Kimliği"
+msgstr "Konto-ID"
 
 #: src/ui/chatty-settings-dialog.ui:361
 msgid "Protocol"
-msgstr "İletişim Kuralı"
+msgstr "Protokoll"
 
 #: src/ui/chatty-settings-dialog.ui:419 src/ui/chatty-settings-dialog.ui:716
 msgid "Password"
-msgstr "Parola"
+msgstr "Lösenord"
 
 #: src/ui/chatty-settings-dialog.ui:494
 msgid "Own Fingerprint"
-msgstr "Kendi Parmak İzi"
+msgstr "Eget fingeravtryck"
 
 #: src/ui/chatty-settings-dialog.ui:520
 msgid "Other Devices"
-msgstr "Diğer Aygıtlar"
+msgstr "Andra enheter"
 
 #: src/ui/chatty-settings-dialog.ui:604
 msgid "XMPP"
@@ -726,31 +760,31 @@ msgstr "Telegram"
 
 #: src/ui/chatty-settings-dialog.ui:691
 msgid "Provider"
-msgstr "Sağlayıcı"
+msgstr "Leverantör"
 
 #: src/ui/chatty-window.ui:31
 msgid "About Chats"
-msgstr "Konuşmalar Hakkında"
+msgstr "Om Chattar"
 
-#: src/ui/chatty-window.ui:58
+#: src/ui/chatty-window.ui:59
 msgid "New Message…"
-msgstr "İletiyi Aç…"
+msgstr "Nytt meddelande…"
 
-#: src/ui/chatty-window.ui:71
+#: src/ui/chatty-window.ui:72
 msgid "New Group Message…"
-msgstr "Yeni Küme Konuşması…"
+msgstr "Nytt gruppmeddelande…"
 
-#: src/ui/chatty-window.ui:84
+#: src/ui/chatty-window.ui:85
 msgid "New Bulk SMS…"
-msgstr "Yeni Çoklu SMS…"
+msgstr "Nytt mass-SMS…"
 
-#: src/ui/chatty-window.ui:176
+#: src/ui/chatty-window.ui:177
 msgid "Leave Chat"
-msgstr "Konuşmadan Ayrıl"
+msgstr "Lämna chatt"
 
-#: src/ui/chatty-window.ui:189
+#: src/ui/chatty-window.ui:190
 msgid "Delete Chat"
-msgstr "Konuşmayı Sil"
+msgstr "Ta bort chatt"
 
 #: src/users/chatty-contact.c:313
 msgid "Mobile: "
@@ -758,60 +792,8 @@ msgstr "Mobil: "
 
 #: src/users/chatty-contact.c:315
 msgid "Work: "
-msgstr "İş: "
+msgstr "Arbete: "
 
 #: src/users/chatty-contact.c:317
 msgid "Other: "
-msgstr "Diğer: "
-
-#~ msgid "Initial development release of chatty with support for xmpp and sms."
-#~ msgstr "chatty'nin sms ve xmpp destekli ön geliştirme dağıtımı"
-
-#~ msgid "Me: "
-#~ msgstr "Ben:"
-
-#~ msgid "About "
-#~ msgstr "Hakkında"
-
-#, fuzzy
-#~ msgid "Less than "
-#~ msgstr "Şundan az:"
-
-#~ msgid " seconds"
-#~ msgstr "saniye"
-
-#~ msgid " minute"
-#~ msgstr "dakika"
-
-#~ msgid " minutes"
-#~ msgstr "dakika"
-
-#~ msgid " hour"
-#~ msgstr "saat"
-
-#~ msgid " hours"
-#~ msgstr "saat"
-
-#~ msgid " day"
-#~ msgstr "gün"
-
-#~ msgid " days"
-#~ msgstr "gün"
-
-#~ msgid " month"
-#~ msgstr "ay"
-
-#~ msgid " months"
-#~ msgstr "ay"
-
-#~ msgid " year"
-#~ msgstr "yıl"
-
-#~ msgid " years"
-#~ msgstr "yıl"
-
-#~ msgid "Unencrypted"
-#~ msgstr "Şifrelenmemiş"
-
-#~ msgid "New Direct Chat"
-#~ msgstr "Yeni Doğrudan Konuşma"
+msgstr "Annat: "

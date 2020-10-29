@@ -13,6 +13,7 @@
 
 #include "chatty-avatar.h"
 #include "chatty-chat.h"
+#include "chatty-pp-chat.h"
 #include "chatty-history.h"
 #include "chatty-icons.h"
 #include "chatty-manager.h"
@@ -45,7 +46,7 @@ struct _ChattyChatView
   GtkAdjustment *vadjustment;
 
   ChattyChat *chat;
-  ChattyConversation *chatty_conv;
+  PurpleConversation *conv;
   char       *last_message_id;  /* id of last sent message, currently used only for SMS */
   guint       message_type;
   guint       refresh_typing_id;
@@ -53,7 +54,6 @@ struct _ChattyChatView
 };
 
 static GHashTable *ht_sms_id = NULL;
-static GHashTable *ht_emoticon = NULL;
 
 #define INDICATOR_WIDTH   60
 #define INDICATOR_HEIGHT  40
@@ -83,31 +83,23 @@ const char *disclaimer_strings[][3] = {
   },
 };
 
-static void
-chatty_conv_init_emoticon_translations (void)
-{
-  ht_emoticon = g_hash_table_new_full (g_str_hash,
-                                       g_str_equal,
-                                       g_free,
-                                       g_free);
-
-  g_hash_table_insert (ht_emoticon, ":)", "🙂");
-  g_hash_table_insert (ht_emoticon, ";)", "😉");
-  g_hash_table_insert (ht_emoticon, ":(", "🙁");
-  g_hash_table_insert (ht_emoticon, ":'(", "😢");
-  g_hash_table_insert (ht_emoticon, ":/", "😕");
-  g_hash_table_insert (ht_emoticon, ":D", "😀");
-  g_hash_table_insert (ht_emoticon, ":'D", "😂");
-  g_hash_table_insert (ht_emoticon, ";P", "😜");
-  g_hash_table_insert (ht_emoticon, ":P", "😛");
-  g_hash_table_insert (ht_emoticon, ";p", "😜");
-  g_hash_table_insert (ht_emoticon, ":p", "😛");
-  g_hash_table_insert (ht_emoticon, ":o", "😮");
-  g_hash_table_insert (ht_emoticon, "B)", "😎 ");
-  g_hash_table_insert (ht_emoticon, "SANTA", "🎅");
-  g_hash_table_insert (ht_emoticon, "FROSTY", "⛄");
-}
-
+const char *emoticons[][15] = {
+  {":)", "🙂"},
+  {";)", "😉"},
+  {":(", "🙁"},
+  {":'(", "😢"},
+  {":/", "😕"},
+  {":D", "😀"},
+  {":'D", "😂"},
+  {";P", "😜"},
+  {":P", "😛"},
+  {";p", "😜"},
+  {":p", "😛"},
+  {":o", "😮"},
+  {"B)", "😎 "},
+  {"SANTA", "🎅"},
+  {"FROSTY", "⛄"},
+};
 
 static gboolean
 chat_view_time_is_same_day (time_t time_a,
@@ -210,25 +202,21 @@ chat_view_indicator_refresh_cb (ChattyChatView *self)
 static void
 chatty_check_for_emoticon (ChattyChatView *self)
 {
-  GtkTextIter         start, end, position;
-  GHashTableIter      iter;
-  gpointer            key, value;
-  g_autofree char    *text = NULL;
+  GtkTextIter start, end, position;
+  g_autofree char *text = NULL;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
   text = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
-  g_hash_table_iter_init (&iter, ht_emoticon);
-
-  while (g_hash_table_iter_next (&iter, &key, &value))
-    if (g_str_has_suffix (text, (char *)key)) {
+  for (guint i = 0; i < G_N_ELEMENTS (emoticons); i++)
+    if (g_str_has_suffix (text, emoticons[i][0])) {
       position = end;
 
-      gtk_text_iter_backward_chars (&position, strlen ((char *)key));
+      gtk_text_iter_backward_chars (&position, strlen (emoticons[i][0]));
       gtk_text_buffer_delete (self->message_input_buffer, &position, &end);
-      gtk_text_buffer_insert (self->message_input_buffer, &position, (char *)value, -1);
+      gtk_text_buffer_insert (self->message_input_buffer, &position, emoticons[i][1], -1);
 
       break;
     }
@@ -246,8 +234,8 @@ chat_view_setup_file_upload (ChattyChatView *self)
 
   gtk_widget_show (self->send_file_button);
 
-  gc = purple_conversation_get_gc (self->chatty_conv->conv);
-  node = chatty_utils_get_conv_blist_node (self->chatty_conv->conv);
+  gc = purple_conversation_get_gc (self->conv);
+  node = chatty_utils_get_conv_blist_node (self->conv);
   prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (gc->prpl);
 
   if (prpl_info->blist_node_menu)
@@ -271,32 +259,26 @@ static void
 chatty_chat_view_update (ChattyChatView *self)
 {
   GtkStyleContext *context;
-  PurpleAccount *account;
-  const char *protocol_id;
-  PurpleConversationType conv_type;
   int index = -1;
+
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-  conv_type = purple_conversation_get_type (self->chatty_conv->conv);
-  protocol_id = purple_account_get_protocol_id (account);
-
-  if (conv_type == PURPLE_CONV_TYPE_CHAT)
-    self->message_type = CHATTY_MSG_TYPE_MUC;
-  else if (conv_type == PURPLE_CONV_TYPE_IM &&
-           g_strcmp0 (protocol_id, "prpl-mm-sms") == 0)
+  if (chatty_chat_is_im (self->chat) &&
+      chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS)
     self->message_type = CHATTY_MSG_TYPE_SMS;
-  else
+  else if (chatty_chat_is_im (self->chat))
     self->message_type = CHATTY_MSG_TYPE_IM;
+  else
+    self->message_type = CHATTY_MSG_TYPE_MUC;
 
   gtk_widget_show (self->encrypt_icon);
 
-  if (conv_type == PURPLE_CONV_TYPE_IM)
-    chatty_chat_load_encryption_status (self->chat);
+  if (chatty_chat_is_im (self->chat) && CHATTY_IS_PP_CHAT (self->chat))
+    chatty_pp_chat_load_encryption_status (CHATTY_PP_CHAT (self->chat));
 
   if (chatty_manager_has_file_upload_plugin (chatty_manager_get_default ()) &&
-      g_strcmp0 (protocol_id, "prpl-jabber") == 0)
+      chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_XMPP)
     chat_view_setup_file_upload (self);
 
   if (self->message_type == CHATTY_MSG_TYPE_IM)
@@ -326,15 +308,13 @@ chatty_update_typing_status (ChattyChatView *self)
   PurpleConvIm           *im;
   GtkTextIter             start, end;
   g_autofree char         *text = NULL;
-  PurpleConversationType  type;
   gboolean                empty;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  conv = self->chatty_conv->conv;
-  type = purple_conversation_get_type (conv);
+  conv = self->conv;
 
-  if (type != PURPLE_CONV_TYPE_IM)
+  if (!chatty_chat_is_im (self->chat))
     return;
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
@@ -370,91 +350,13 @@ chatty_update_typing_status (ChattyChatView *self)
 }
 
 static void
-chatty_conv_get_im_messages_cb (const guchar *msg,
-                                int           direction,
-                                time_t        time_stamp,
-                                const guchar *uuid,
-                                gpointer      user_data,
-                                int           last_message)
-{
-  ChattyChatView *self = user_data;
-  ChattyMsgDirection msg_direction;
-
-  g_assert (CHATTY_IS_CHAT_VIEW (self));
-
-  if (direction == 1)
-    msg_direction = CHATTY_DIRECTION_IN;
-  else if (direction == -1)
-    msg_direction = CHATTY_DIRECTION_OUT;
-  else
-    msg_direction = CHATTY_DIRECTION_SYSTEM; /* TODO: LELAND: Do we have this case for IMs? */
-
-  if (msg && *msg) {
-    g_autoptr(ChattyMessage) message = NULL;
-
-    message = chatty_message_new (NULL, NULL, (const char *)msg, (const char *)uuid,
-                                  time_stamp, msg_direction, 0);
-    chatty_chat_prepend_message (self->chat, message);
-  }
-}
-
-
-static void
-chatty_conv_get_chat_messages_cb (const guchar *msg,
-                                  int           direction,
-                                  int           time_stamp,
-                                  const char   *room,
-                                  const guchar *who,
-                                  const guchar *uuid,
-                                  gpointer      user_data)
-{
-  ChattyChatView *self = user_data;
-  g_autoptr(ChattyMessage) message = NULL;
-
-  g_assert (CHATTY_IS_CHAT_VIEW (self));
-
-  if (msg && *msg) {
-    if (direction == 1) {
-      ChattyPpBuddy *buddy = NULL;
-      const char    *alias = NULL;
-
-      if (who)
-        alias = strchr ((const char *)who, '/');
-
-      /* Skip ‘/’ */
-      if (alias)
-        alias++;
-      else
-        alias = (const char *)who;
-
-      if (alias)
-        buddy = chatty_chat_find_user (self->chat, alias);
-
-      message = chatty_message_new ((ChattyItem *)buddy, alias,
-                                    (const char *)msg, (const char *)uuid,
-                                    time_stamp, CHATTY_DIRECTION_IN, 0);
-      chatty_chat_prepend_message (self->chat, message);
-    } else if (direction == -1) {
-      message = chatty_message_new (NULL, NULL, (const char *)msg, (const char *)uuid,
-                                    0, CHATTY_DIRECTION_OUT, 0);
-      chatty_chat_prepend_message (self->chat, message);
-    } else {
-      message = chatty_message_new (NULL, NULL, (const char *)msg, (const char *)uuid,
-                                    time_stamp, CHATTY_DIRECTION_SYSTEM, 0);
-      chatty_chat_prepend_message (self->chat, message);
-    }
-  }
-}
-
-
-static void
 chat_view_edge_overshot_cb (ChattyChatView  *self,
                             GtkPositionType  pos)
 {
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
   if (pos == GTK_POS_TOP)
-    chatty_chat_view_load (self, LAZY_LOAD_INITIAL_MSGS_LIMIT);
+    chatty_manager_load_more_chat (chatty_manager_get_default (), self->chat, LAZY_LOAD_INITIAL_MSGS_LIMIT);
 }
 
 
@@ -472,7 +374,7 @@ chat_view_message_row_new (ChattyMessage  *message,
   if (self->message_type == CHATTY_MSG_TYPE_MUC)
     is_im = FALSE;
 
-  protocol = chatty_chat_get_protocol (self->chat);
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
   row = chatty_message_row_new (message, protocol, is_im);
   chatty_message_row_set_alias (CHATTY_MESSAGE_ROW (row),
                                 chatty_message_get_user_alias (message));
@@ -534,7 +436,7 @@ chat_encrypt_changed_cb (ChattyChatView *self)
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
   context = gtk_widget_get_style_context (self->encrypt_icon);
-  encryption = chatty_chat_get_encryption_status (self->chat);
+  encryption = chatty_chat_get_encryption (self->chat);
 
   if (encryption == CHATTY_ENCRYPTION_ENABLED) {
     icon_name = "changes-prevent-symbolic";
@@ -547,6 +449,22 @@ chat_encrypt_changed_cb (ChattyChatView *self)
   }
 
   gtk_image_set_from_icon_name (GTK_IMAGE (self->encrypt_icon), icon_name, 1);
+}
+
+static void
+chat_buddy_typing_changed_cb (ChattyChatView *self)
+{
+  g_assert (CHATTY_IS_CHAT_VIEW (self));
+
+  if (chatty_chat_get_buddy_typing (self->chat)) {
+    gtk_revealer_set_reveal_child (GTK_REVEALER (self->typing_revealer), TRUE);
+    self->refresh_typing_id = g_timeout_add (300,
+                                             (GSourceFunc)chat_view_indicator_refresh_cb,
+                                             self);
+  } else {
+    gtk_revealer_set_reveal_child (GTK_REVEALER (self->typing_revealer), FALSE);
+    g_clear_handle_id (&self->refresh_typing_id, g_source_remove);
+  }
 }
 
 static gboolean
@@ -590,7 +508,7 @@ chatty_conv_check_for_command (ChattyChatView *self)
   PurpleMessageFlags  flags = 0;
 
   flags |= PURPLE_MESSAGE_NO_LOG | PURPLE_MESSAGE_SYSTEM;
-  conv = self->chatty_conv->conv;
+  conv = self->conv;
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
 
@@ -720,7 +638,7 @@ chat_view_send_file_button_clicked_cb (ChattyChatView *self,
 
   callback = g_object_get_data (G_OBJECT (button), "callback");
   data = g_object_get_data (G_OBJECT (button), "callback-data");
-  node = chatty_utils_get_conv_blist_node (self->chatty_conv->conv);
+  node = chatty_utils_get_conv_blist_node (self->conv);
 
   if (callback)
     callback (node, data);
@@ -730,17 +648,15 @@ static void
 chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 {
   PurpleConversation  *conv;
-  PurpleAccount *account;
+  ChattyAccount *account;
   GtkTextIter    start, end;
   gchar         *message = NULL;
-  const gchar   *protocol_id;
   gchar         *sms_id_str;
   guint          sms_id;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  conv = self->chatty_conv->conv;
-  account = purple_conversation_get_account (conv);
+  conv = self->conv;
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
 
@@ -751,19 +667,20 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
     return;
   }
 
-  if (!purple_account_is_connected (account))
+  account = chatty_chat_get_account (self->chat);
+  if (chatty_account_get_status (account) != CHATTY_CONNECTED)
     return;
 
-  protocol_id = purple_account_get_protocol_id (account);
-
   gtk_widget_grab_focus (self->message_input);
-  purple_idle_touch ();
+
+  if (conv)
+    purple_idle_touch ();
 
   message = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
   if (gtk_text_buffer_get_char_count (self->message_input_buffer)) {
     /* provide a msg-id to the sms-plugin for send-receipts */
-    if (g_strcmp0 (protocol_id, "prpl-mm-sms") == 0) {
+    if (chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS) {
       sms_id = g_random_int ();
 
       sms_id_str = g_strdup_printf ("%i", sms_id);
@@ -780,9 +697,9 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
                                       PURPLE_MESSAGE_INVISIBLE);
     }
 
-    if (purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM) {
+    if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM) {
       purple_conv_im_send (PURPLE_CONV_IM(conv), message);
-    } else if (purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_CHAT) {
+    } else if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_CHAT) {
       purple_conv_chat_send(PURPLE_CONV_CHAT(conv), message);
     }
 
@@ -800,12 +717,12 @@ chat_view_input_key_pressed_cb (ChattyChatView *self,
 {
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  if (!chatty_settings_get_return_sends_message (chatty_settings_get_default ()) ||
-      gtk_text_buffer_get_char_count (self->message_input_buffer) == 0)
-    return FALSE;
-
-  if (!(event_key->state & GDK_SHIFT_MASK) && event_key->keyval == GDK_KEY_Return) {
-    chat_view_send_message_button_clicked_cb (self);
+  if (!(event_key->state & GDK_SHIFT_MASK) && event_key->keyval == GDK_KEY_Return &&
+      chatty_settings_get_return_sends_message (chatty_settings_get_default ())) {
+    if (gtk_text_buffer_get_char_count (self->message_input_buffer) > 0)
+      chat_view_send_message_button_clicked_cb (self);
+    else
+      gtk_widget_error_bell (self->message_input);
 
     return TRUE;
   }
@@ -817,14 +734,10 @@ chat_view_input_key_pressed_cb (ChattyChatView *self,
 static void
 chat_view_message_input_changed_cb (ChattyChatView *self)
 {
-  PurpleAccount *account;
-  const gchar   *protocol;
-  gboolean       has_text;
+  gboolean has_text;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  account  = purple_conversation_get_account (self->chatty_conv->conv);
-  protocol = purple_account_get_protocol_id (account);
   has_text = gtk_text_buffer_get_char_count (self->message_input_buffer) > 0;
   gtk_widget_set_visible (self->send_message_button, has_text);
 
@@ -832,7 +745,7 @@ chat_view_message_input_changed_cb (ChattyChatView *self)
     chatty_update_typing_status (self);
 
   if (chatty_settings_get_convert_emoticons (chatty_settings_get_default ()) &&
-      (g_strcmp0 (protocol, "prpl-mm-sms") != 0))
+      chatty_item_get_protocols (CHATTY_ITEM (self->chat)) != CHATTY_PROTOCOL_SMS)
     chatty_check_for_emoticon (self);
 }
 
@@ -931,10 +844,20 @@ chat_view_sms_sent_cb (const char *sms_id,
     return;
   }
 
-  message = chatty_chat_find_message_with_id (chat, sms_id);
+  message = chatty_pp_chat_find_message_with_id (CHATTY_PP_CHAT (chat), sms_id);
 
   if (message)
     chatty_message_set_status (message, sent_status, time_now);
+}
+
+static void
+chatty_chat_view_map (GtkWidget *widget)
+{
+  ChattyChatView *self = (ChattyChatView *)widget;
+
+  GTK_WIDGET_CLASS (chatty_chat_view_parent_class)->map (widget);
+
+  gtk_widget_grab_focus (self->message_input);
 }
 
 static void
@@ -942,6 +865,9 @@ chatty_chat_view_finalize (GObject *object)
 {
   ChattyChatView *self = (ChattyChatView *)object;
 
+  g_hash_table_foreach_remove (ht_sms_id,
+                               chat_view_hash_table_match_item,
+                               self);
   g_clear_object (&self->chat);
 
   G_OBJECT_CLASS (chatty_chat_view_parent_class)->finalize (object);
@@ -954,6 +880,8 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   object_class->finalize = chatty_chat_view_finalize;
+
+  widget_class->map = chatty_chat_view_map;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/chatty/"
@@ -1011,7 +939,6 @@ void
 chatty_chat_view_purple_init (void)
 {
   ht_sms_id = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
-  chatty_conv_init_emoticon_translations ();
 
   purple_signal_connect (purple_conversations_get_handle (),
                          "sms-sent", ht_sms_id,
@@ -1024,15 +951,12 @@ chatty_chat_view_purple_uninit (void)
   purple_signals_disconnect_by_handle (ht_sms_id);
 
   g_hash_table_destroy (ht_sms_id);
-  g_hash_table_destroy (ht_emoticon);
 }
 
 void
 chatty_chat_view_set_chat (ChattyChatView *self,
                            ChattyChat     *chat)
 {
-  PurpleConversation *conv;
-
   g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
   g_return_if_fail (CHATTY_IS_CHAT (chat));
 
@@ -1042,8 +966,8 @@ chatty_chat_view_set_chat (ChattyChatView *self,
   if (!chat)
     return;
 
-  conv = chatty_chat_get_purple_conv (chat);
-  self->chatty_conv = CHATTY_CONVERSATION (conv);
+  if (CHATTY_IS_PP_CHAT (chat))
+    self->conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (chat));
 
   gtk_list_box_bind_model (GTK_LIST_BOX (self->message_list),
                            chatty_chat_get_messages (self->chat),
@@ -1058,8 +982,13 @@ chatty_chat_view_set_chat (ChattyChatView *self,
                            G_CALLBACK (chat_encrypt_changed_cb),
                            self,
                            G_CONNECT_SWAPPED);
+  g_signal_connect_object (self->chat, "notify::buddy-typing",
+                           G_CALLBACK (chat_buddy_typing_changed_cb),
+                           self,
+                           G_CONNECT_SWAPPED);
 
   chat_encrypt_changed_cb (self);
+  chat_buddy_typing_changed_cb (self);
   chatty_chat_view_update (self);
 }
 
@@ -1069,92 +998,4 @@ chatty_chat_view_get_chat (ChattyChatView *self)
   g_return_val_if_fail (CHATTY_IS_CHAT_VIEW (self), NULL);
 
   return self->chat;
-}
-
-
-void
-chatty_chat_view_load (ChattyChatView *self,
-                       guint           limit)
-{
-  g_autoptr(ChattyMessage) message = NULL;
-  GListModel *message_list;
-  PurpleAccount *account;
-  const gchar   *conv_name;
-  const char    *uid = NULL;
-  gboolean       im;
-
-  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
-  g_return_if_fail (self->chatty_conv);
-
-  im = (self->chatty_conv->conv->type == PURPLE_CONV_TYPE_IM);
-
-  conv_name = purple_conversation_get_name (self->chatty_conv->conv);
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-
-  /* Get the uid of the first message */
-  message_list = chatty_chat_get_messages (self->chat);
-  message = g_list_model_get_item (message_list, 0);
-  if (message)
-    uid = chatty_message_get_uid (message);
-
-  if (im) {
-    g_autofree char *who = NULL;
-
-    /* Remove resource (user could be connecting from different devices/applications) */
-    who = chatty_utils_jabber_id_strip (conv_name);
-
-    chatty_history_get_im_messages (account->username,
-                                    who,
-                                    chatty_conv_get_im_messages_cb,
-                                    self,
-                                    limit,
-                                    uid);
-  } else {
-    chatty_history_get_chat_messages (account->username,
-                                      conv_name,
-                                      chatty_conv_get_chat_messages_cb,
-                                      self,
-                                      limit,
-                                      uid);
-  }
-}
-
-
-void
-chatty_chat_view_remove_footer (ChattyChatView *self)
-{
-  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
-
-  g_hash_table_foreach_remove (ht_sms_id,
-                               chat_view_hash_table_match_item,
-                               self);
-}
-
-void
-chatty_chat_view_focus_entry (ChattyChatView *self)
-{
-  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
-
-  gtk_widget_grab_focus (self->message_input);
-}
-
-void
-chatty_chat_view_show_typing_indicator (ChattyChatView *self)
-{
-  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
-
-  gtk_revealer_set_reveal_child (GTK_REVEALER (self->typing_revealer), TRUE);
-
-  self->refresh_typing_id = g_timeout_add (300,
-                                           (GSourceFunc)chat_view_indicator_refresh_cb,
-                                           self);
-}
-
-void
-chatty_chat_view_hide_typing_indicator (ChattyChatView *self)
-{
-  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
-
-  gtk_revealer_set_reveal_child (GTK_REVEALER (self->typing_revealer), FALSE);
-  g_clear_handle_id (&self->refresh_typing_id, g_source_remove);
 }

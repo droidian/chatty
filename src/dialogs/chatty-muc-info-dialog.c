@@ -11,8 +11,8 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <glib-object.h>
+#include "chatty-pp-chat.h"
 #include "chatty-window.h"
-#include "chatty-conversation.h"
 #include "chatty-icons.h"
 #include "chatty-list-row.h"
 #include "chatty-manager.h"
@@ -49,7 +49,7 @@ struct _ChattyMucInfoDialog
   const char *new_topic;
 
   ChattyChat *chat;
-  ChattyConversation *chatty_conv;
+  PurpleConversation *conv;
 };
 
 
@@ -86,14 +86,14 @@ button_invite_contact_clicked_cb (ChattyMucInfoDialog *self)
   name = gtk_entry_get_text (GTK_ENTRY(self->entry_invite_name));
   invite_msg = gtk_entry_get_text (GTK_ENTRY(self->entry_invite_msg));
 
-  if (name && *name && self->chatty_conv) {
+  if (name && *name && self->conv) {
     PurpleConversationType conv_type;
 
-    conv_type = purple_conversation_get_type (self->chatty_conv->conv);
+    conv_type = purple_conversation_get_type (self->conv);
 
     if (conv_type == PURPLE_CONV_TYPE_CHAT)
-      serv_chat_invite (purple_conversation_get_gc (self->chatty_conv->conv),
-                        purple_conv_chat_get_id (PURPLE_CONV_CHAT (self->chatty_conv->conv)),
+      serv_chat_invite (purple_conversation_get_gc (self->conv),
+                        purple_conv_chat_get_id (PURPLE_CONV_CHAT (self->conv)),
                         invite_msg,
                         name);
   }
@@ -167,8 +167,8 @@ switch_prefs_state_changed_cb (ChattyMucInfoDialog *self)
 
   active = gtk_switch_get_active (GTK_SWITCH(self->switch_prefs_status));
 
-  node = PURPLE_BLIST_NODE(purple_blist_find_chat (self->chatty_conv->conv->account, 
-                                                   self->chatty_conv->conv->name));
+  node = PURPLE_BLIST_NODE(purple_blist_find_chat (self->conv->account, 
+                                                   self->conv->name));
 
   purple_blist_node_set_bool (node, "chatty-status-msg", active);
 }
@@ -177,17 +177,12 @@ switch_prefs_state_changed_cb (ChattyMucInfoDialog *self)
 static void
 switch_prefs_notify_changed_cb (ChattyMucInfoDialog *self)
 {
-  PurpleBlistNode *node;
-  gboolean         active;
+  gboolean active;
 
   g_assert (CHATTY_IS_MUC_INFO_DIALOG (self));
 
   active = gtk_switch_get_active (GTK_SWITCH(self->switch_prefs_notifications));
-
-  node = PURPLE_BLIST_NODE(purple_blist_find_chat (self->chatty_conv->conv->account, 
-                                                   self->chatty_conv->conv->name));
-
-  purple_blist_node_set_bool (node, "chatty-notifications", active);
+  chatty_pp_chat_set_show_notifications (CHATTY_PP_CHAT (self->chat), active);
 }
 
 
@@ -246,7 +241,7 @@ chatty_muc_set_topic (ChattyMucInfoDialog *self)
 
   g_assert (CHATTY_IS_MUC_INFO_DIALOG (self));
 
-  gc = purple_conversation_get_gc (self->chatty_conv->conv);
+  gc = purple_conversation_get_gc (self->conv);
 
   prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl);
 
@@ -258,7 +253,7 @@ chatty_muc_set_topic (ChattyMucInfoDialog *self)
     return;
   }
 
-  chat_id = purple_conv_chat_get_id (PURPLE_CONV_CHAT(self->chatty_conv->conv));
+  chat_id = purple_conv_chat_get_id (PURPLE_CONV_CHAT(self->conv));
 
   prpl_info->set_chat_topic (gc, chat_id, self->new_topic);
 }
@@ -284,15 +279,15 @@ chatty_muc_info_dialog_update_chat (ChattyMucInfoDialog *self)
   gtk_text_view_set_buffer (GTK_TEXT_VIEW(self->textview_topic), 
                             self->msg_buffer_topic);
 
-  account = purple_conversation_get_account (self->chatty_conv->conv);
+  account = purple_conversation_get_account (self->conv);
 
-  chat = PURPLE_CONV_CHAT(self->chatty_conv->conv);
-  node = PURPLE_BLIST_NODE(purple_blist_find_chat (account, self->chatty_conv->conv->name));
-  chat_name = purple_conversation_get_title (self->chatty_conv->conv);
+  chat = PURPLE_CONV_CHAT(self->conv);
+  node = PURPLE_BLIST_NODE(purple_blist_find_chat (account, self->conv->name));
+  chat_name = purple_conversation_get_title (self->conv);
 
   gtk_label_set_text (GTK_LABEL(self->label_chat_id), chat_name);
 
-  topic = purple_conv_chat_get_topic (PURPLE_CONV_CHAT(self->chatty_conv->conv));
+  topic = purple_conv_chat_get_topic (PURPLE_CONV_CHAT(self->conv));
   flags = purple_conv_chat_user_get_flags (chat, chat->nick);
 
   if (flags & PURPLE_CBFLAGS_FOUNDER) {
@@ -315,7 +310,7 @@ chatty_muc_info_dialog_update_chat (ChattyMucInfoDialog *self)
   gtk_switch_set_state (GTK_SWITCH(self->switch_prefs_status),
                         purple_blist_node_get_bool (node, "chatty-status-msg"));
 
-  chatty_chat = chatty_manager_find_purple_conv (chatty_manager_get_default (), self->chatty_conv->conv);
+  chatty_chat = self->conv->ui_data;
   g_return_if_fail (chatty_chat);
 
   user_list = chatty_chat_get_users (chatty_chat);
@@ -396,14 +391,12 @@ void
 chatty_muc_info_dialog_set_chat (ChattyMucInfoDialog *self,
                                  ChattyChat          *chat)
 {
-  PurpleConversation *conv;
-
   g_return_if_fail (CHATTY_IS_MUC_INFO_DIALOG (self));
   g_return_if_fail (CHATTY_IS_CHAT (chat));
 
-  conv = chatty_chat_get_purple_conv (chat);
+  if (CHATTY_IS_PP_CHAT (chat))
+    self->conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (chat));
   self->chat = chat;
-  self->chatty_conv = conv->ui_data;
 
   chatty_muc_info_dialog_update_chat (self);
 }

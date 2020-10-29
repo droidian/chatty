@@ -18,396 +18,443 @@
 #define MESSAGE_LIMIT 20
 
 #include <glib/gstdio.h>
+#include <sqlite3.h>
 
 #include "purple-init.h"
 #include "chatty-history.h"
 
 typedef struct Message {
-  char *uuid;
+  ChattyChat *chat;
+  char *account;
   char *room;
-  PurpleConvMessage *msg;
+  char *who;
+  char *what;
+  char *uuid;
+  PurpleMessageFlags flags;
+  PurpleConversationType type;
+  time_t when;
 } Message;
 
-static guint array_index = 0;
-
-static int
-direction_for_flag (PurpleMessageFlags flag)
+static ChattyMsgDirection
+chatty_direction_for_flag (PurpleMessageFlags flag)
 {
   if (flag & PURPLE_MESSAGE_RECV)
-    return 1;
+    return CHATTY_DIRECTION_IN;
 
   if (flag & PURPLE_MESSAGE_SEND)
-    return -1;
+    return CHATTY_DIRECTION_OUT;
 
   if (flag & PURPLE_MESSAGE_SYSTEM)
-    return 0;
+    return CHATTY_DIRECTION_SYSTEM;
 
-  g_return_val_if_reached (0);
+  g_return_val_if_reached (CHATTY_DIRECTION_SYSTEM);
+}
+
+static PurpleMessageFlags
+flag_for_direction (int direction)
+{
+  if (direction == 1)
+    return PURPLE_MESSAGE_RECV;
+
+  if (direction == -1)
+    return PURPLE_MESSAGE_SEND;
+
+  if (direction == 0)
+    return PURPLE_MESSAGE_SYSTEM;
+
+  g_return_val_if_reached (PURPLE_MESSAGE_SYSTEM);
 }
 
 static void
 free_message (Message *msg)
 {
-  g_free (msg->msg->who);
-  g_free (msg->msg->what);
-  g_free (msg->msg->alias);
-  g_free (msg->uuid);
+  g_assert_true (msg);
+  g_clear_object (&msg->chat);
+  g_free (msg->account);
+  g_free (msg->who);
+  g_free (msg->what);
   g_free (msg->room);
+  g_free (msg->uuid);
   g_free (msg);
 }
 
+static void
+finish_pointer_cb (GObject      *object,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+  g_autoptr(GError) error = NULL;
+  GTask *task = user_data;
+  gpointer data;
+
+  g_assert_true (G_IS_TASK (task));
+
+  data = g_task_propagate_pointer (G_TASK (result), &error);
+  g_assert_no_error (error);
+
+  g_task_return_pointer (task, data, NULL);
+}
+
+static void
+finish_bool_cb (GObject      *object,
+                GAsyncResult *result,
+                gpointer      user_data)
+{
+  g_autoptr(GError) error = NULL;
+  GTask *task = user_data;
+  gboolean status;
+
+  g_assert_true (G_IS_TASK (task));
+
+  status = g_task_propagate_boolean (G_TASK (result), &error);
+  g_assert_no_error (error);
+
+  g_task_return_boolean (task, status);
+}
+
 static Message *
-new_message (const char         *buddy_username,
+new_message (const char         *account,
+             const char         *buddy,
              const char         *msg_text,
              const char         *uuid,
              PurpleMessageFlags  flags,
              time_t              time_stamp,
              const char         *room)
 {
-  PurpleConvMessage *msg;
+  ChattyChat *chat;
   Message *message;
 
-  msg = g_new (PurpleConvMessage, 1);
-  msg->who = g_strdup (buddy_username);
-  msg->what = g_strdup (msg_text);
-  msg->when  = time_stamp;
-  msg->flags = flags;
-  msg->alias = g_strdup (room);
-
-  if (!msg->alias)
-    msg->alias = g_strdup ("");
-
+  chat = chatty_chat_new (account, room ? room : buddy, room == NULL);
   message = g_new (Message, 1);
-  message->msg = msg;
+  message->account = g_strdup (account);
+  message->who = g_strdup (buddy);
+  message->what = g_strdup (msg_text);
   message->uuid = g_strdup (uuid);
   message->room = g_strdup (room);
+  message->chat = chat;
+  message->when  = time_stamp;
+  message->flags = flags;
 
   return message;
 }
 
 static void
-compare_im (const guchar *msg_text,
-            int           direction,
-            time_t        time_stamp,
-            const guchar *uuid,
-            gpointer      data,
-            int           last_message)
+compare_message (Message       *message,
+                 ChattyMessage *chatty_message)
 {
-  GPtrArray *msg_array = data;
-  PurpleConvMessage *msg;
-  Message *message;
-  int dir;
+  ChattyMsgDirection direction;
 
-  g_assert (data);
-  g_assert (array_index < msg_array->len);
+  if (message == NULL)
+    g_assert_null (chatty_message);
 
-  message = msg_array->pdata[msg_array->len - array_index - 1];
-  g_assert (message);
-  g_assert (message->msg);
+  if (message == NULL)
+    return;
 
-  msg = message->msg;
-  dir = direction_for_flag (msg->flags);
-
-  g_assert_cmpstr (message->uuid, ==, (const char *)uuid);
-  g_assert_cmpstr (msg->what, ==, (const char *)msg_text);
-  g_assert_cmpint (msg->when, ==, time_stamp);
-  g_assert_cmpint (dir, ==, direction);
-
-  array_index++;
+  direction = chatty_direction_for_flag (message->flags);
+  g_assert_cmpstr (message->what, ==, chatty_message_get_text (chatty_message));
+  g_assert_cmpstr (message->uuid, ==, chatty_message_get_uid (chatty_message));
+  g_assert_cmpint (message->when, ==, chatty_message_get_time (chatty_message));
+  g_assert_cmpint (direction, ==, chatty_message_get_msg_direction (chatty_message));
 }
 
 static void
-compare_chat (const guchar *msg_text,
-              int           direction,
-              int           time_stamp,
-              const char   *room,
-              const guchar *who,
-              const guchar *uuid,
-              gpointer      data)
+test_history_new (void)
 {
-  GPtrArray *msg_array = data;
-  PurpleConvMessage *msg;
-  Message *message;
-  int dir;
+  ChattyHistory *history;
+  GTask *task;
+  char *dir;
+  const char *file_name;
+  gboolean status;
 
-  g_assert (data);
+  history = chatty_history_get_default ();
+  g_assert (CHATTY_IS_HISTORY (history));
+  g_assert_false (chatty_history_is_open (history));
 
-  g_assert (array_index < msg_array->len);
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  dir = g_strdup (g_test_get_dir (G_TEST_BUILT));
+  file_name = g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL);
+  g_remove (file_name);
+  g_assert_false (g_file_test (file_name, G_FILE_TEST_EXISTS));
+  chatty_history_open_async (history, dir, "test-history.db", finish_bool_cb, task);
 
-  message = msg_array->pdata[msg_array->len - array_index - 1];
-  g_assert (message);
-  g_assert (message->msg);
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
 
-  msg = message->msg;
-  dir = direction_for_flag (msg->flags);
+  status = g_task_propagate_boolean (task, NULL);
+  g_assert_true (g_file_test (file_name, G_FILE_TEST_IS_REGULAR));
+  g_assert_true (chatty_history_is_open (history));
+  g_assert_true (status);
+  g_clear_object (&task);
 
-  g_assert_cmpstr (message->uuid, ==, (const char *)uuid);
-  g_assert_cmpstr (message->room, ==, room);
-  g_assert_cmpstr (msg->who, ==, (const char *)who);
-  g_assert_cmpstr (msg->what, ==, (const char *)msg_text);
-  g_assert_cmpint (msg->when, ==, time_stamp);
-  g_assert_cmpint (dir, ==, direction);
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  g_object_ref (history);
+  chatty_history_close_async (history, finish_bool_cb, task);
 
-  array_index++;
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
+
+  status = g_task_propagate_boolean (task, NULL);
+  g_assert_false (chatty_history_is_open (history));
+  g_assert_true (status);
+  g_clear_object (&task);
+  g_clear_object (&history);
+
+  g_remove (file_name);
+  g_assert_false (g_file_test (file_name, G_FILE_TEST_EXISTS));
+  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  g_assert_true (g_file_test (file_name, G_FILE_TEST_IS_REGULAR));
+
+  history = chatty_history_get_default ();
+  g_assert_true (chatty_history_is_open (history));
+
+  g_object_ref (history);
+  chatty_history_close ();
+  g_assert_false (chatty_history_is_open (history));
+  g_object_unref (history);
 }
 
 static void
-add_im (GPtrArray          *msg_array,
-        const char         *ac,
-        const char         *buddy,
-        const char         *msg_text,
-        time_t              time_stamp,
-        PurpleMessageFlags  flags)
+add_message (ChattyHistory      *history,
+             GPtrArray          *test_msg_array,
+             const char         *account,
+             const char         *room,
+             const char         *who,
+             const char         *uuid,
+             const char         *message,
+             time_t              when,
+             PurpleMessageFlags  flags)
 {
-  PurpleConvMessage *msg;
-  Message *message;
-  ChattyLog *log_data;
-  char *uuid;
-  int dir;
-  char message_exists;
+  GPtrArray *msg_array;
+  Message *msg;
+  GTask *task;
+  char *uid;
+  int time_stamp;
+  PurpleConversationType type;
+  gboolean success;
 
-  uuid = g_uuid_string_random ();
-  message = new_message (buddy, msg_text, uuid, flags, time_stamp, NULL);
-  g_ptr_array_add (msg_array, message);
+  g_assert_true (CHATTY_IS_HISTORY (history));
+  g_assert_nonnull (account);
 
-  msg = message->msg;
-  dir = direction_for_flag (msg->flags);
+  if (room)
+    type = PURPLE_CONV_TYPE_CHAT;
+  else
+    type = PURPLE_CONV_TYPE_IM;
 
-  array_index = 0;
-  chatty_history_add_im_message (msg->what, dir, ac, msg->who, uuid, msg->when);
-  chatty_history_get_im_messages (ac, buddy, compare_im, msg_array, msg_array->len, NULL);
-  g_assert_cmpint (array_index, ==, msg_array->len);
+  uid = g_strdup (uuid);
+  msg = new_message (account, who, message, uid, flags, when, room);
+  success = chatty_history_add_message (account, room, who, message, &uid, flags, when, type);
+  g_assert_true (success);
+  g_assert_nonnull (uid);
+  g_ptr_array_add (test_msg_array, msg);
 
-  log_data = g_new0 (ChattyLog, 1);
-  message_exists = chatty_history_get_im_last_message (ac, buddy, log_data);
-  g_assert_true (!!message_exists);
-  g_assert_cmpint (log_data->epoch, ==, msg->when);
-  g_assert_cmpint (log_data->dir, ==, dir);
-  g_assert_cmpstr (log_data->msg, ==, msg->what);
-  g_assert_cmpstr (log_data->uid, ==, message->uuid);
-  g_free (log_data->msg);
-  g_free (log_data);
-}
+  if (msg->uuid == NULL)
+    msg->uuid = uid;
 
-static void
-add_chat (GPtrArray          *msg_array,
-          const char         *ac,
-          const char         *buddy,
-          const char         *room,
-          const char         *msg_text,
-          time_t              time_stamp,
-          PurpleMessageFlags  flags)
-{
-  PurpleConvMessage *msg;
-  Message *message;
-  char *uuid;
-  int dir, last_time;
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  chatty_history_get_messages_async (history, msg->chat, NULL, -1, finish_pointer_cb, task);
 
-  uuid = g_uuid_string_random ();
-  message = new_message (buddy,  msg_text, uuid, flags, time_stamp, room);
-  g_ptr_array_add (msg_array, message);
+  /* Wait until the task is completed */
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
 
-  msg = message->msg;
-  dir = direction_for_flag (msg->flags);
+  msg_array = g_task_propagate_pointer (task, NULL);
+  g_assert_nonnull (msg_array);
+  g_assert_cmpint (test_msg_array->len, ==, msg_array->len);
 
-  array_index = 0;
-  chatty_history_add_chat_message (msg->what, dir, ac, msg->who, uuid, msg->when, room);
-  chatty_history_get_chat_messages (ac, room, compare_chat, msg_array, msg_array->len, NULL);
-  g_assert_cmpint (array_index, ==, msg_array->len);
+  if (type == PURPLE_CONV_TYPE_CHAT) {
+    g_assert_true (chatty_history_chat_exists (account, room));
 
-  /* Load some of the contents */
-  if (msg_array->len >= 2) {
-    array_index = 0;
-    chatty_history_get_chat_messages (ac, room, compare_chat, msg_array, msg_array->len - 1, NULL);
-    g_assert_cmpint (array_index, ==, msg_array->len - 1);
+    time_stamp = chatty_history_get_chat_timestamp (uid, room);
+    g_assert_cmpint (when, ==, time_stamp);
+
+    time_stamp = chatty_history_get_last_message_time (account, room);
+    g_assert_cmpint (when, ==, time_stamp);
+  } else {
+    g_assert_true (chatty_history_im_exists (account, who));
+
+    time_stamp = chatty_history_get_im_timestamp (uid, account);
+    g_assert_cmpint (when, ==, time_stamp);
   }
 
-  last_time = chatty_history_get_chat_last_message_time (ac, room);
-  g_assert_cmpint (last_time, ==, msg->when);
+  for (guint i = 0; i < msg_array->len; i++)
+    compare_message (test_msg_array->pdata[i], msg_array->pdata[i]);
 }
 
 static void
-test_history_im (void)
+delete_existing_chat (const char *account,
+                      const char *chat_name,
+                      gboolean    is_im)
 {
-  GPtrArray *msg_array;
-  ChattyLog *log_data;
-  const char *account, *buddy;
-  char message_exists;
+  g_autoptr(ChattyChat) chat = NULL;
+  gboolean status;
 
-  g_remove (g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL));
-  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  if (is_im)
+    status = chatty_history_im_exists (account, chat_name);
+  else
+    status = chatty_history_chat_exists (account, chat_name);
+  g_assert_true (status);
 
-  msg_array = g_ptr_array_new ();
-  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+  chat = chatty_chat_new (account, chat_name, is_im);
+  chatty_history_delete_chat (chat);
 
-  account = "account@test";
-  buddy = "buddy@test";
-
-  log_data = g_new0 (ChattyLog, 1);
-  message_exists = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_false (!!message_exists);
-  g_free (log_data->msg);
-
-  add_im (msg_array, account, buddy,
-          "Message", time (NULL) - 4, PURPLE_MESSAGE_SYSTEM);
-  add_im (msg_array, account, buddy,
-          "Some random message", time (NULL) - 3, PURPLE_MESSAGE_SYSTEM);
-  add_im (msg_array, account, buddy,
-          "Yet another random message", time (NULL) -1, PURPLE_MESSAGE_SEND);
-  add_im (msg_array, account, buddy,
-          "നല്ല ഒരു അറിവ് message", time (NULL), PURPLE_MESSAGE_SEND);
-  add_im (msg_array, account, buddy,
-          "A very simple message", time (NULL), PURPLE_MESSAGE_RECV);
-  add_im (msg_array, account, buddy,
-          "And one more", time (NULL), PURPLE_MESSAGE_RECV);
-  add_im (msg_array, account, buddy,
-          "And one more", time (NULL) + 1, PURPLE_MESSAGE_RECV);
-
-  g_ptr_array_free (msg_array, TRUE);
-
-  msg_array = g_ptr_array_new ();
-  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
-
-  buddy = "somebuddy@test";
-  add_im (msg_array, account, buddy,
-          "Message", time (NULL), PURPLE_MESSAGE_SYSTEM);
-  add_im (msg_array, account, buddy,
-          "Some text message", time (NULL) + 1, PURPLE_MESSAGE_SYSTEM);
-  add_im (msg_array, account, buddy,
-          "Yet another test message", time (NULL) + 1, PURPLE_MESSAGE_SEND);
-  add_im (msg_array, account, buddy,
-          "നല്ല ഒരു അറിവ്", time (NULL) + 1, PURPLE_MESSAGE_SEND);
-  add_im (msg_array, account, buddy,
-          "A Simple message", time (NULL) + 1, PURPLE_MESSAGE_RECV);
-  add_im (msg_array, account, buddy,
-          "And one more", time (NULL) + 2, PURPLE_MESSAGE_RECV);
-  add_im (msg_array, account, buddy,
-          "And one more", time (NULL) + 3, PURPLE_MESSAGE_RECV);
-
-  buddy = "buddy@test";
-  message_exists = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_true (!!message_exists);
-  chatty_history_delete_im (account, buddy);
-  message_exists = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_false (!!message_exists);
-
-  buddy = "somebuddy@test";
-  message_exists = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_true (!!message_exists);
-  chatty_history_delete_im (account, buddy);
-  message_exists = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_false (!!message_exists);
-
-  chatty_history_close ();
+  if (is_im)
+    status = chatty_history_im_exists (account, chat_name);
+  else
+    status = chatty_history_chat_exists (account, chat_name);
+  g_assert_false (status);
 }
 
 static void
-test_history_chat (void)
+compare_chat_message (ChattyMessage *a,
+                      ChattyMessage *b)
 {
-  GPtrArray *msg_array;
-  ChattyLog *log_data;
-  const char *account, *buddy, *room;
-  int last_time;
+  if (a == b)
+    return;
 
-  g_remove (g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL));
-  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  g_assert_true (CHATTY_IS_MESSAGE (a));
+  g_assert_true (CHATTY_IS_MESSAGE (b));
 
-  msg_array = g_ptr_array_new ();
-  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+  g_assert_cmpstr (chatty_message_get_uid (a), ==, chatty_message_get_uid (b));
+  g_assert_cmpstr (chatty_message_get_text (a), ==, chatty_message_get_text (b));
+  g_assert_cmpint (chatty_message_get_time (a), ==, chatty_message_get_time (b));
+  g_assert_cmpint (chatty_message_get_msg_direction (a), ==, chatty_message_get_msg_direction (b));
+}
 
-  account = "account@test";
-  buddy = "buddy@test";
+static void
+add_chatty_message (ChattyHistory      *history,
+                    ChattyChat         *chat,
+                    GPtrArray          *msg_array,
+                    const char         *what,
+                    int                 when,
+                    ChattyMsgDirection  direction,
+                    ChattyMsgStatus     status)
+{
+  GPtrArray *old_msg_array;
+  ChattyMessage *message;
+  GTask *task;
+  char *uuid;
+  gboolean success;
 
-  log_data = g_new0 (ChattyLog, 1);
-  last_time = chatty_history_get_im_last_message (account, buddy, log_data);
-  g_assert_false (!!last_time);
-  g_free (log_data->msg);
 
-  room = "room@test";
-  add_chat (msg_array, account, buddy, room,
-            "Message", time (NULL) - 4, PURPLE_MESSAGE_SYSTEM);
-  add_chat (msg_array, account, buddy, room,
-            "Some random message", time (NULL) - 3, PURPLE_MESSAGE_SYSTEM);
-  add_chat (msg_array, account, buddy, room,
-            "Yet another random message", time (NULL) -1, PURPLE_MESSAGE_SEND);
-  add_chat (msg_array, account, buddy, room,
-            "നല്ല ഒരു അറിവ് message", time (NULL), PURPLE_MESSAGE_SEND);
-  add_chat (msg_array, account, buddy, room,
-            "A very simple message", time (NULL), PURPLE_MESSAGE_RECV);
-  add_chat (msg_array, account, buddy, room,
-            "And one more", time (NULL), PURPLE_MESSAGE_RECV);
-  add_chat (msg_array, account, buddy, room,
-            "And one more", time (NULL) + 1, PURPLE_MESSAGE_RECV);
+  uuid = g_uuid_string_random ();
+  message = chatty_message_new (NULL, NULL, what, uuid, when, direction, status);
+  g_assert (CHATTY_IS_MESSAGE (message));
+  g_ptr_array_add (msg_array, message);
 
-  g_ptr_array_free (msg_array, TRUE);
+  if (chatty_chat_is_im (chat))
+    chatty_message_set_user_name (message, chatty_chat_get_chat_name (chat));
 
-  msg_array = g_ptr_array_new ();
-  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  chatty_history_add_message_async (history, chat, message, finish_bool_cb, task);
 
-  room = "another@test";
-  buddy = "another-buddy@test";
-  add_chat (msg_array, account, buddy, room,
-            "Message", time (NULL), PURPLE_MESSAGE_SYSTEM);
-  add_chat (msg_array, account, buddy, room,
-            "Some text message", time (NULL) + 1, PURPLE_MESSAGE_SYSTEM);
-  add_chat (msg_array, account, buddy, room,
-            "Yet another test message", time (NULL) + 1, PURPLE_MESSAGE_SEND);
-  add_chat (msg_array, account, buddy, room,
-            "നല്ല ഒരു അറിവ്", time (NULL) + 1, PURPLE_MESSAGE_SEND);
-  add_chat (msg_array, account, buddy, room,
-            "A Simple message", time (NULL) + 1, PURPLE_MESSAGE_RECV);
-  add_chat (msg_array, account, buddy, room,
-            "And one more", time (NULL) + 2, PURPLE_MESSAGE_RECV);
-  add_chat (msg_array, account, buddy, room,
-          "And one more", time (NULL) + 3, PURPLE_MESSAGE_RECV);
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
 
-  room = "room@test";
-  last_time = chatty_history_get_chat_last_message_time (account, room);
-  g_assert_true (!!last_time);
-  chatty_history_delete_chat (account, room);
-  last_time = chatty_history_get_chat_last_message_time (account, room);
-  g_assert_false (!!last_time);
+  success = g_task_propagate_boolean (task, NULL);
+  g_assert_true (success);
+  g_clear_object (&task);
 
-  room = "another@test";
-  last_time = chatty_history_get_chat_last_message_time (account, room);
-  g_assert_true (!!last_time);
-  chatty_history_delete_chat (account, room);
-  last_time = chatty_history_get_chat_last_message_time (account, room);
-  g_assert_false (!!last_time);
+  message = msg_array->pdata[0];
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  chatty_history_get_messages_async (history, chat, message, -1, finish_pointer_cb, task);
 
-  chatty_history_close ();
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
+
+  old_msg_array = g_task_propagate_pointer (task, NULL);
+  g_assert_null (old_msg_array);
+  g_clear_object (&task);
+
+  if (msg_array->len > 2) {
+    message = msg_array->pdata[msg_array->len - 2];
+    g_assert (CHATTY_IS_MESSAGE (message));
+
+    task = g_task_new (NULL, NULL, NULL, NULL);
+    chatty_history_get_messages_async (history, chat, message, -1, finish_pointer_cb, task);
+
+    while (!g_task_get_completed (task))
+      g_main_context_iteration (NULL, TRUE);
+
+    old_msg_array = g_task_propagate_pointer (task, NULL);
+    g_assert_nonnull (old_msg_array);
+    g_assert_cmpint (old_msg_array->len, ==, msg_array->len - 2);
+
+    for (guint i = 0; i < msg_array->len - 2; i++)
+      compare_chat_message (msg_array->pdata[i], old_msg_array->pdata[i]);
+  }
 }
 
 static void
 test_history_message (void)
 {
+  ChattyHistory *history;
+  ChattyChat *chat;
   GPtrArray *msg_array;
-  PurpleAccount *pa;
-  Message *message;
-  const char *buddy;
-  char *uuid;
+  const char *account, *who;
+  int when;
 
   g_remove (g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL));
   chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  history = chatty_history_get_default ();
+  g_assert_true (chatty_history_is_open (history));
 
-  pa = g_new0 (PurpleAccount, 1);
-  pa->username = g_strdup ("account@test");
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)g_object_unref);
+
+  account = "test-account@example.com";
+  who = "buddy@example.org";
+  chat = chatty_chat_new (account, who, TRUE);
+  g_assert (CHATTY_IS_CHAT (chat));
+
+  when = time (NULL);
+  add_chatty_message (history, chat, msg_array, "Random message", when, CHATTY_DIRECTION_OUT, 0);
+  add_chatty_message (history, chat, msg_array, "Another message", when + 1, CHATTY_DIRECTION_IN, 0);
+  add_chatty_message (history, chat, msg_array, "And more message", when + 1, CHATTY_DIRECTION_IN, 0);
+  add_chatty_message (history, chat, msg_array, "More message", when + 1, CHATTY_DIRECTION_OUT, 0);
+  g_clear_object (&chat);
+  g_ptr_array_free (msg_array, TRUE);
+
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)g_object_unref);
+
+  chat = chatty_chat_new (account, who, FALSE);
+  g_assert (CHATTY_IS_CHAT (chat));
+  add_chatty_message (history, chat, msg_array, "Random message", when, CHATTY_DIRECTION_SYSTEM, 0);
+  add_chatty_message (history, chat, msg_array, "Another message", when + 1, CHATTY_DIRECTION_IN, 0);
+  add_chatty_message (history, chat, msg_array, "And more message", when + 1, CHATTY_DIRECTION_IN, 0);
+  add_chatty_message (history, chat, msg_array, "More message", when + 1, CHATTY_DIRECTION_OUT, 0);
+
+  chatty_history_close ();
+}
+
+static void
+test_history_raw_message (void)
+{
+  ChattyHistory *history;
+  GPtrArray *msg_array;
+  const char *account, *who, *room;
+  char *uuid;
+  int when;
+
+  g_remove (g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL));
+  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  history = chatty_history_get_default ();
 
   /* Test chat message */
   msg_array = g_ptr_array_new ();
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
-  uuid = g_uuid_string_random ();
-  buddy = "buddy@test";
-  message = new_message (buddy, "Random message",
-                         uuid, PURPLE_MESSAGE_SYSTEM, time (NULL), "chatroom@test");
-  g_ptr_array_add (msg_array, message);
-  chatty_history_add_message (pa, message->msg, &uuid, PURPLE_CONV_TYPE_CHAT, NULL);
+  account = "account@test";
+  who = "buddy@test";
+  room = "chatroom@test";
+  g_assert_false (chatty_history_im_exists (account, who));
+  g_assert_false (chatty_history_chat_exists (account, room));
 
-  array_index = 0;
-  chatty_history_get_chat_messages (pa->username, message->room, compare_chat,
-                                    msg_array, msg_array->len, NULL);
-  g_assert_cmpint (array_index, ==, msg_array->len);
+  uuid = g_uuid_string_random ();
+  when = time (NULL);
+
+  add_message (history, msg_array, account, room, who, uuid,
+               "Random message", when, PURPLE_MESSAGE_SYSTEM);
   g_clear_pointer (&uuid, g_free);
   g_ptr_array_free (msg_array, TRUE);
 
@@ -415,18 +462,207 @@ test_history_message (void)
   msg_array = g_ptr_array_new ();
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
-  message = new_message (buddy, "Really Random message",
-                         uuid, PURPLE_MESSAGE_SEND, time (NULL), "chatroom@test");
-  g_ptr_array_add (msg_array, message);
-  chatty_history_add_message (pa, message->msg, &uuid, PURPLE_CONV_TYPE_IM, NULL);
-  g_assert_nonnull (uuid);
-  message->uuid = uuid;
-
-  array_index = 0;
-  chatty_history_get_im_messages (pa->username, buddy, compare_im,
-                                    msg_array, msg_array->len, NULL);
-  g_assert_cmpint (array_index, ==, msg_array->len);
+  uuid = g_uuid_string_random ();
+  add_message (history, msg_array, account, NULL, who, uuid,
+               "Some Random message", time(NULL) + 5, PURPLE_MESSAGE_SYSTEM);
+  g_clear_pointer (&uuid, g_free);
   g_ptr_array_free (msg_array, TRUE);
+
+
+  /* Test several IM messages */
+  account = "some-account@test";
+  who = "buddy@test";
+  room = NULL;
+  uuid = NULL;
+
+  chatty_history_close ();
+  g_remove (g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL));
+  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  history = chatty_history_get_default ();
+
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+
+  add_message (history, msg_array, account, room, who, uuid,
+               "Message", when - 4, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Some random message", when - 3, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Yet another random message", when -1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "നല്ല ഒരു അറിവ് message", when, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "A very simple message", when, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 1, PURPLE_MESSAGE_RECV);
+  g_ptr_array_free (msg_array, TRUE);
+
+  /* Another buddy */
+  who = "somebuddy@test";
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+
+  add_message (history, msg_array, account, room, who, uuid,
+               "Message", when, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Some test message", when + 1, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Yet another test message", when + 1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "നല്ല ഒരു അറിവ്", when + 1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "A Simple message", when + 1, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 2, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 3, PURPLE_MESSAGE_RECV);
+  g_ptr_array_free (msg_array, TRUE);
+
+  /* Test several Chat messages */
+  room = "room@test";
+
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+
+  add_message (history, msg_array, account, room, who, uuid,
+               "Message", when - 4, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Some random message", when - 3, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Yet another random message", when -1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "നല്ല ഒരു അറിവ് message", when, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "A very simple message", when, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 1, PURPLE_MESSAGE_RECV);
+  g_ptr_array_free (msg_array, TRUE);
+
+  /* Another buddy */
+  room = "another@test";
+  who = "another-buddy@test";
+
+  msg_array = g_ptr_array_new ();
+  g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
+
+  add_message (history, msg_array, account, room, who, uuid,
+               "Message", when, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Some test message", when + 1, PURPLE_MESSAGE_SYSTEM);
+  add_message (history, msg_array, account, room, who, uuid,
+               "Yet another test message", when + 1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "നല്ല ഒരു അറിവ്", when + 1, PURPLE_MESSAGE_SEND);
+  add_message (history, msg_array, account, room, who, uuid,
+               "A Simple message", when + 1, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 2, PURPLE_MESSAGE_RECV);
+  add_message (history, msg_array, account, room, who, uuid,
+               "And one more", when + 3, PURPLE_MESSAGE_RECV);
+
+  /* Test deletion */
+  delete_existing_chat (account, "buddy@test", TRUE);
+  delete_existing_chat (account, "somebuddy@test", TRUE);
+  delete_existing_chat (account, "room@test", FALSE);
+  delete_existing_chat (account, "another@test", FALSE);
+
+  chatty_history_close ();
+}
+
+static void
+test_value (sqlite3    *db,
+            const char *statement,
+            int         statement_status,
+            int         id,
+            int         direction,
+            const char *account,
+            const char *who,
+            const char *message,
+            const char *room)
+{
+  g_autofree char *uuid = NULL;
+  sqlite3_stmt *stmt;
+  int status, time_stamp;
+  PurpleConversationType type;
+  PurpleMessageFlags flags;
+
+  status = sqlite3_prepare_v2 (db, statement, -1, &stmt, NULL);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+
+  uuid = g_uuid_string_random ();
+  time_stamp = time (NULL) + g_random_int_range (1, 1000);
+
+  if (room)
+    type = PURPLE_CONV_TYPE_CHAT;
+  else
+    type = PURPLE_CONV_TYPE_IM;
+
+  flags = flag_for_direction (direction);
+  if (statement_status == SQLITE_ROW) {
+    gboolean success;
+
+    success = chatty_history_add_message (account, room, who, message, &uuid, flags, time_stamp, type);
+    g_assert_true (success);
+  }
+
+  status = sqlite3_step (stmt);
+  g_assert_cmpint (status, ==, statement_status);
+
+  if (statement_status != SQLITE_ROW)
+    return;
+
+  g_assert_cmpint (id, ==, sqlite3_column_int (stmt, 0));
+  g_assert_cmpint (time_stamp, ==, sqlite3_column_int (stmt, 1));
+  g_assert_cmpint (direction, ==, sqlite3_column_int (stmt, 2));
+  g_assert_cmpstr (account, ==, (char *)sqlite3_column_text (stmt, 3));
+  g_assert_cmpstr (who, ==, (char *)sqlite3_column_text (stmt, 4));
+  g_assert_cmpstr (uuid, ==, (char *)sqlite3_column_text (stmt, 5));
+  g_assert_cmpstr (message, ==, (char *)sqlite3_column_text (stmt, 6));
+  if (room)
+    g_assert_cmpstr (room, ==, (char *)sqlite3_column_text (stmt, 7));
+
+  sqlite3_finalize (stmt);
+}
+
+static void
+test_history_db (void)
+{
+  const char *file_name, *account, *who, *message, *room;
+  sqlite3 *db;
+  int status;
+
+  file_name = g_test_get_filename (G_TEST_BUILT, "test-history.db", NULL);
+  g_remove (file_name);
+  g_assert_false (g_file_test (file_name, G_FILE_TEST_IS_REGULAR));
+  chatty_history_open (g_test_get_dir (G_TEST_BUILT), "test-history.db");
+  g_assert_true (g_file_test (file_name, G_FILE_TEST_IS_REGULAR));
+
+  status = sqlite3_open (file_name, &db);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+
+  account = "account@test";
+  who = "buddy@test";
+  message = "Random messsage";
+  room = "room@test";
+
+  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
+              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
+  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_chat LIMIT 1",
+              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
+  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
+              SQLITE_ROW, 1, -1, account, who, message, NULL);
+  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_chat LIMIT 1",
+              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
+  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
+              SQLITE_ROW, 2, -1, account, who, message, NULL);
+  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message,room FROM chatty_chat LIMIT 1",
+              SQLITE_ROW, 1, -1, account, who, message, room);
+  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message,room FROM chatty_chat LIMIT 1",
+              SQLITE_ROW, 2, -1, account, who, message, room);
 
   chatty_history_close ();
 }
@@ -435,20 +671,12 @@ int
 main (int   argc,
       char *argv[])
 {
-  int ret;
-
   g_test_init (&argc, &argv, NULL);
 
-  test_purple_init ();
-
-  g_test_add_func ("/history/im", test_history_im);
-  g_test_add_func ("/history/chat", test_history_chat);
+  g_test_add_func ("/history/new", test_history_new);
   g_test_add_func ("/history/message", test_history_message);
+  g_test_add_func ("/history/raw_message", test_history_raw_message);
+  g_test_add_func ("/history/db", test_history_db);
 
-  ret = g_test_run ();
-
-  /* FIXME: purple_core_quit() results in more leak! */
-  purple_core_quit ();
-
-  return ret;
+  return g_test_run ();
 }

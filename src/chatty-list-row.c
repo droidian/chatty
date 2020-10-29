@@ -67,19 +67,30 @@ chatty_time_ago_in_words (time_t time_stamp)
 
   double dist_in_seconds;
 
-    str_about     = "~";
-    str_less_than = "<";
-    str_seconds   = _("s");
-    str_minute    = _("m");
-    str_minutes   = _("m");
-    str_hour      = _("h");
-    str_hours     = _("h");
-    str_day       = _("d");
-    str_days      = _("d");
-    str_month     = _("mo");
-    str_months    = _("mos");
-    str_year      = _("y");
-    str_years     = _("y");
+  str_about     =    "~";
+  str_less_than =    "<";
+  /* Translators: Timestamp seconds suffix */
+  str_seconds   = C_("timestamp-suffix-seconds", "s");
+  /* Translators: Timestamp minute suffix */
+  str_minute    = C_("timestamp-suffix-minute", "m");
+  /* Translators: Timestamp minutes suffix */
+  str_minutes   = C_("timestamp-suffix-minutes", "m");
+  /* Translators: Timestamp hour suffix */
+  str_hour      = C_("timestamp-suffix-hour", "h");
+  /* Translators: Timestamp hours suffix */
+  str_hours     = C_("timestamp-suffix-hours", "h");
+  /* Translators: Timestamp day suffix */
+  str_day       = C_("timestamp-suffix-day", "d");
+  /* Translators: Timestamp days suffix */
+  str_days      = C_("timestamp-suffix-days", "d");
+  /* Translators: Timestamp month suffix */
+  str_month     = C_("timestamp-suffix-month", "mo");
+  /* Translators: Timestamp months suffix */
+  str_months    = C_("timestamp-suffix-months", "mos");
+  /* Translators: Timestamp year suffix */
+  str_year      = C_("timestamp-suffix-year", "y");
+  /* Translators: Timestamp years suffix */
+  str_years     = C_("timestamp-suffix-years", "y");
 
   time (&time_now);
 
@@ -180,10 +191,12 @@ chatty_time_ago_in_words (time_t time_stamp)
     if (remainder < 131400) {
       prefix = str_about;
     } else if (remainder < 394200) {
+      /* Translators: Timestamp prefix (e.g. Over 5h) */
       prefix = _("Over");
     } else {
       ++number;
       unit = str_years;
+      /* Translators: Timestamp prefix (e.g. Almost 5h) */
       prefix = _("Almost");
     }
     break;

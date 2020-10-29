@@ -167,10 +167,25 @@ application_show_connection_error (ChattyApplication *self,
   gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG(dialog),
                                             "%s: %s\n\n%s",
                                             message,
-                                            chatty_pp_account_get_username (account),
+                                            chatty_account_get_username (CHATTY_ACCOUNT (account)),
                                             _("Please check ID and password"));
 
   run_dialog_and_destroy (GTK_DIALOG (dialog));
+}
+
+static void
+application_open_chat (ChattyApplication *self,
+                       ChattyChat        *chat)
+{
+  g_assert (CHATTY_IS_APPLICATION (self));
+  g_assert (CHATTY_IS_CHAT (chat));
+
+  if (!self->main_window) {
+    self->main_window = chatty_window_new (GTK_APPLICATION (self));
+    g_object_add_weak_pointer (G_OBJECT (self->main_window), (gpointer *)&self->main_window);
+  }
+
+  chatty_window_open_chat (CHATTY_WINDOW (self->main_window), chat);
 }
 
 static gboolean
@@ -184,6 +199,19 @@ application_open_uri (ChattyApplication *self)
   g_clear_pointer (&self->uri, g_free);
 
   return G_SOURCE_REMOVE;
+}
+
+static void
+chatty_application_show_window (GSimpleAction *action,
+                                GVariant      *parameter,
+                                gpointer       user_data)
+{
+  ChattyApplication *self = user_data;
+
+  g_assert (CHATTY_IS_APPLICATION (self));
+
+  g_application_activate (G_APPLICATION (self));
+  gtk_window_present (GTK_WINDOW (self->main_window));
 }
 
 static void
@@ -264,6 +292,9 @@ chatty_application_startup (GApplication *application)
 {
   ChattyApplication *self = (ChattyApplication *)application;
   g_autofree char *db_path = NULL;
+  static const GActionEntry app_entries[] = {
+    { "show-window", chatty_application_show_window },
+  };
 
   self->daemon = FALSE;
   self->manager = g_object_ref (chatty_manager_get_default ());
@@ -282,10 +313,12 @@ chatty_application_startup (GApplication *application)
   gtk_css_provider_load_from_resource (self->css_provider,
                                        "/sm/puri/chatty/css/style.css");
 
+  g_action_map_add_action_entries (G_ACTION_MAP (self), app_entries,
+                                   G_N_ELEMENTS (app_entries), self);
+
   gtk_style_context_add_provider_for_screen (gdk_screen_get_default(),
                                              GTK_STYLE_PROVIDER (self->css_provider),
                                              GTK_STYLE_PROVIDER_PRIORITY_USER);
-  chatty_manager_purple (self->manager);
   g_signal_connect_object (self->manager, "authorize-buddy",
                            G_CALLBACK (application_authorize_buddy_cb), self,
                            G_CONNECT_SWAPPED);
@@ -309,6 +342,7 @@ chatty_application_activate (GApplication *application)
   if (!self->main_window) {
     self->main_window = chatty_window_new (app);
 
+    chatty_manager_purple (self->manager);
     g_object_add_weak_pointer (G_OBJECT (self->main_window), (gpointer *)&self->main_window);
   }
 
@@ -317,6 +351,10 @@ chatty_application_activate (GApplication *application)
                       "delete-event",
                       G_CALLBACK (gtk_widget_hide_on_delete),
                       NULL);
+
+  g_signal_connect_object (self->manager, "open-chat",
+                           G_CALLBACK (application_open_chat), self,
+                           G_CONNECT_SWAPPED);
 
   if (self->show_window)
     gtk_window_present (GTK_WINDOW (self->main_window));
@@ -378,6 +416,28 @@ chatty_application_get_main_window (ChattyApplication *self)
 
   if (self->main_window)
     return CHATTY_WINDOW (self->main_window);
+
+  return NULL;
+}
+
+/**
+ * chatty_application_get_active_chat:
+ * @self: A #ChattyApplication
+ *
+ * Get the currently shown chat
+ *
+ * Returns: (transfer none): A #ChattyChat if a chat
+ * is shown. %NULL if no chat is shown.  If window is
+ * hidden, %NULL is returned regardless of wether a
+ * chat is shown or not.
+ */
+ChattyChat *
+chatty_application_get_active_chat (ChattyApplication *self)
+{
+  g_return_val_if_fail (CHATTY_IS_APPLICATION (self), NULL);
+
+  if (self->main_window)
+    return chatty_window_get_active_chat (CHATTY_WINDOW (self->main_window));
 
   return NULL;
 }

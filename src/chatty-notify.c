@@ -14,7 +14,6 @@
 #include "chatty-notify.h"
 #include "chatty-icons.h"
 #include "chatty-utils.h"
-#include "chatty-conversation.h"
 
 static PurpleConversation *conv_notify = NULL;
 
@@ -24,27 +23,13 @@ cb_open_message (GSimpleAction *action,
                  gpointer       user_data)
 {
   if (conv_notify) {
-    chatty_conv_show_conversation (conv_notify);
+    purple_conversation_present (conv_notify);
   }
-}
-
-
-static void
-cb_open_settings (GSimpleAction *action,
-                  GVariant      *parameter,
-                  gpointer       user_data)
-{
-  ChattyWindow *window;
-
-  window = chatty_application_get_main_window (CHATTY_APPLICATION_DEFAULT ());
-
-  chatty_window_change_view (window, CHATTY_VIEW_SETTINGS);
 }
 
 
 static const GActionEntry actions[] = {
   { "open-message", cb_open_message },
-  { "open-settings", cb_open_settings },
 };
 
 
@@ -66,6 +51,7 @@ chatty_notify_show_notification (const char         *title,
   application = g_application_get_default ();
 
   notification = g_notification_new ("chatty");
+  g_notification_set_default_action (notification, "app.show-window");
 
   if (pixbuf) {
     icon = chatty_icon_get_gicon_from_pixbuf (pixbuf);
@@ -104,16 +90,6 @@ chatty_notify_show_notification (const char         *title,
       g_notification_set_title (notification, title ? title : _("Account Connected"));
       g_notification_set_priority (notification, G_NOTIFICATION_PRIORITY_HIGH);
       g_application_send_notification (application, "x-chatty.network.connected", notification);
-      break;
-
-    case CHATTY_NOTIFY_ACCOUNT_DISCONNECTED:
-      g_notification_add_button (notification,
-                                 _("Open Account Settings"),
-                                 "app.open-settings");
-
-      g_notification_set_title (notification, title ? title : _("Account Disconnected"));
-      g_notification_set_priority (notification, G_NOTIFICATION_PRIORITY_URGENT);
-      g_application_send_notification (application, "x-chatty.network.disconnected", notification);
       break;
 
     default:

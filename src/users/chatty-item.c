@@ -303,6 +303,14 @@ chatty_item_get_protocols (ChattyItem *self)
   return CHATTY_ITEM_GET_CLASS (self)->get_protocols (self);
 }
 
+gboolean
+chatty_item_is_sms (ChattyItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ITEM (self), FALSE);
+
+  return chatty_item_get_protocols (self) == CHATTY_PROTOCOL_SMS;
+}
+
 /**
  * chatty_item_matches:
  * @self: a #ChattyItem

@@ -12,6 +12,7 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
+#include "chatty-message.h"
 #include "chatty-chat.h"
 #include "chatty-manager.h"
 #include "version.h"
@@ -19,7 +20,6 @@
 #include "xmlnode.h"
 #include "xeps.h"
 #include "chatty-xep-0184.h"
-#include "chatty-conversation.h"
 #include "chatty-settings.h"
 
 
@@ -46,13 +46,9 @@ cb_ht_bubble_node_check_items (gpointer key,
 static void
 cb_chatty_xep_deleting_conversation (PurpleConversation *conv)
 {
-  ChattyChat *chat;
-
-  chat = chatty_manager_find_purple_conv (chatty_manager_get_default (), conv);
-
   g_hash_table_foreach_remove (ht_bubble_node,
                                cb_ht_bubble_node_check_items,
-                               chat);
+                               conv->ui_data);
 
   g_debug ("conversation closed");
 }
@@ -89,7 +85,7 @@ chatty_xeps_display_received (const char* node_id)
 
     if (message)
       chatty_message_set_status (message, CHATTY_STATUS_DELIVERED, time (NULL));
-    else
+    else if (n_items)
       g_warn_if_reached ();
 
     g_hash_table_remove (ht_bubble_node, node_id);
@@ -113,7 +109,6 @@ chatty_xeps_add_sent (PurpleConnection *gc,
                       const char       *node_to,
                       const char       *node_id)
 {
-  ChattyChat          *chat;
   PurpleAccount       *account;
   PurpleConversation  *conv;
 
@@ -127,13 +122,11 @@ chatty_xeps_add_sent (PurpleConnection *gc,
                                                 node_to,
                                                 account);
 
-  if (!conv) {
+  if (!conv || !conv->ui_data) {
     return;
   }
 
-  chat = chatty_manager_find_purple_conv (chatty_manager_get_default (), conv);
-
-  g_hash_table_insert (ht_bubble_node, strdup (node_id), chat);
+  g_hash_table_insert (ht_bubble_node, strdup (node_id), conv->ui_data);
 
   g_debug ("attached key: %s, table size %i \n",
            node_id,

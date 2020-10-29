@@ -65,13 +65,21 @@ chatty_app_run_cb (GObject      *object,
                    gpointer      user_data)
 {
   GDBusConnection *connection = (GDBusConnection *)object;
-  g_autoptr(GError) error = NULL;
+  g_autoptr(GTask) task = user_data;
   g_autoptr(GVariant) variant = NULL;
+  GError *error = NULL;
+
+  g_assert (G_IS_DBUS_CONNECTION (connection));
+  g_assert (G_IS_TASK (task));
 
   variant = g_dbus_connection_call_finish (connection, result, &error);
 
-  if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-    g_warning ("Error: %s", error->message);
+  if (error) {
+    g_dbus_error_strip_remote_error (error);
+    g_task_return_error (task, error);
+  } else {
+    g_task_return_boolean (task, TRUE);
+  }
 }
 
 static void
@@ -79,15 +87,19 @@ chatty_eds_bus_got (GObject      *object,
                     GAsyncResult *result,
                     gpointer      user_data)
 {
-  g_autoptr(ChattyEds) self = user_data;
+  g_autoptr(GTask) task = user_data;
   g_autoptr(GDBusConnection) connection = NULL;
-  g_autoptr(GError) error = NULL;
+  GCancellable *cancellable;
+  GError *error = NULL;
+
+  g_assert (G_IS_TASK (task));
 
   connection  = g_bus_get_finish (result, &error);
+  cancellable = g_task_get_cancellable (task);
 
-  if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-    g_warning ("Error: %s", error->message);
-  else if (!error)
+  if (error)
+    g_task_return_error (task, error);
+  else
     g_dbus_connection_call (connection,
                             "org.gnome.Contacts",
                             "/org/gnome/Contacts",
@@ -97,9 +109,9 @@ chatty_eds_bus_got (GObject      *object,
                             NULL,
                             G_DBUS_CALL_FLAGS_NONE,
                             -1,
-                            self->cancellable,
+                            cancellable,
                             chatty_app_run_cb,
-                            NULL);
+                            g_steal_pointer (&task));
 }
 
 static ChattyContact *
@@ -633,10 +645,30 @@ chatty_eds_find_by_number (ChattyEds  *self,
  * Open GNOME Contacts.
  */
 void
-chatty_eds_open_contacts_app (ChattyEds *self)
+chatty_eds_open_contacts_app (ChattyEds           *self,
+                              GCancellable        *cancellable,
+                              GAsyncReadyCallback  callback,
+                              gpointer             user_data)
 {
+  g_autoptr(GTask) task = NULL;
+
+  g_return_if_fail (CHATTY_IS_EDS (self));
+  g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+  task = g_task_new (self, cancellable, callback, user_data);
+
   g_bus_get (G_BUS_TYPE_SESSION,
-             self->cancellable,
+             cancellable,
              chatty_eds_bus_got,
-             g_object_ref (self));
+             g_steal_pointer (&task));
+}
+
+gboolean
+chatty_eds_open_contacts_app_finish (ChattyEds    *self,
+                                     GAsyncResult *result,
+                                     GError       **error)
+{
+  g_return_val_if_fail (CHATTY_IS_EDS (self), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }

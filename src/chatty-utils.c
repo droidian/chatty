@@ -11,10 +11,8 @@
 #include "chatty-settings.h"
 #include "chatty-utils.h"
 #include <libebook-contacts/libebook-contacts.h>
+#include <gdesktop-enums.h>
 
-/* https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gtk/org.gtk.Settings.FileChooser.gschema.xml#L42 */
-#define CLOCK_FORMAT_24H 0
-#define CLOCK_FORMAT_12H 1
 
 static const char *avatar_colors[] = {
   "E57373", "F06292", "BA68C8", "9575CD",
@@ -236,13 +234,6 @@ chatty_utils_create_fingerprint_row (const char *fp,
   return GTK_WIDGET(row);
 }
 
-gpointer
-chatty_utils_get_node_object (PurpleBlistNode *node)
-{
-  return node->ui_data;
-}
-
-
 const char *
 chatty_utils_get_color_for_str (const char *str)
 {
@@ -255,6 +246,7 @@ chatty_utils_get_color_for_str (const char *str)
 
   return avatar_colors[hash % G_N_ELEMENTS (avatar_colors)];
 }
+
 
 char *
 chatty_utils_get_human_time (time_t unix_time)
@@ -274,34 +266,43 @@ chatty_utils_get_human_time (time_t unix_time)
   g_date_time_get_ymd (now, &year_now, &month_now, &day_now);
   g_date_time_get_ymd (local_time, &year, &month, &day);
 
-  if (year  == year_now &&
-      month == month_now)
-    {
-      g_autoptr(GSettings) gtk_settings = NULL;
-      gint clock_format;
+  /* If the message is from the current month */
+  if (year  == year_now && month == month_now) {
+    g_autoptr(GSettings) settings = NULL;
+    GDesktopClockFormat clock_format;
 
-      gtk_settings = g_settings_new ("org.gnome.desktop.interface");
-      clock_format = g_settings_get_enum (gtk_settings, "clock-format");
+    settings = g_settings_new ("org.gnome.desktop.interface");
+    clock_format = g_settings_get_enum (settings, "clock-format");
 
-      /* Time Format */
-      if (day == day_now && clock_format == CLOCK_FORMAT_24H)
-        return g_date_time_format (local_time, "%R");
-      else if (day == day_now)
-        /* TRANSLATORS: Time format with time in AM/PM format */
-        return g_date_time_format (local_time, _("%I:%M %p"));
-
-      /* Localized day name */
-      if (day_now - day <= 7 && clock_format == CLOCK_FORMAT_24H)
-        /* TRANSLATORS: Time format as supported by g_date_time_format() */
-        return g_date_time_format (local_time, _("%A %R"));
-      else if (day_now - day <= 7)
-        /* TRANSLATORS: Time format with day and time in AM/PM format */
-        return g_date_time_format (local_time, _("%A %I:%M %p"));
+    /* If the message was today */
+    if (day == day_now) {
+      if (clock_format == G_DESKTOP_CLOCK_FORMAT_24H)
+        return g_date_time_format (local_time, "%H∶%M");
+      else
+        return g_date_time_format (local_time, "%I∶%M %p");
     }
 
-  /* TRANSLATORS: Year format as supported by g_date_time_format() */
+    /* If the message was in the last 7 days */
+    if (day_now - day <= 7) {
+      if (clock_format == G_DESKTOP_CLOCK_FORMAT_24H)
+        /* TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+           See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+         */
+        return g_date_time_format (local_time, _("%A %H∶%M"));
+      else
+        /* TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+          See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+         */
+        return g_date_time_format (local_time, _("%A %I∶%M %p"));
+    }
+  }
+
+  /* TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+     See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+   */
   return g_date_time_format (local_time, _("%Y-%m-%d"));
 }
+
 
 PurpleBlistNode *
 chatty_utils_get_conv_blist_node (PurpleConversation *conv)

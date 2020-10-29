@@ -12,11 +12,11 @@
 #include <glib/gi18n.h>
 #include <glib-object.h>
 #include "chatty-avatar.h"
+#include "chatty-pp-chat.h"
 #include "chatty-window.h"
 #include "chatty-manager.h"
 #include "users/chatty-pp-account.h"
 #include "chatty-utils.h"
-#include "chatty-conversation.h"
 #include "chatty-icons.h"
 #include "chatty-enums.h"
 #include "chatty-chat.h"
@@ -42,7 +42,7 @@ struct _ChattyUserInfoDialog
   GtkWidget *listbox_fps;
 
   ChattyChat *chat;
-  ChattyConversation *chatty_conv;
+  PurpleConversation *conv;
   PurpleBuddy        *buddy;
   const char         *alias;
 };
@@ -86,18 +86,13 @@ show_select_avatar_dialog (ChattyUserInfoDialog *self)
 static void
 button_avatar_clicked_cb (ChattyUserInfoDialog *self)
 {
-  PurpleContact *contact;
-  char          *file_name = NULL;
+  g_autofree char *file_name = NULL;
 
   file_name = show_select_avatar_dialog (self);
 
-  if (file_name) {
-    contact = purple_buddy_get_contact (self->buddy);
-
-    purple_buddy_icons_node_set_custom_icon_from_file ((PurpleBlistNode*)contact, file_name);
-  }
-
-  g_free (file_name);
+  if (file_name)
+    chatty_item_set_avatar_async (CHATTY_ITEM (self->chat), file_name,
+                                  NULL, NULL, NULL);
 }
 
 
@@ -109,10 +104,7 @@ switch_notify_changed_cb (ChattyUserInfoDialog *self)
   g_assert (CHATTY_IS_USER_INFO_DIALOG (self));
 
   active = gtk_switch_get_active (GTK_SWITCH(self->switch_notify));
-
-  purple_blist_node_set_bool (PURPLE_BLIST_NODE(self->buddy),
-                              "chatty-notifications",
-                              active);
+  chatty_pp_chat_set_show_notifications (CHATTY_PP_CHAT (self->chat), active);
 }
 
 
@@ -175,7 +167,7 @@ user_info_dialog_encrypt_changed_cb (ChattyUserInfoDialog *self)
 
   g_assert (CHATTY_IS_USER_INFO_DIALOG (self));
 
-  encryption = chatty_chat_get_encryption_status (self->chat);
+  encryption = chatty_chat_get_encryption (self->chat);
 
   if (encryption == CHATTY_ENCRYPTION_UNSUPPORTED ||
       encryption == CHATTY_ENCRYPTION_UNKNOWN)
@@ -193,17 +185,15 @@ user_info_dialog_encrypt_changed_cb (ChattyUserInfoDialog *self)
 static void
 chatty_user_info_dialog_request_fps (ChattyUserInfoDialog *self)
 {
-  PurpleAccount          *account;
-  PurpleConversationType  type;
-  const char             *name;
+  PurpleAccount *account;
+  const char *name;
 
   void * plugins_handle = purple_plugins_get_handle();
 
-  account = purple_conversation_get_account (self->chatty_conv->conv);
-  type = purple_conversation_get_type (self->chatty_conv->conv);
-  name = purple_conversation_get_name (self->chatty_conv->conv);
+  account = purple_conversation_get_account (self->conv);
+  name = purple_conversation_get_name (self->conv);
 
-  if (type == PURPLE_CONV_TYPE_IM) {
+  if (chatty_chat_is_im (self->chat)) {
     g_autofree gchar *stripped = chatty_utils_jabber_id_strip (name);
 
     purple_signal_emit (plugins_handle,
@@ -245,11 +235,11 @@ chatty_user_info_dialog_update_chat (ChattyUserInfoDialog *self)
     gtk_widget_show (GTK_WIDGET(self->label_encrypt));
     gtk_widget_show (GTK_WIDGET(self->label_encrypt_status));
 
-    chatty_chat_load_encryption_status (self->chat);
+    chatty_pp_chat_load_encryption_status (CHATTY_PP_CHAT (self->chat));
     chatty_user_info_dialog_request_fps (self);
   }
 
-  self->buddy = purple_find_buddy (self->chatty_conv->conv->account, self->chatty_conv->conv->name);
+  self->buddy = purple_find_buddy (self->conv->account, self->conv->name);
   self->alias = purple_buddy_get_alias (self->buddy);
 
   if (protocol == CHATTY_PROTOCOL_SMS) {
@@ -273,7 +263,7 @@ chatty_user_info_dialog_update_chat (ChattyUserInfoDialog *self)
 
   alias = self->alias ? chatty_utils_jabber_id_strip (self->alias) : g_strdup ("");
   gtk_label_set_text (GTK_LABEL(self->label_alias), alias);
-  gtk_label_set_text (GTK_LABEL(self->label_jid), self->chatty_conv->conv->name);
+  gtk_label_set_text (GTK_LABEL(self->label_jid), self->conv->name);
 }
 
 
@@ -336,14 +326,13 @@ void
 chatty_user_info_dialog_set_chat (ChattyUserInfoDialog *self,
                                   ChattyChat           *chat)
 {
-  PurpleConversation *conv;
-
   g_return_if_fail (CHATTY_IS_USER_INFO_DIALOG (self));
   g_return_if_fail (CHATTY_IS_CHAT (chat));
 
-  conv = chatty_chat_get_purple_conv (chat);
+  if (CHATTY_IS_PP_CHAT (chat))
+    self->conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (chat));
+
   self->chat = chat;
-  self->chatty_conv = conv->ui_data;
 
   chatty_user_info_dialog_update_chat (self);
 }

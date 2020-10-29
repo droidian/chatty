@@ -37,6 +37,9 @@ void                chatty_message_set_id          (ChattyMessage      *self,
                                                     const char         *id);
 const char         *chatty_message_get_text        (ChattyMessage      *self);
 ChattyItem         *chatty_message_get_user        (ChattyMessage      *self);
+const char         *chatty_message_get_user_name   (ChattyMessage      *self);
+void                chatty_message_set_user_name   (ChattyMessage      *self,
+                                                    const char         *user_name);
 const char         *chatty_message_get_user_alias  (ChattyMessage      *self);
 time_t              chatty_message_get_time        (ChattyMessage      *self);
 ChattyMsgStatus     chatty_message_get_status      (ChattyMessage      *self);

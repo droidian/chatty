@@ -90,7 +90,7 @@ struct _ChattySettingsDialog
   GtkWidget      *return_sends_switch;
 
   ChattySettings *settings;
-  ChattyPpAccount *selected_account;
+  ChattyAccount  *selected_account;
 
   gboolean visible;
 };
@@ -191,14 +191,14 @@ chatty_account_list_clear (ChattySettingsDialog *self,
 static void
 settings_update_account_details (ChattySettingsDialog *self)
 {
-  ChattyPpAccount *account;
+  ChattyAccount *account;
   const char *account_name, *protocol_name;
 
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
   account = self->selected_account;
-  account_name = chatty_pp_account_get_username (account);
-  protocol_name = chatty_pp_account_get_protocol_name (account);
+  account_name = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  protocol_name = chatty_account_get_protocol_name (CHATTY_ACCOUNT (account));
 
   gtk_entry_set_text (GTK_ENTRY (self->account_id_entry), account_name);
   gtk_label_set_text (GTK_LABEL (self->account_protocol_label), protocol_name);
@@ -209,7 +209,7 @@ static void
 chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
 {
   ChattyManager *manager;
-  g_autoptr (ChattyPpAccount) account = NULL;
+  g_autoptr (ChattyAccount) account = NULL;
   const char *user_id, *password, *server_url;
   gboolean is_matrix, is_telegram;
 
@@ -224,11 +224,11 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
   is_telegram = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->telegram_radio_button));
 
   if (is_matrix)
-    account = chatty_pp_account_new (CHATTY_PROTOCOL_MATRIX, user_id, server_url);
+    account = (ChattyAccount *)chatty_pp_account_new (CHATTY_PROTOCOL_MATRIX, user_id, server_url);
   else if (is_telegram)
-    account = chatty_pp_account_new (CHATTY_PROTOCOL_TELEGRAM, user_id, NULL);
+    account = (ChattyAccount *)chatty_pp_account_new (CHATTY_PROTOCOL_TELEGRAM, user_id, NULL);
   else /* XMPP */
-    account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, user_id, NULL);
+    account = (ChattyAccount *)chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, user_id, NULL);
 
   if (password)
     {
@@ -238,7 +238,7 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
         chatty_account_set_remember_password (CHATTY_ACCOUNT (account), TRUE);
     }
 
-  chatty_pp_account_save (account);
+  chatty_account_save (account);
 
   if (!chatty_manager_get_disable_auto_login (manager))
     chatty_account_set_enabled (CHATTY_ACCOUNT (account), TRUE);
@@ -254,8 +254,8 @@ chatty_settings_save_clicked_cb (ChattySettingsDialog *self)
 
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
-  chatty_pp_account_set_username (self->selected_account,
-                                  gtk_entry_get_text (GTK_ENTRY (self->account_id_entry)));
+  chatty_account_set_username (self->selected_account,
+                               gtk_entry_get_text (GTK_ENTRY (self->account_id_entry)));
 
   password_entry = (GtkEntry *)self->password_entry;
   chatty_account_set_password (CHATTY_ACCOUNT (self->selected_account),
@@ -332,7 +332,7 @@ static void
 chatty_settings_dialog_update_status (GtkListBoxRow *row)
 {
   ChattySettingsDialog *self;
-  ChattyPpAccount *account;
+  ChattyAccount *account;
   GtkWidget *dialog;
   GtkSpinner *spinner;
   ChattyStatus status;
@@ -384,8 +384,6 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
     }
   else
     {
-      const gchar *protocol_id;
-
       gtk_widget_show (self->save_button);
       self->selected_account = g_object_get_data (G_OBJECT (row), "row-account");
       g_assert (self->selected_account != NULL);
@@ -394,14 +392,12 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
       gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack),
                                         "edit-account-view");
 
-      protocol_id = chatty_pp_account_get_protocol_id (self->selected_account);
-
       if (chatty_manager_lurch_plugin_is_loaded (manager) &&
-          g_strcmp0 (protocol_id, "prpl-jabber") == 0)
+          chatty_item_get_protocols (CHATTY_ITEM (self->selected_account)) == CHATTY_PROTOCOL_XMPP)
         {
           PurpleAccount *account;
 
-          account = chatty_pp_account_get_account (self->selected_account);
+          account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (self->selected_account));
           gtk_widget_show (GTK_WIDGET (self->fingerprint_list));
           gtk_widget_show (GTK_WIDGET (self->fingerprint_device_list));
           chatty_settings_dialog_get_fp_list_own (self, account);
@@ -514,7 +510,7 @@ settings_delete_account_clicked_cb (ChattySettingsDialog *self)
 
   gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
                                             _("Delete account %s?"),
-                                            chatty_pp_account_get_username (self->selected_account));
+                                            chatty_account_get_username (CHATTY_ACCOUNT (self->selected_account)));
 
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
   gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
@@ -523,11 +519,10 @@ settings_delete_account_clicked_cb (ChattySettingsDialog *self)
 
   if (response == GTK_RESPONSE_OK)
     {
-      PurpleAccount *account;
+      ChattyAccount *account;
 
-      account = chatty_pp_account_get_account (self->selected_account);
-      self->selected_account = NULL;
-      purple_accounts_delete (account);
+      account = g_steal_pointer (&self->selected_account);
+      chatty_account_delete (account);
 
       chatty_settings_dialog_populate_account_list (self);
       gtk_widget_hide (self->save_button);
@@ -556,12 +551,12 @@ settings_protocol_changed_cb (ChattySettingsDialog *self,
 }
 
 static GtkWidget *
-chatty_account_row_new (ChattyPpAccount *account)
+chatty_account_row_new (ChattyAccount *account)
 {
   HdyActionRow   *row;
   GtkWidget      *account_enabled_switch;
-  const gchar    *protocol_id;
   GtkWidget      *spinner;
+  ChattyProtocol protocol;
 
   row = hdy_action_row_new ();
   gtk_widget_show (GTK_WIDGET (row));
@@ -569,14 +564,13 @@ chatty_account_row_new (ChattyPpAccount *account)
                      "row-account",
                      (gpointer) account);
 
-  protocol_id = chatty_pp_account_get_protocol_id (account);
-
-  if ((g_strcmp0 (protocol_id, "prpl-jabber")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-matrix")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-telegram")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-delta")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-threepl")) != 0 &&
-      (g_strcmp0 (protocol_id, "prpl-mm-sms")) != 0)
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (account));
+  if (protocol & ~(CHATTY_PROTOCOL_XMPP |
+                   CHATTY_PROTOCOL_MATRIX |
+                   CHATTY_PROTOCOL_TELEGRAM |
+                   CHATTY_PROTOCOL_DELTA |
+                   CHATTY_PROTOCOL_THREEPL |
+                   CHATTY_PROTOCOL_SMS))
     return NULL;
 
   spinner = gtk_spinner_new ();
@@ -599,8 +593,8 @@ chatty_account_row_new (ChattyPpAccount *account)
                           account_enabled_switch, "active",
                           G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
 
-  hdy_action_row_set_title (row, chatty_pp_account_get_username (account));
-  hdy_action_row_set_subtitle (row, chatty_pp_account_get_protocol_name (account));
+  hdy_action_row_set_title (row, chatty_account_get_username (CHATTY_ACCOUNT (account)));
+  hdy_action_row_set_subtitle (row, chatty_account_get_protocol_name (CHATTY_ACCOUNT (account)));
   hdy_action_row_add_action (row, account_enabled_switch);
   hdy_action_row_set_activatable_widget (row, NULL);
 
@@ -621,12 +615,12 @@ chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self)
 
   for (guint i = 0; i < n_items; i++)
     {
-      g_autoptr(ChattyPpAccount) account = NULL;
+      g_autoptr(ChattyAccount) account = NULL;
       GtkWidget *row;
 
       account = g_list_model_get_item (model, i);
 
-      if (chatty_pp_account_is_sms (account))
+      if (chatty_item_is_sms (CHATTY_ITEM (account)))
         continue;
 
       row = chatty_account_row_new (account);

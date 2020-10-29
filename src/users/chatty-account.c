@@ -37,12 +37,37 @@ enum {
 
 static GParamSpec *properties[N_PROPS];
 
+static const char *
+chatty_account_real_get_protocol_name (ChattyAccount *self)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  return "";
+}
+
 static ChattyStatus
 chatty_account_real_get_status (ChattyAccount *self)
 {
   g_assert (CHATTY_IS_ACCOUNT (self));
 
   return CHATTY_DISCONNECTED;
+}
+
+static const char *
+chatty_account_real_get_username (ChattyAccount *self)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  return "";
+}
+
+static void
+chatty_account_real_set_username (ChattyAccount *self,
+                                  const char    *username)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  /* Do nothing */
 }
 
 static GListModel *
@@ -105,6 +130,22 @@ chatty_account_real_set_remember_password (ChattyAccount *self,
 }
 
 static void
+chatty_account_real_save (ChattyAccount *self)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  /* Do Nothing */
+}
+
+static void
+chatty_account_real_delete (ChattyAccount *self)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  /* Do Nothing */
+}
+
+static void
 chatty_account_get_property (GObject    *object,
                              guint       prop_id,
                              GValue     *value,
@@ -154,7 +195,10 @@ chatty_account_class_init (ChattyAccountClass *klass)
   object_class->get_property = chatty_account_get_property;
   object_class->set_property = chatty_account_set_property;
 
+  klass->get_protocol_name = chatty_account_real_get_protocol_name;
   klass->get_status   = chatty_account_real_get_status;
+  klass->get_username = chatty_account_real_get_username;
+  klass->set_username = chatty_account_real_set_username;
   klass->get_buddies  = chatty_account_real_get_buddies;
   klass->get_enabled  = chatty_account_real_get_enabled;
   klass->set_enabled  = chatty_account_real_set_enabled;
@@ -162,6 +206,8 @@ chatty_account_class_init (ChattyAccountClass *klass)
   klass->set_password = chatty_account_real_set_password;
   klass->get_remember_password = chatty_account_real_get_remember_password;
   klass->set_remember_password = chatty_account_real_set_remember_password;
+  klass->save = chatty_account_real_save;
+  klass->delete = chatty_account_real_delete;
 
   /**
    * ChattyAccount:enabled:
@@ -195,12 +241,37 @@ chatty_account_init (ChattyAccount *self)
 {
 }
 
+const char *
+chatty_account_get_protocol_name (ChattyAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), "");
+
+  return CHATTY_ACCOUNT_GET_CLASS (self)->get_protocol_name (self);
+}
+
 ChattyStatus
 chatty_account_get_status (ChattyAccount *self)
 {
   g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), CHATTY_DISCONNECTED);
 
   return CHATTY_ACCOUNT_GET_CLASS (self)->get_status (self);
+}
+
+const char *
+chatty_account_get_username (ChattyAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), "");
+
+  return CHATTY_ACCOUNT_GET_CLASS (self)->get_username (self);
+}
+
+void
+chatty_account_set_username (ChattyAccount *self,
+                             const char    *username)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->set_username (self, username);
 }
 
 GListModel *
@@ -260,4 +331,28 @@ chatty_account_set_remember_password (ChattyAccount *self,
   g_return_if_fail (CHATTY_IS_ACCOUNT (self));
 
   CHATTY_ACCOUNT_GET_CLASS (self)->set_remember_password (self, remember);
+}
+
+/**
+ * chatty_account_save:
+ * @self: A #ChattyAccount
+ *
+ * Save @self to accounts store, which is saved to disk.
+ * If the account is already saved, the function simply
+ * returns.
+ */
+void
+chatty_account_save (ChattyAccount *self)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->save (self);
+}
+
+void
+chatty_account_delete (ChattyAccount *self)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->delete (self);
 }

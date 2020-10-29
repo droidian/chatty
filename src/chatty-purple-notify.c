@@ -27,12 +27,14 @@ chatty_notify_message (PurpleNotifyMsgType  type,
                        const char          *primary,
                        const char          *secondary)
 {
-  ChattyWindow *window;
-  GtkWidget    *dialog;
+  GtkApplication *app;
+  GtkWindow *window;
+  GtkWidget *dialog;
 
-  window = chatty_application_get_main_window (CHATTY_APPLICATION_DEFAULT ());
+  app = GTK_APPLICATION (g_application_get_default ());
+  window = gtk_application_get_active_window (app);
 
-  dialog = gtk_message_dialog_new (GTK_WINDOW(window),
+  dialog = gtk_message_dialog_new (window,
                                    GTK_DIALOG_MODAL,
                                    GTK_MESSAGE_INFO,
                                    GTK_BUTTONS_NONE,
@@ -51,7 +53,7 @@ chatty_notify_message (PurpleNotifyMsgType  type,
                     G_CALLBACK(cb_message_response_cb),
                     dialog);
 
-  gtk_window_set_transient_for (GTK_WINDOW(dialog), GTK_WINDOW(window));
+  gtk_window_set_transient_for (GTK_WINDOW (dialog), window);
 
   gtk_widget_show_all (dialog);
 

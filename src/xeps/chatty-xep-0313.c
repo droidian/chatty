@@ -18,7 +18,6 @@
 #include "chatty-xep-0313.h"
 #include "chatty-utils.h"
 #include "chatty-history.h"
-#include "chatty-conversation.h"
 #include "chatty-manager.h"
 #include "chatty-settings.h"
 
@@ -476,8 +475,9 @@ cb_chatty_mam_bare_info(PurpleConnection *pc,
     mamq->js = js;
     mamq->id = g_strdup(qid);
     if(g_strcmp0(bare, purple_account_get_username(pa))) {
-      time_t ts = chatty_history_get_chat_last_message_time(
-                            purple_account_get_username(pa), bare);
+      time_t ts;
+
+      ts = chatty_history_get_last_message_time (purple_account_get_username(pa), bare);
       // For MUC we're getting all messages so last history ts is ok
       if(ts>0)
         dt = g_date_time_new_from_unix_utc(ts);
@@ -703,9 +703,9 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     // check history and drop the dup
     msg_type = xmlnode_get_attrib(message, "type");
     if(from && msg_type && g_strcmp0(msg_type, "groupchat") == 0) {
-      dts = get_chat_timestamp_for_uuid(stanza_id, from);
+      dts = chatty_history_get_chat_timestamp (stanza_id, from);
     } else {
-      dts = get_im_timestamp_for_uuid(stanza_id, user);
+      dts = chatty_history_get_im_timestamp (stanza_id, user);
     }
     if(dts < INT_MAX) {
       g_debug ("Message id %s for acc %s is already stored on %d", stanza_id, user, dts);
@@ -736,7 +736,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
       if(node_oid) {
         const char *uuid = xmlnode_get_attrib (node_oid, "id");
         if(uuid) {
-          dts = get_im_timestamp_for_uuid(uuid, user);
+          dts = chatty_history_get_im_timestamp (uuid, user);
           if(dts < INT_MAX) {
             g_debug ("Message id %s for acc %s is already stored on %d", uuid, user, dts);
             return TRUE; // note - true means stop processing
@@ -764,10 +764,12 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
   if(stamp)
     mamc->cur_msg->p.when = purple_str_to_time (stamp, TRUE, NULL, NULL, NULL);
   jabber_message_parse (js, message);
-  if(stanza_id != NULL || mamc->cur_msg->p.what != NULL)
-    chatty_history_add_message (pc->account, &(mamc->cur_msg->p),
-                                (char**)&stanza_id, mamc->cur_msg->type,
-                                NULL);
+  if(stanza_id != NULL || mamc->cur_msg->p.what != NULL) {
+    PurpleConvMessage *pcm = &(mamc->cur_msg->p);
+
+    chatty_history_add_message (pc->account->username, pcm->alias, pcm->who, pcm->what,
+                                (char**)&stanza_id, pcm->flags, pcm->when,  mamc->cur_msg->type);
+  }
   // Update last timestamp for account's archive
   if(mamq != NULL && mamq->to == NULL)
     mamc->last_ts = mamc->cur_msg->p.when;

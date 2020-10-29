@@ -44,6 +44,7 @@
   </object>
   <object class="GtkPopoverMenu" id="header_chat_list_new_msg_popover">
     <property name="can_focus">False</property>
+    <property name="relative-to">header_add_chat_button</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
@@ -257,7 +258,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkToggleButton">
+                  <object class="GtkToggleButton" id="search_button">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
@@ -405,17 +406,20 @@
             <property name="visible">True</property>
             <property name="hexpand">False</property>
             <property name="kinetic-scrolling">True</property>
+
             <child>
-              <object class="GtkOverlay">
+              <object class="GtkStack" id="sidebar_stack">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child type="overlay">
-                  <object class="GtkBox" id="overlay">
-                    <property name="visible">False</property>
-                    <property name="can_focus">False</property>
+
+                <!-- Empty chat list view -->
+                <child>
+                  <object class="GtkBox" id="empty_view">
+                    <property name="visible">True</property>
                     <property name="halign">center</property>
                     <property name="valign">center</property>
                     <property name="expand">True</property>
+                    <property name="margin_start">36</property>
+                    <property name="margin_end">36</property>
                     <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkImage" id="overlay_icon">
@@ -430,88 +434,57 @@
                           <class name="dim-label"/>
                         </style>
                       </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
                     </child>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkLabel" id="overlay_label_1">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <property name="margin_start">36</property>
-                        <property name="margin_end">36</property>
-                        <property name="expand">True</property>
-                        <child>
-                          <object class="GtkLabel" id="overlay_label_1">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="opacity">0.5</property>
-                            <property name="halign">center</property>
-                            <property name="margin_bottom">12</property>
-                            <property name="justify">center</property>
-                            <property name="wrap">True</property>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                              <attribute name="scale" value="2"/>
-                            </attributes>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel" id="overlay_label_2">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="opacity">0.5</property>
-                            <property name="margin_top">24</property>
-                            <property name="xalign">0</property>
-                            <property name="justify">left</property>
-                            <property name="wrap">True</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel" id="overlay_label_3">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="opacity">0.5</property>
-                            <property name="margin_top">24</property>
-                            <property name="margin_bottom">64</property>
-                            <property name="xalign">0</property>
-                            <property name="justify">left</property>
-                            <property name="wrap">True</property>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">2</property>
-                          </packing>
-                        </child>
+                        <property name="opacity">0.5</property>
+                        <property name="halign">center</property>
+                        <property name="margin_bottom">12</property>
+                        <property name="justify">center</property>
+                        <property name="wrap">True</property>
+                        <attributes>
+                          <attribute name="weight" value="bold"/>
+                          <attribute name="scale" value="2"/>
+                        </attributes>
                       </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="overlay_label_2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="opacity">0.5</property>
+                        <property name="margin_top">24</property>
+                        <property name="xalign">0</property>
+                        <property name="justify">left</property>
+                        <property name="wrap">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="overlay_label_3">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="opacity">0.5</property>
+                        <property name="margin_top">24</property>
+                        <property name="margin_bottom">64</property>
+                        <property name="xalign">0</property>
+                        <property name="justify">left</property>
+                        <property name="wrap">True</property>
+                      </object>
                     </child>
                   </object>
                 </child>
+
+                <!-- Chat list view -->
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="chat_list_view">
                     <property name="visible">True</property>
                     <property name="orientation">vertical</property>
                     <property name="can_focus">False</property>
                     <property name="expand">True</property>
+
+                    <!-- Search bar -->
                     <child>
                       <object class="HdySearchBar" id="chats_search_bar">
                         <property name="visible">True</property>
@@ -537,6 +510,8 @@
                         </child>
                       </object>
                     </child>
+
+                    <!-- Chat list -->
                     <child>
                       <object class="GtkListBox" id="chats_listbox">
                         <property name="visible">True</property>
@@ -546,8 +521,10 @@
                         <signal name="row-activated" handler="window_chat_row_activated_cb" swapped="no"/>
                       </object>
                     </child>
+
                   </object>
                 </child>
+
               </object>
             </child>
           </object>

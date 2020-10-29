@@ -64,7 +64,7 @@ on_screensaver_active_changed (GtkApplication *app)
 
       ca = g_list_model_get_item (model, i);
 
-      if (chatty_pp_account_is_sms (ca))
+      if (chatty_item_is_sms (CHATTY_ITEM (ca)))
         continue;
 
       if (!chatty_pp_account_has_features (ca, CHATTY_PP_ACCOUNT_FEATURES_CSI))

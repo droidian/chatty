@@ -116,7 +116,6 @@ static void
 chatty_add_new_buddy (ChattyPpBuddy *self)
 {
   PurpleConversation *conv;
-  const char *purple_id;
 
   g_assert (CHATTY_IS_PP_BUDDY (self));
 
@@ -127,9 +126,7 @@ chatty_add_new_buddy (ChattyPpBuddy *self)
 
   g_debug ("%s: %s ", __func__, purple_buddy_get_name (self->pp_buddy));
 
-  purple_id = purple_account_get_protocol_id (self->pp_account);
-
-  if (g_strcmp0 (purple_id, "prpl-mm-sms") != 0)
+  if (chatty_item_get_protocols (CHATTY_ITEM (self)) != CHATTY_PROTOCOL_SMS)
     purple_account_add_buddy_with_invite (self->pp_account, self->pp_buddy, NULL);
 
   conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_IM,
