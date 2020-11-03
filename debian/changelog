@@ -1,3 +1,10 @@
+chatty (0.1.17-1) unstable; urgency=medium
+
+  [ Evangelos Ribeiro Tzaras ]
+  * Update to version 0.1.17
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 03 Nov 2020 17:03:04 +0100
+
 chatty (0.1.16-1) unstable; urgency=medium
 
   [ Evangelos Ribeiro Tzaras ]
