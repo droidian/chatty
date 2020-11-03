@@ -679,6 +679,11 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
   message = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
   if (gtk_text_buffer_get_char_count (self->message_input_buffer)) {
+    g_autofree char *escaped = NULL;
+    ChattyProtocol protocol;
+
+    protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
+
     /* provide a msg-id to the sms-plugin for send-receipts */
     if (chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS) {
       sms_id = g_random_int ();
@@ -697,10 +702,14 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
                                       PURPLE_MESSAGE_INVISIBLE);
     }
 
+    if (protocol == CHATTY_PROTOCOL_MATRIX ||
+        protocol == CHATTY_PROTOCOL_XMPP)
+      escaped = purple_markup_escape_text (message, -1);
+
     if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM) {
-      purple_conv_im_send (PURPLE_CONV_IM(conv), message);
+      purple_conv_im_send (PURPLE_CONV_IM(conv), escaped ? escaped : message);
     } else if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_CHAT) {
-      purple_conv_chat_send(PURPLE_CONV_CHAT(conv), message);
+      purple_conv_chat_send (PURPLE_CONV_CHAT (conv), escaped ? escaped : message);
     }
 
     gtk_widget_hide (self->send_message_button);

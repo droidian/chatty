@@ -35,6 +35,7 @@ struct _ChattyMessageRow
   GtkGesture *longpress_gesture;
 
   ChattyMessage *message;
+  ChattyProtocol protocol;
   gboolean       is_im;
 };
 
@@ -42,7 +43,8 @@ G_DEFINE_TYPE (ChattyMessageRow, chatty_message_row, GTK_TYPE_LIST_BOX_ROW)
 
 
 static gchar *
-chatty_msg_list_escape_message (const char *message)
+chatty_msg_list_escape_message (ChattyMessageRow *self,
+                                const char       *message)
 {
   g_autofree char *nl_2_br;
   g_autofree char *striped;
@@ -51,7 +53,10 @@ chatty_msg_list_escape_message (const char *message)
   char *result;
 
   nl_2_br = purple_strdup_withhtml (message);
-  striped = purple_markup_strip_html (nl_2_br);
+  if (self->protocol == CHATTY_PROTOCOL_SMS)
+    striped = g_strdup (message);
+  else
+    striped = purple_markup_strip_html (nl_2_br);
   escaped = purple_markup_escape_text (striped, -1);
   linkified = purple_markup_linkify (escaped);
   // convert all tags to lowercase for GtkLabel markup parser
@@ -151,7 +156,7 @@ message_row_update_message (ChattyMessageRow *self)
                             NULL);
   }
 
-  message = chatty_msg_list_escape_message (chatty_message_get_text (self->message));
+  message = chatty_msg_list_escape_message (self, chatty_message_get_text (self->message));
   gtk_label_set_markup (GTK_LABEL (self->message_label), message);
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
@@ -225,6 +230,7 @@ chatty_message_row_new (ChattyMessage  *message,
 
   self = g_object_new (CHATTY_TYPE_MESSAGE_ROW, NULL);
   sc = gtk_widget_get_style_context (self->message_label);
+  self->protocol = protocol;
 
   if (!message)
     return GTK_WIDGET (self);
@@ -254,7 +260,8 @@ chatty_message_row_new (ChattyMessage  *message,
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
   }
 
-  if (is_im || direction == CHATTY_DIRECTION_SYSTEM)
+  if (is_im || direction == CHATTY_DIRECTION_SYSTEM ||
+      direction == CHATTY_DIRECTION_OUT)
     gtk_widget_hide (self->avatar_image);
   else
     chatty_avatar_set_item (CHATTY_AVATAR (self->avatar_image),

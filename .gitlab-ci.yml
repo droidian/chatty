@@ -36,6 +36,14 @@ build-debian-gcc-bullseye:
   <<: *tags
   image: debian:bullseye
   stage: build
+  before_script:
+    - export DEBIAN_FRONTEND=noninteractive
+    - apt-get -y update
+    - apt-get -y install build-essential wget ca-certificates gnupg lcov
+    - echo "deb http://ci.puri.sm/ bullseyeci main" > /etc/apt/sources.list.d/ci.list
+    - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
+    - apt-get -y update
+    - apt-get -y build-dep .
   script:
     - export LC_ALL=C.UTF-8
     - meson . _build -Db_coverage=true --werror

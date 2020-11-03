@@ -987,6 +987,47 @@ chatty_pp_chat_find_user (ChattyPpChat *self,
   return chat_find_user (self, username, NULL);
 }
 
+/**
+ * chatty_pp_chat_get_buddy_name:
+ * @self: A #ChattyPpChat
+ * @who: The name of buddy
+ *
+ * Get Full buddy username for @who.  You
+ * may get `alice@example.com/wonderland`
+ * when @who is `alice`.
+ */
+char *
+chatty_pp_chat_get_buddy_name (ChattyPpChat *self,
+                               const char   *who)
+{
+  PurplePluginProtocolInfo *prpl_info;
+  PurpleConnection *gc;
+  PurpleAccount *account;
+
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), NULL);
+  g_return_val_if_fail (who && *who, NULL);
+
+  if (chatty_chat_is_im (CHATTY_CHAT (self)) || !self->conv)
+    return NULL;
+
+  account = self->conv->account;
+  gc = purple_account_get_connection (account);
+
+  if (!gc)
+    return NULL;
+
+  prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (gc->prpl);
+
+  if (prpl_info && prpl_info->get_cb_real_name) {
+    int chat_id;
+
+    chat_id = purple_conv_chat_get_id (PURPLE_CONV_CHAT (self->conv));
+    return prpl_info->get_cb_real_name(gc, chat_id, who);
+  }
+
+  return NULL;
+}
+
 void
 chatty_pp_chat_emit_user_changed (ChattyPpChat *self,
                                   const char   *user)

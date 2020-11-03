@@ -54,6 +54,8 @@ void                chatty_pp_chat_remove_user            (ChattyPpChat       *s
                                                            const char         *user);
 ChattyPpBuddy      *chatty_pp_chat_find_user              (ChattyPpChat       *self,
                                                            const char         *username);
+char               *chatty_pp_chat_get_buddy_name         (ChattyPpChat       *chat,
+                                                           const char         *who);
 void                chatty_pp_chat_emit_user_changed      (ChattyPpChat       *self,
                                                            const char         *user);
 void                chatty_pp_chat_load_encryption_status (ChattyPpChat       *self);

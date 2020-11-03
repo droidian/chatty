@@ -308,6 +308,18 @@ window_chat_name_matches (ChattyItem   *item,
       return FALSE;
   }
 
+  if (hdy_leaflet_get_fold (HDY_LEAFLET (self->header_box)) == HDY_FOLD_FOLDED) {
+    GListModel *message_list;
+    guint n_items;
+
+    message_list = chatty_chat_get_messages (CHATTY_CHAT (item));
+    n_items = g_list_model_get_n_items (message_list);
+
+    if (n_items == 0)
+      return FALSE;
+  }
+
+
   if (!self->chat_needle || !*self->chat_needle)
     return TRUE;
 
@@ -441,6 +453,7 @@ notify_fold_cb (GObject      *sender,
     chatty_window_chat_list_select_first (self);
   }
 
+  gtk_filter_changed (self->chat_filter, GTK_FILTER_CHANGE_DIFFERENT);
   chatty_update_header (self);
 }
 
