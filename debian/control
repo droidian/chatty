@@ -31,9 +31,9 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:
- purple-carbons,
  purple-lurch,
  purple-mm-sms,
+ purple-xmpp-carbons,
  purple-xmpp-http-upload,
 Suggests:
  gnome-calls,
