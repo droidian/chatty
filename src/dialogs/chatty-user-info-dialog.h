@@ -7,13 +7,12 @@
 
 #pragma once
 
-#define HANDY_USE_UNSTABLE_API
 #include <handy.h>
 
 G_BEGIN_DECLS
 
 #define CHATTY_TYPE_USER_INFO_DIALOG (chatty_user_info_dialog_get_type())
-G_DECLARE_FINAL_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, CHATTY, USER_INFO_DIALOG, HdyDialog)
+G_DECLARE_FINAL_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, CHATTY, USER_INFO_DIALOG, GtkDialog)
 
 
 GtkWidget *chatty_user_info_dialog_new      (GtkWindow            *parent_window);

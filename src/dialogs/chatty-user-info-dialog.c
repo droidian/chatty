@@ -25,7 +25,7 @@
 
 struct _ChattyUserInfoDialog
 {
-  HdyDialog  parent_instance;
+  GtkDialog  parent_instance;
 
   GtkWidget *label_alias;
   GtkWidget *label_jid;
@@ -48,7 +48,7 @@ struct _ChattyUserInfoDialog
 };
 
 
-G_DEFINE_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, HDY_TYPE_DIALOG)
+G_DEFINE_TYPE (ChattyUserInfoDialog, chatty_user_info_dialog, GTK_TYPE_DIALOG)
 
 
 /* Copied from chatty-dialogs.c written by Andrea Schäfer <mosibasu@me.com> */
@@ -273,7 +273,7 @@ chatty_user_info_dialog_class_init (ChattyUserInfoDialogClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-dialog-user-info.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyUserInfoDialog, button_avatar);
@@ -300,14 +300,6 @@ static void
 chatty_user_info_dialog_init (ChattyUserInfoDialog *self)
 {
   gtk_widget_init_template (GTK_WIDGET(self));
-
-  gtk_list_box_set_header_func (GTK_LIST_BOX(self->listbox_fps),
-                                hdy_list_box_separator_header,
-                                NULL, NULL);
-
-  gtk_list_box_set_header_func (GTK_LIST_BOX(self->listbox_prefs),
-                                hdy_list_box_separator_header,
-                                NULL, NULL);
 }
 
 

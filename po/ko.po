@@ -1,0 +1,802 @@
+# Korean translation for chatty.
+# Copyright (C) 2020 chatty's authors and contributors.
+# This file is distributed under the same license as the chatty package.
+# Seong-ho Cho <shcho@gnome.org>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: chatty master\n"
+"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
+"POT-Creation-Date: 2020-09-13 03:25+0000\n"
+"PO-Revision-Date: 2020-09-13 14:05+0900\n"
+"Language-Team: Korean <gnome-kr@googlegroups.com>\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Last-Translator: Seong-ho Cho <shcho@gnome.org>\n"
+"X-Generator: Poedit 2.3.1\n"
+
+#: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
+#: src/chatty-application.c:304 src/ui/chatty-window.ui:225
+msgid "Chats"
+msgstr "대화"
+
+#: data/sm.puri.Chatty.desktop.in:5
+msgid "sm.puri.Chatty"
+msgstr "sm.puri.Chatty"
+
+#: data/sm.puri.Chatty.desktop.in:6
+msgid "SMS and XMPP chat application"
+msgstr "SMS 및 XMPP 대화 프로그램"
+
+#: data/sm.puri.Chatty.desktop.in:7
+msgid "XMPP;SMS;chat;jabber;messaging;modem"
+msgstr "XMPP;SMS;단문;문자;chat;대화;jabber;재버;messaging;modem;모뎀;"
+
+#: data/sm.puri.Chatty.gschema.xml:7 data/sm.puri.Chatty.gschema.xml:8
+msgid "Whether the application is launching the first time"
+msgstr "프로그램을 처음 실행했는지 여부"
+
+#: data/sm.puri.Chatty.gschema.xml:13
+msgid "Country code in ISO 3166-1 alpha-2 format"
+msgstr "ISO 3166-1 alpha-2 형식의 국가 코드"
+
+#: data/sm.puri.Chatty.gschema.xml:14
+msgid "Two letter country code of the last available SIM/Network"
+msgstr "최근 존재하는 SIM/네트워크의 2문자 기반 국가 코드"
+
+#: data/sm.puri.Chatty.gschema.xml:19
+msgid "Send message read receipts"
+msgstr "메시지 읽음 상태 보내기"
+
+#: data/sm.puri.Chatty.gschema.xml:20
+msgid "Whether to send the status of the message if read"
+msgstr "메시지 읽음 상태를 보낼지 여부"
+
+#: data/sm.puri.Chatty.gschema.xml:25
+msgid "Message carbon copies"
+msgstr "메시지 참조자"
+
+#: data/sm.puri.Chatty.gschema.xml:26 src/ui/chatty-settings-dialog.ui:153
+msgid "Share chat history among devices"
+msgstr "장치간 대화 기록 공유"
+
+#: data/sm.puri.Chatty.gschema.xml:31
+msgid "Enable Message Archive Management"
+msgstr "메시지 보관 관리자 활성"
+
+#: data/sm.puri.Chatty.gschema.xml:32
+msgid "Enable MAM archive synchronization from the server"
+msgstr "서버와 MAM 보관 동기화 활성"
+
+#: data/sm.puri.Chatty.gschema.xml:37
+msgid "Send typing notifications"
+msgstr "입력 중 알림 보내기"
+
+#: data/sm.puri.Chatty.gschema.xml:38
+msgid "Whether to Send typing notifications"
+msgstr "입력중 알림을 보낼지 여부"
+
+#: data/sm.puri.Chatty.gschema.xml:43 data/sm.puri.Chatty.gschema.xml:44
+msgid "Mark offline users differently"
+msgstr "오프라인 사용자를 다르게 표시"
+
+#: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
+msgid "Mark Idle users differently"
+msgstr "대기중인 사용자를 다르게 표시"
+
+#: data/sm.puri.Chatty.gschema.xml:55 data/sm.puri.Chatty.gschema.xml:56
+msgid "Indicate unknown contacts"
+msgstr "알 수 없는 연락처 표시"
+
+#: data/sm.puri.Chatty.gschema.xml:61
+msgid "Convert text to emoticons"
+msgstr "텍스트를 이모티콘으로 변환"
+
+#: data/sm.puri.Chatty.gschema.xml:62
+msgid "Convert text matching emoticons as real emoticons"
+msgstr "일치하는 텍스트 이모티콘을 실제 이모티콘 그림으로 변환"
+
+#: data/sm.puri.Chatty.gschema.xml:67
+msgid "Enter key sends the message"
+msgstr "Enter키를 누르면 메시지 보내기"
+
+#: data/sm.puri.Chatty.gschema.xml:68
+msgid "Whether pressing Enter key sends the message"
+msgstr "Enter키를 눌렀을 때 메시지를 보낼지 여부"
+
+#: data/sm.puri.Chatty.gschema.xml:73
+msgid "Window maximized"
+msgstr "창 최대화"
+
+#: data/sm.puri.Chatty.gschema.xml:74
+msgid "Window maximized state"
+msgstr "창 최대화 상태"
+
+#: data/sm.puri.Chatty.gschema.xml:79
+msgid "Window size"
+msgstr "창 크기"
+
+#: data/sm.puri.Chatty.gschema.xml:80
+msgid "Window size (width, height)."
+msgstr "창 크기(너비, 높이)."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:7
+msgid "A messaging application"
+msgstr "메시징 프로그램"
+
+#: data/sm.puri.Chatty.metainfo.xml.in:9
+msgid "Chats is a messaging application supporting XMPP and SMS."
+msgstr "대화는 XMPP와 SMS를 지원하는 메시징 프로그램입니다."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:16
+msgid "Chats message window"
+msgstr "대화 메시지 창"
+
+#: src/chatty-application.c:68
+msgid "Show release version"
+msgstr "릴리스 버전 표시"
+
+#: src/chatty-application.c:69
+msgid "Start in daemon mode"
+msgstr "데몬 모드로 시작"
+
+#: src/chatty-application.c:70
+msgid "Disable all accounts"
+msgstr "모든 계정 비활성"
+
+#: src/chatty-application.c:71
+msgid "Enable libpurple debug messages"
+msgstr "libpurple 디버깅 메시지 활성"
+
+#: src/chatty-application.c:72
+msgid "Enable verbose libpurple debug messages"
+msgstr "방대한 libpurple 디버깅 메시지 활성"
+
+#: src/chatty-application.c:108
+#, c-format
+msgid "Authorize %s?"
+msgstr "%s 사용자를 수락합니까?"
+
+#: src/chatty-application.c:112
+msgid "Reject"
+msgstr "거절"
+
+#: src/chatty-application.c:114
+msgid "Accept"
+msgstr "수락"
+
+#: src/chatty-application.c:119
+#, c-format
+msgid "Add %s to contact list"
+msgstr "%s 계정을 연락처에 추가"
+
+#: src/chatty-application.c:142
+msgid "Contact added"
+msgstr "연락처에 추가했습니다"
+
+#: src/chatty-application.c:145
+#, c-format
+msgid "User %s has added %s to the contacts"
+msgstr "%s 사용자를 %s 연락처에 추가했습니다"
+
+#: src/chatty-application.c:165
+msgid "Login failed"
+msgstr "로그인 실패"
+
+#: src/chatty-application.c:171
+msgid "Please check ID and password"
+msgstr "ID와 암호를 확인하십시오."
+
+#: src/chatty-chat-view.c:69 src/chatty-chat-view.c:74
+msgid "This is an IM conversation."
+msgstr "인스턴트 메시징 대화입니다."
+
+#: src/chatty-chat-view.c:70 src/chatty-chat-view.c:80
+msgid "Your messages are not encrypted,"
+msgstr "메시지 암호화를 하지 않았습니다,"
+
+#: src/chatty-chat-view.c:71
+msgid "ask your counterpart to use E2EE."
+msgstr "상대방에게 E2EE 사용을 요청하십시오."
+
+#: src/chatty-chat-view.c:75
+msgid "Your messages are secured"
+msgstr "메시지를 암호화 처리했습니다"
+
+#: src/chatty-chat-view.c:76
+msgid "by end-to-end encryption."
+msgstr "(종단간 암호화 처리)."
+
+#: src/chatty-chat-view.c:79
+msgid "This is an SMS conversation."
+msgstr "SMS 대화입니다."
+
+#: src/chatty-chat-view.c:81
+msgid "and carrier rates may apply."
+msgstr "그리고 사용 요금을 청구할 수 있습니다."
+
+#. Translators: Timestamp seconds suffix
+#: src/chatty-list-row.c:73
+msgctxt "timestamp-suffix-seconds"
+msgid "s"
+msgstr "초"
+
+#. Translators: Timestamp minute suffix
+#: src/chatty-list-row.c:75
+msgctxt "timestamp-suffix-minute"
+msgid "m"
+msgstr "분"
+
+#. Translators: Timestamp minutes suffix
+#: src/chatty-list-row.c:77
+msgctxt "timestamp-suffix-minutes"
+msgid "m"
+msgstr "분"
+
+#. Translators: Timestamp hour suffix
+#: src/chatty-list-row.c:79
+msgctxt "timestamp-suffix-hour"
+msgid "h"
+msgstr "시"
+
+#. Translators: Timestamp hours suffix
+#: src/chatty-list-row.c:81
+msgctxt "timestamp-suffix-hours"
+msgid "h"
+msgstr "시간"
+
+#. Translators: Timestamp day suffix
+#: src/chatty-list-row.c:83
+msgctxt "timestamp-suffix-day"
+msgid "d"
+msgstr "일"
+
+#. Translators: Timestamp days suffix
+#: src/chatty-list-row.c:85
+msgctxt "timestamp-suffix-days"
+msgid "d"
+msgstr "일"
+
+#. Translators: Timestamp month suffix
+#: src/chatty-list-row.c:87
+msgctxt "timestamp-suffix-month"
+msgid "mo"
+msgstr "월"
+
+#. Translators: Timestamp months suffix
+#: src/chatty-list-row.c:89
+msgctxt "timestamp-suffix-months"
+msgid "mos"
+msgstr "월"
+
+#. Translators: Timestamp year suffix
+#: src/chatty-list-row.c:91
+msgctxt "timestamp-suffix-year"
+msgid "y"
+msgstr "년"
+
+#. Translators: Timestamp years suffix
+#: src/chatty-list-row.c:93
+msgctxt "timestamp-suffix-years"
+msgid "y"
+msgstr "년"
+
+# Note: 시간의 직전 몇 경과 상태 prefix.
+#. Translators: Timestamp prefix (e.g. Over 5h)
+#: src/chatty-list-row.c:195
+msgid "Over"
+msgstr "지남: "
+
+# Note: 시간의 직전 몇 경과 상태 prefix.
+#. Translators: Timestamp prefix (e.g. Almost 5h)
+#: src/chatty-list-row.c:200
+msgid "Almost"
+msgstr "직전: "
+
+#: src/chatty-list-row.c:217
+msgid "Owner"
+msgstr "소유자"
+
+#: src/chatty-list-row.c:220
+msgid "Moderator"
+msgstr "중재자"
+
+#: src/chatty-list-row.c:223
+msgid "Member"
+msgstr "구성원"
+
+#: src/chatty-manager.c:887
+#, c-format
+msgid "New message from %s"
+msgstr "%s의 새 메시지"
+
+#: src/chatty-message-row.c:89
+msgid "Copy"
+msgstr "복사"
+
+#: src/chatty-notify.c:67
+msgid "Open Message"
+msgstr "메시지 열기"
+
+#: src/chatty-notify.c:72
+msgid "Message Received"
+msgstr "메시지 받음"
+
+#: src/chatty-notify.c:78
+msgid "Message Error"
+msgstr "메시지 오류"
+
+#: src/chatty-notify.c:84
+msgid "Account Info"
+msgstr "계정 정보"
+
+#: src/chatty-notify.c:90
+msgid "Account Connected"
+msgstr "계정 연결함"
+
+#: src/chatty-purple-notify.c:44
+msgid "Close"
+msgstr "닫기"
+
+#: src/chatty-purple-request.c:186
+msgid "Save File..."
+msgstr "파일 저장..."
+
+#: src/chatty-purple-request.c:187
+msgid "Open File..."
+msgstr "파일 열기..."
+
+#: src/chatty-purple-request.c:191 src/chatty-window.c:585
+#: src/dialogs/chatty-settings-dialog.c:443
+#: src/dialogs/chatty-user-info-dialog.c:65 src/ui/chatty-dialog-join-muc.ui:16
+#: src/ui/chatty-dialog-muc-info.ui:56
+msgid "Cancel"
+msgstr "취소"
+
+#: src/chatty-purple-request.c:193
+msgid "Save"
+msgstr "저장"
+
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:442
+#: src/dialogs/chatty-user-info-dialog.c:64
+msgid "Open"
+msgstr "열기"
+
+#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:291
+msgid "%A %H∶%M"
+msgstr "%A %H∶%M"
+
+#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:296
+msgid "%A %I∶%M %p"
+msgstr "%A %p %I∶%M"
+
+#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:303
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
+#: src/chatty-window.c:103 src/chatty-window.c:108 src/chatty-window.c:113
+msgid "Choose a contact"
+msgstr "연락처 선택"
+
+#: src/chatty-window.c:104
+msgid ""
+"Select an <b>SMS</b> or <b>Instant Message</b> contact with the <b>\"+\"</b> "
+"button in the titlebar."
+msgstr ""
+"제목 표시줄의 <b>\"+\"</b> 단추로 <b>SMS</b> 또는 <b>인스턴스 메시지</b> 연락"
+"처를 선택하십시오."
+
+#: src/chatty-window.c:109
+msgid ""
+"Select an <b>Instant Message</b> contact with the \"+\" button in the "
+"titlebar."
+msgstr ""
+"제목 표시줄의 \"+\" 단추로 <b>인스턴트 메시지</b> 연락처를 선택하십시오."
+
+#: src/chatty-window.c:114
+msgid "Start a <b>SMS</b> chat with the \"+\" button in the titlebar."
+msgstr "제목 표시줄의 \"+\" 단추로 <b>SMS</b> 대화를 선택하십시오."
+
+#: src/chatty-window.c:115 src/chatty-window.c:119
+msgid ""
+"For <b>Instant Messaging</b> add or activate an account in <i>\"preferences"
+"\"</i>."
+msgstr ""
+"<i>\"기본 설정\"</i>에서 <b>인스턴트 메시지</b> 연락처를 추가하거나 활성화하"
+"십시오."
+
+#: src/chatty-window.c:118
+msgid "Start chatting"
+msgstr "대화 시작"
+
+#: src/chatty-window.c:570
+msgid "Delete chat with"
+msgstr "다음 대화 삭제"
+
+#: src/chatty-window.c:571
+msgid "This deletes the conversation history"
+msgstr "대화 기록을 지웁니다"
+
+#: src/chatty-window.c:573
+msgid "Disconnect group chat"
+msgstr "단체 대화 나가기"
+
+#: src/chatty-window.c:574
+msgid "This removes chat from chats list"
+msgstr "대화 목록에서 대화를 제거합니다"
+
+#: src/chatty-window.c:587
+msgid "Delete"
+msgstr "삭제"
+
+#: src/chatty-window.c:797
+msgid "An SMS and XMPP messaging client"
+msgstr "SMS 및 XMPP 메시지 전송 클라이언트"
+
+#: src/chatty-window.c:804
+msgid "translator-credits"
+msgstr "조성호 <shcho@gnome.org>"
+
+#: src/dialogs/chatty-muc-info-dialog.c:318
+msgid "members"
+msgstr "명"
+
+#: src/dialogs/chatty-new-chat-dialog.c:146
+msgid "Send To"
+msgstr "다음으로 보내기:"
+
+#: src/dialogs/chatty-new-chat-dialog.c:190
+#, c-format
+msgid "Error opening GNOME Contacts: %s"
+msgstr "그놈 연락처 열기 오류: %s"
+
+#: src/dialogs/chatty-settings-dialog.c:319
+msgid "Select Protocol"
+msgstr "프로토콜을 선택하십시오"
+
+#: src/dialogs/chatty-settings-dialog.c:324
+msgid "Add XMPP account"
+msgstr "XMPP 계정 추가"
+
+#: src/dialogs/chatty-settings-dialog.c:355
+msgid "connected"
+msgstr "연결함"
+
+#: src/dialogs/chatty-settings-dialog.c:357
+msgid "connecting…"
+msgstr "연결중…"
+
+#: src/dialogs/chatty-settings-dialog.c:359
+msgid "disconnected"
+msgstr "연결 끊김"
+
+#: src/dialogs/chatty-settings-dialog.c:439
+#: src/dialogs/chatty-user-info-dialog.c:61
+msgid "Set Avatar"
+msgstr "아바타 설정"
+
+#: src/dialogs/chatty-settings-dialog.c:509
+#: src/ui/chatty-settings-dialog.ui:477
+msgid "Delete Account"
+msgstr "계정 삭제"
+
+#: src/dialogs/chatty-settings-dialog.c:512
+#, c-format
+msgid "Delete account %s?"
+msgstr "%s 계정을 삭제하시겠습니까?"
+
+#: src/dialogs/chatty-user-info-dialog.c:135
+msgid "Encryption not available"
+msgstr "암호화 연결 아님"
+
+#: src/dialogs/chatty-user-info-dialog.c:173
+msgid "Encryption is not available"
+msgstr "암호화 연결중이 아닙니다"
+
+#: src/dialogs/chatty-user-info-dialog.c:175
+msgid "This chat is encrypted"
+msgstr "이 대화는 암호화 처리중입니다"
+
+#: src/dialogs/chatty-user-info-dialog.c:177
+msgid "This chat is not encrypted"
+msgstr "이 대화는 암호화 처리중이 아닙니다."
+
+#: src/dialogs/chatty-user-info-dialog.c:245
+msgid "Phone Number:"
+msgstr "전화번호:"
+
+#: src/ui/chatty-dialog-join-muc.ui:12
+msgid "New Group Chat"
+msgstr "새 단체 대화"
+
+#: src/ui/chatty-dialog-join-muc.ui:28
+msgid "Join Chat"
+msgstr "대화 참여"
+
+#: src/ui/chatty-dialog-join-muc.ui:81 src/ui/chatty-dialog-new-chat.ui:237
+msgid "Select chat account"
+msgstr "대화 계정 선택"
+
+#: src/ui/chatty-dialog-join-muc.ui:155
+msgid "Password (optional)"
+msgstr "암호 (추가)"
+
+#: src/ui/chatty-dialog-muc-info.ui:26
+msgid "Group Details"
+msgstr "단체 정보"
+
+#: src/ui/chatty-dialog-muc-info.ui:52
+msgid "Invite Contact"
+msgstr "연락처 초대"
+
+#: src/ui/chatty-dialog-muc-info.ui:69
+msgid "Invite"
+msgstr "초대"
+
+#: src/ui/chatty-dialog-muc-info.ui:166
+msgid "Room topic"
+msgstr "대화방 주제"
+
+#: src/ui/chatty-dialog-muc-info.ui:225
+msgid "Room settings"
+msgstr "대화방 설정"
+
+#: src/ui/chatty-dialog-muc-info.ui:248 src/ui/chatty-dialog-user-info.ui:209
+msgid "Notifications"
+msgstr "알림"
+
+#: src/ui/chatty-dialog-muc-info.ui:249
+msgid "Show notification badge"
+msgstr "알림 뱃지 표시"
+
+#: src/ui/chatty-dialog-muc-info.ui:265
+msgid "Status Messages"
+msgstr "상태 메시지"
+
+#: src/ui/chatty-dialog-muc-info.ui:266
+msgid "Show status messages in chat"
+msgstr "대화에 상태 메시지 표시"
+
+#: src/ui/chatty-dialog-muc-info.ui:289
+msgid "0 members"
+msgstr "0명"
+
+#: src/ui/chatty-dialog-muc-info.ui:377
+msgid "Invite Message"
+msgstr "메시지 초대"
+
+#: src/ui/chatty-dialog-new-chat.ui:26
+msgid "Start Chat"
+msgstr "대화 시작"
+
+#: src/ui/chatty-dialog-new-chat.ui:55
+msgid "New Contact"
+msgstr "새 연락처"
+
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:126
+msgid "Add Contact"
+msgstr "연락처 추가"
+
+#: src/ui/chatty-dialog-new-chat.ui:149
+msgid "Send To:"
+msgstr "다음으로 보내기:"
+
+#: src/ui/chatty-dialog-new-chat.ui:288
+msgid "Name (optional)"
+msgstr "성명 (추가)"
+
+#: src/ui/chatty-dialog-new-chat.ui:328 src/ui/chatty-window.ui:152
+msgid "Add to Contacts"
+msgstr "연락처에 추가"
+
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:112
+msgid "Chat Details"
+msgstr "대화 정보"
+
+#: src/ui/chatty-dialog-user-info.ui:96
+msgid "XMPP ID"
+msgstr "XMPP ID"
+
+#: src/ui/chatty-dialog-user-info.ui:111 src/ui/chatty-dialog-user-info.ui:225
+msgid "Encryption"
+msgstr "암호화"
+
+#: src/ui/chatty-dialog-user-info.ui:126 src/ui/chatty-settings-dialog.ui:390
+msgid "Status"
+msgstr "상태"
+
+#: src/ui/chatty-dialog-user-info.ui:226
+msgid "Secure messaging using OMEMO"
+msgstr "OMEMO로 보안 대화"
+
+#: src/ui/chatty-dialog-user-info.ui:247
+msgid "Fingerprints"
+msgstr "지문키"
+
+#: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:18
+msgid "Preferences"
+msgstr "기본 설정"
+
+#: src/ui/chatty-settings-dialog.ui:21
+msgid "Back"
+msgstr "뒤로"
+
+#: src/ui/chatty-settings-dialog.ui:41
+msgid "_Add"
+msgstr "추가(_A)"
+
+#: src/ui/chatty-settings-dialog.ui:57
+msgid "_Save"
+msgstr "저장(_S)"
+
+#: src/ui/chatty-settings-dialog.ui:91
+msgid "Accounts"
+msgstr "계정"
+
+#: src/ui/chatty-settings-dialog.ui:105
+msgid "Add new account…"
+msgstr "새 계정 추가…"
+
+#: src/ui/chatty-settings-dialog.ui:117
+msgid "Privacy"
+msgstr "개인 정보"
+
+#: src/ui/chatty-settings-dialog.ui:122
+msgid "Message Receipts"
+msgstr "메시지 수신자"
+
+#: src/ui/chatty-settings-dialog.ui:123
+msgid "Confirm received messages"
+msgstr "수신 메시지 확인"
+
+#: src/ui/chatty-settings-dialog.ui:137
+msgid "Message Archive Management"
+msgstr "메시지 보관 관리자"
+
+#: src/ui/chatty-settings-dialog.ui:138
+msgid "Sync conversations with chat server"
+msgstr "대화 서버와 대화 내용 동기화"
+
+#: src/ui/chatty-settings-dialog.ui:152
+msgid "Message Carbon Copies"
+msgstr "메시지 참조"
+
+#: src/ui/chatty-settings-dialog.ui:167
+msgid "Typing Notification"
+msgstr "입력중 알림"
+
+#: src/ui/chatty-settings-dialog.ui:168
+msgid "Send typing messages"
+msgstr "입력중 메시지 보내기"
+
+#: src/ui/chatty-settings-dialog.ui:185
+msgid "Chats List"
+msgstr "대화 목록"
+
+#: src/ui/chatty-settings-dialog.ui:190
+msgid "Indicate Offline Contacts"
+msgstr "오프라인 연락처 표시"
+
+#: src/ui/chatty-settings-dialog.ui:191
+msgid "Grey out avatars from offline contacts"
+msgstr "오프라인 연락처 아바타를 회색으로 표시"
+
+#: src/ui/chatty-settings-dialog.ui:205
+msgid "Indicate Idle Contacts"
+msgstr "대기중 연락처 표시"
+
+#: src/ui/chatty-settings-dialog.ui:206
+msgid "Blur avatars from idle contacts"
+msgstr "대기중 연락처의 아바타를 흐리게 표시"
+
+#: src/ui/chatty-settings-dialog.ui:220
+msgid "Indicate Unknown Contacts"
+msgstr "알 수 없는 연락처 표시"
+
+#: src/ui/chatty-settings-dialog.ui:221
+msgid "Color unknown contact ID red"
+msgstr "알 수 없는 연락처 ID를 적색으로 표시"
+
+#: src/ui/chatty-settings-dialog.ui:238
+msgid "Editor"
+msgstr "편집기"
+
+#: src/ui/chatty-settings-dialog.ui:243
+msgid "Graphical Emoticons"
+msgstr "그래픽 이모티콘"
+
+#: src/ui/chatty-settings-dialog.ui:244
+msgid "Convert ASCII emoticons"
+msgstr "ASCII 이모티콘 변환"
+
+#: src/ui/chatty-settings-dialog.ui:258
+msgid "Return = Send Message"
+msgstr "Return = 메시지 보내기"
+
+#: src/ui/chatty-settings-dialog.ui:259
+msgid "Send message with return key"
+msgstr "리턴키로 메시지 보내기"
+
+#: src/ui/chatty-settings-dialog.ui:328
+msgid "Account ID"
+msgstr "계정 ID"
+
+#: src/ui/chatty-settings-dialog.ui:361
+msgid "Protocol"
+msgstr "프로토콜"
+
+#: src/ui/chatty-settings-dialog.ui:419 src/ui/chatty-settings-dialog.ui:716
+msgid "Password"
+msgstr "암호"
+
+#: src/ui/chatty-settings-dialog.ui:494
+msgid "Own Fingerprint"
+msgstr "보유 지문키"
+
+#: src/ui/chatty-settings-dialog.ui:520
+msgid "Other Devices"
+msgstr "기타 장치"
+
+#: src/ui/chatty-settings-dialog.ui:604
+msgid "XMPP"
+msgstr "XMPP"
+
+#: src/ui/chatty-settings-dialog.ui:618
+msgid "Matrix"
+msgstr "매트릭스"
+
+#: src/ui/chatty-settings-dialog.ui:633
+msgid "Telegram"
+msgstr "텔레그램"
+
+#: src/ui/chatty-settings-dialog.ui:691
+msgid "Provider"
+msgstr "공급자"
+
+#: src/ui/chatty-window.ui:31
+msgid "About Chats"
+msgstr "대화 정보"
+
+#: src/ui/chatty-window.ui:59
+msgid "New Message…"
+msgstr "새 메시지…"
+
+#: src/ui/chatty-window.ui:72
+msgid "New Group Message…"
+msgstr "새 단체 메시지…"
+
+#: src/ui/chatty-window.ui:85
+msgid "New Bulk SMS…"
+msgstr "새 단체 SMS…"
+
+#: src/ui/chatty-window.ui:177
+msgid "Leave Chat"
+msgstr "대화 나가기"
+
+#: src/ui/chatty-window.ui:190
+msgid "Delete Chat"
+msgstr "대화 삭제"
+
+#: src/users/chatty-contact.c:313
+msgid "Mobile: "
+msgstr "모바일: "
+
+#: src/users/chatty-contact.c:315
+msgid "Work: "
+msgstr "직장: "
+
+#: src/users/chatty-contact.c:317
+msgid "Other: "
+msgstr "기타: "

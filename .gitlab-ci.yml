@@ -19,6 +19,7 @@ before_script:
   - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
   - apt-get -y update
   - apt-get -y build-dep .
+  - apt-get -y install libgtk-3-bin xvfb
 
 build-debian-gcc-buster:
   <<: *tags
@@ -60,7 +61,7 @@ test:debian-gcc:
   script:
     - export G_DEBUG=fatal-warnings
     - export LC_ALL=C.UTF-8
-    - ninja -C _build test
+    - xvfb-run -a -s "-screen 0 1024x768x24" ninja -C _build test
     - ninja -C _build coverage
   coverage: '/^\s+lines\.+:\s+([\d.]+\%)\s+/'
 

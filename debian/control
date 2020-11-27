@@ -9,8 +9,9 @@ Build-Depends:
  desktop-file-utils,
  libgtk-3-dev,
  libfeedback-dev,
- libhandy-0.0-dev (>= 0.0.10),
+ libhandy-1-dev (>= 1.0.0),
  libebook-contacts1.2-dev,
+ libphonenumber-dev,
  libpurple-dev,
  libsqlite3-dev,
  libebook1.2-dev,
@@ -32,5 +33,7 @@ Recommends:
 Suggests:
  calls,
 Description: XMPP and SMS messaging
- Chatty is a chat application for XMPP and SMS using
- libpurple and Modemmanager.
+ Chatty is GTK based chat application supporting SMS and XMPP.
+ .
+ It works on desktops but also adjusts to small screen sizes like smart phones
+ and other mobile devices.

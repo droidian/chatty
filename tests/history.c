@@ -21,34 +21,21 @@
 #include <sqlite3.h>
 
 #include "purple-init.h"
+#include "chatty-settings.h"
+#include "chatty-utils.h"
 #include "chatty-history.h"
 
 typedef struct Message {
   ChattyChat *chat;
+  ChattyMessage *message;
   char *account;
   char *room;
   char *who;
   char *what;
   char *uuid;
   PurpleMessageFlags flags;
-  PurpleConversationType type;
   time_t when;
 } Message;
-
-static ChattyMsgDirection
-chatty_direction_for_flag (PurpleMessageFlags flag)
-{
-  if (flag & PURPLE_MESSAGE_RECV)
-    return CHATTY_DIRECTION_IN;
-
-  if (flag & PURPLE_MESSAGE_SEND)
-    return CHATTY_DIRECTION_OUT;
-
-  if (flag & PURPLE_MESSAGE_SYSTEM)
-    return CHATTY_DIRECTION_SYSTEM;
-
-  g_return_val_if_reached (CHATTY_DIRECTION_SYSTEM);
-}
 
 static PurpleMessageFlags
 flag_for_direction (int direction)
@@ -70,6 +57,7 @@ free_message (Message *msg)
 {
   g_assert_true (msg);
   g_clear_object (&msg->chat);
+  g_clear_object (&msg->message);
   g_free (msg->account);
   g_free (msg->who);
   g_free (msg->what);
@@ -112,6 +100,139 @@ finish_bool_cb (GObject      *object,
   g_task_return_boolean (task, status);
 }
 
+static int
+history_db_get_int (sqlite3    *db,
+                    const char *statement)
+{
+  sqlite3_stmt *stmt;
+  int value, status;
+
+  g_assert (db);
+
+  status = sqlite3_prepare_v2 (db, statement, -1, &stmt, NULL);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+
+  status = sqlite3_step (stmt);
+  g_assert_cmpint (status, ==, SQLITE_ROW);
+
+  value = sqlite3_column_int (stmt, 0);
+
+  sqlite3_finalize (stmt);
+
+  return value;
+}
+
+static void
+compare_table (sqlite3    *db,
+               const char *sql,
+               int         expected_count,
+               int         count)
+{
+  sqlite3_stmt *stmt;
+  int status;
+
+  status = sqlite3_prepare_v2 (db, sql, -1, &stmt, NULL);
+  if (status != SQLITE_OK)
+    g_warning ("sql: %s", sql);
+
+  g_assert_cmpint (status, ==, SQLITE_OK);
+
+  if (expected_count != count)
+    g_warning ("%d %d sql: %s", expected_count, count, sql);
+  status = sqlite3_step (stmt);
+  g_assert_cmpint (status, ==, SQLITE_ROW);
+  g_assert_cmpint (expected_count, ==, count);
+
+  count = sqlite3_column_int (stmt, 0);
+  if (expected_count != count)
+    g_warning ("%d %d sql: %s", expected_count, count, sql);
+
+  g_assert_cmpint (expected_count, ==, count);
+
+  sqlite3_finalize (stmt);
+}
+
+static void
+compare_history_db (sqlite3 *db)
+{
+  /* Pragma version should match */
+  g_assert_cmpint (history_db_get_int (db, "PRAGMA main.user_version;"), ==,
+                   history_db_get_int (db, "PRAGMA test.user_version;"));
+
+  /* Each db should have the same count of table rows */
+  g_assert_cmpint (history_db_get_int (db, "SELECT COUNT(*) FROM main.sqlite_master;"),
+                   ==,
+                   history_db_get_int (db, "SELECT COUNT(*) FROM test.sqlite_master;"));
+
+  /* As duplicate rows are removed, SELECT count should match the size of one table. */
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT username,alias,type FROM main.users "
+                 "UNION "
+                 "SELECT username,alias,type FROM test.users "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.users;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.users;"));
+
+  /* sqlite doesn't guarantee `id` to be always incremented by one.  It
+   * may depend on the order they are updated in chatty-history.  And so
+   * compare by values.
+   */
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT username,protocol FROM main.accounts "
+                 "INNER JOIN main.users ON users.id=accounts.user_id "
+                 "UNION "
+                 "SELECT username,protocol  FROM test.accounts "
+                 "INNER JOIN test.users ON users.id=accounts.user_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.accounts;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.accounts;"));
+
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT name,threads.alias,users.username,protocol,threads.type FROM main.threads "
+                 "INNER JOIN main.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN main.users ON users.id=accounts.user_id "
+                 "UNION "
+                 "SELECT name,threads.alias,users.username,protocol,threads.type FROM test.threads "
+                 "INNER JOIN test.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN test.users ON users.id=accounts.user_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.threads;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.threads;"));
+
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT threads.name,a.username,u.username FROM main.thread_members "
+                 "INNER JOIN main.users AS u ON u.id=thread_members.user_id "
+                 "INNER JOIN main.threads ON threads.id=thread_id "
+                 "INNER JOIN main.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN main.users As a ON a.id=accounts.user_id "
+                 "UNION "
+                 "SELECT threads.name,a.username,u.username FROM test.thread_members "
+                 "INNER JOIN test.users AS u ON u.id=thread_members.user_id "
+                 "INNER JOIN test.threads ON threads.id=thread_id "
+                 "INNER JOIN test.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN test.users As a ON a.id=accounts.user_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.thread_members;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.thread_members;"));
+
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT uid,threads.name,users.username,body,body_type,direction,time FROM main.messages "
+                 "LEFT JOIN main.users ON users.id=sender_id "
+                 "INNER JOIN main.threads ON threads.id=thread_id "
+                 "UNION "
+                 "SELECT uid,threads.name,users.username,body,body_type,direction,time FROM test.messages "
+                 "LEFT JOIN test.users ON users.id=sender_id "
+                 "INNER JOIN test.threads ON threads.id=thread_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.messages;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.messages;"));
+}
+
 static Message *
 new_message (const char         *account,
              const char         *buddy,
@@ -121,11 +242,21 @@ new_message (const char         *account,
              time_t              time_stamp,
              const char         *room)
 {
+  g_autoptr(ChattyContact) contact = NULL;
   ChattyChat *chat;
   Message *message;
+  ChattyMsgDirection direction = CHATTY_DIRECTION_UNKNOWN;
 
+  direction = chatty_utils_direction_from_flag (flags);
   chat = chatty_chat_new (account, room ? room : buddy, room == NULL);
+  g_object_set (G_OBJECT (chat), "protocols", CHATTY_PROTOCOL_XMPP, NULL);
   message = g_new (Message, 1);
+  contact = g_object_new (CHATTY_TYPE_CONTACT,
+                          "protocols", CHATTY_PROTOCOL_XMPP,
+                          NULL);
+  chatty_contact_set_value (contact, buddy);
+  message->message = chatty_message_new (CHATTY_ITEM (contact), NULL, msg_text,
+                                         uuid, time_stamp, direction, 0);
   message->account = g_strdup (account);
   message->who = g_strdup (buddy);
   message->what = g_strdup (msg_text);
@@ -150,7 +281,7 @@ compare_message (Message       *message,
   if (message == NULL)
     return;
 
-  direction = chatty_direction_for_flag (message->flags);
+  direction = chatty_utils_direction_from_flag (message->flags);
   g_assert_cmpstr (message->what, ==, chatty_message_get_text (chatty_message));
   g_assert_cmpstr (message->uuid, ==, chatty_message_get_uid (chatty_message));
   g_assert_cmpint (message->when, ==, chatty_message_get_time (chatty_message));
@@ -229,20 +360,17 @@ add_message (ChattyHistory      *history,
   GTask *task;
   char *uid;
   int time_stamp;
-  PurpleConversationType type;
   gboolean success;
 
   g_assert_true (CHATTY_IS_HISTORY (history));
   g_assert_nonnull (account);
 
-  if (room)
-    type = PURPLE_CONV_TYPE_CHAT;
-  else
-    type = PURPLE_CONV_TYPE_IM;
+  if (!uuid)
+    uuid = g_uuid_string_random ();
 
   uid = g_strdup (uuid);
   msg = new_message (account, who, message, uid, flags, when, room);
-  success = chatty_history_add_message (account, room, who, message, &uid, flags, when, type);
+  success = chatty_history_add_message (msg->chat, msg->message);
   g_assert_true (success);
   g_assert_nonnull (uid);
   g_ptr_array_add (test_msg_array, msg);
@@ -261,7 +389,7 @@ add_message (ChattyHistory      *history,
   g_assert_nonnull (msg_array);
   g_assert_cmpint (test_msg_array->len, ==, msg_array->len);
 
-  if (type == PURPLE_CONV_TYPE_CHAT) {
+  if (!chatty_chat_is_im (msg->chat)) {
     g_assert_true (chatty_history_chat_exists (account, room));
 
     time_stamp = chatty_history_get_chat_timestamp (uid, room);
@@ -405,6 +533,7 @@ test_history_message (void)
   who = "buddy@example.org";
   chat = chatty_chat_new (account, who, TRUE);
   g_assert (CHATTY_IS_CHAT (chat));
+  g_object_set (G_OBJECT (chat), "protocols", CHATTY_PROTOCOL_XMPP, NULL);
 
   when = time (NULL);
   add_chatty_message (history, chat, msg_array, "Random message", when, CHATTY_DIRECTION_OUT, 0);
@@ -419,6 +548,7 @@ test_history_message (void)
 
   chat = chatty_chat_new (account, who, FALSE);
   g_assert (CHATTY_IS_CHAT (chat));
+  g_object_set (G_OBJECT (chat), "protocols", CHATTY_PROTOCOL_XMPP, NULL);
   add_chatty_message (history, chat, msg_array, "Random message", when, CHATTY_DIRECTION_SYSTEM, 0);
   add_chatty_message (history, chat, msg_array, "Another message", when + 1, CHATTY_DIRECTION_IN, 0);
   add_chatty_message (history, chat, msg_array, "And more message", when + 1, CHATTY_DIRECTION_IN, 0);
@@ -454,7 +584,7 @@ test_history_raw_message (void)
   when = time (NULL);
 
   add_message (history, msg_array, account, room, who, uuid,
-               "Random message", when, PURPLE_MESSAGE_SYSTEM);
+               "Random message", when, PURPLE_MESSAGE_SYSTEM | PURPLE_MESSAGE_RECV);
   g_clear_pointer (&uuid, g_free);
   g_ptr_array_free (msg_array, TRUE);
 
@@ -587,7 +717,6 @@ test_value (sqlite3    *db,
   g_autofree char *uuid = NULL;
   sqlite3_stmt *stmt;
   int status, time_stamp;
-  PurpleConversationType type;
   PurpleMessageFlags flags;
 
   status = sqlite3_prepare_v2 (db, statement, -1, &stmt, NULL);
@@ -596,16 +725,24 @@ test_value (sqlite3    *db,
   uuid = g_uuid_string_random ();
   time_stamp = time (NULL) + g_random_int_range (1, 1000);
 
-  if (room)
-    type = PURPLE_CONV_TYPE_CHAT;
-  else
-    type = PURPLE_CONV_TYPE_IM;
-
   flags = flag_for_direction (direction);
   if (statement_status == SQLITE_ROW) {
+    g_autoptr(ChattyChat) chat = NULL;
+    g_autoptr(ChattyMessage) chat_message = NULL;
+    ChattyMsgDirection chat_direction;
     gboolean success;
 
-    success = chatty_history_add_message (account, room, who, message, &uuid, flags, time_stamp, type);
+    chat = chatty_chat_new (account, room ? room : who, room == NULL);
+    g_object_set (G_OBJECT (chat), "protocols", CHATTY_PROTOCOL_XMPP, NULL);
+
+    if (!uuid)
+      uuid = g_uuid_string_random ();
+
+    chat_direction = chatty_utils_direction_from_flag (flags);
+    chat_message = chatty_message_new (NULL, NULL, message, uuid, time_stamp, chat_direction, 0);
+    if (chat_direction != CHATTY_DIRECTION_OUT)
+      chatty_message_set_user_name (chat_message, who);
+    success = chatty_history_add_message (chat, chat_message);
     g_assert_true (success);
   }
 
@@ -613,18 +750,26 @@ test_value (sqlite3    *db,
   g_assert_cmpint (status, ==, statement_status);
 
   if (statement_status != SQLITE_ROW)
-    return;
+    goto end;
 
   g_assert_cmpint (id, ==, sqlite3_column_int (stmt, 0));
-  g_assert_cmpint (time_stamp, ==, sqlite3_column_int (stmt, 1));
-  g_assert_cmpint (direction, ==, sqlite3_column_int (stmt, 2));
-  g_assert_cmpstr (account, ==, (char *)sqlite3_column_text (stmt, 3));
-  g_assert_cmpstr (who, ==, (char *)sqlite3_column_text (stmt, 4));
-  g_assert_cmpstr (uuid, ==, (char *)sqlite3_column_text (stmt, 5));
-  g_assert_cmpstr (message, ==, (char *)sqlite3_column_text (stmt, 6));
-  if (room)
-    g_assert_cmpstr (room, ==, (char *)sqlite3_column_text (stmt, 7));
+  g_assert_cmpstr (uuid, ==, (char *)sqlite3_column_text (stmt, 1));
+  g_assert_cmpstr (message, ==, (char *)sqlite3_column_text (stmt, 2));
+  g_assert_cmpint (direction, ==, sqlite3_column_int (stmt, 3));
+  g_debug ("%s %s", sqlite3_column_text (stmt, 4), sqlite3_column_text (stmt, 5));
+  g_assert_cmpstr (account, ==, (char *)sqlite3_column_text (stmt, 4));
 
+  if (direction == -1)
+    g_assert_cmpstr (account, ==, (char *)sqlite3_column_text (stmt, 5));
+  else
+    g_assert_cmpstr (who, ==, (char *)sqlite3_column_text (stmt, 5));
+
+  if (room)
+    g_assert_cmpstr (room, ==, (char *)sqlite3_column_text (stmt, 6));
+  else
+    g_assert_cmpstr (who, ==, (char *)sqlite3_column_text (stmt, 6));
+
+ end:
   sqlite3_finalize (stmt);
 }
 
@@ -632,6 +777,7 @@ static void
 test_history_db (void)
 {
   const char *file_name, *account, *who, *message, *room;
+  const char *statement;
   sqlite3 *db;
   int status;
 
@@ -649,22 +795,113 @@ test_history_db (void)
   message = "Random messsage";
   room = "room@test";
 
-  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
-              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
-  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_chat LIMIT 1",
-              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
-  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
-              SQLITE_ROW, 1, -1, account, who, message, NULL);
-  test_value (db, "SELECT id,timestamp,direction,account,who,uid,message FROM chatty_chat LIMIT 1",
-              SQLITE_DONE, 0, 0, NULL, NULL, NULL, NULL);
-  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message FROM chatty_im LIMIT 1",
-              SQLITE_ROW, 2, -1, account, who, message, NULL);
-  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message,room FROM chatty_chat LIMIT 1",
-              SQLITE_ROW, 1, -1, account, who, message, room);
-  test_value (db, "SELECT max(id),timestamp,direction,account,who,uid,message,room FROM chatty_chat LIMIT 1",
-              SQLITE_ROW, 2, -1, account, who, message, room);
+  statement = "SELECT max(messages.id),uid,body,direction,a.username,s.username,threads.name "
+    "FROM messages "
+    "INNER JOIN threads "
+    "ON threads.id=thread_id "
+    "INNER JOIN accounts "
+    "ON threads.account_id=accounts.id "
+    "INNER JOIN users as a "
+    "ON accounts.user_id=a.id "
+    "INNER JOIN users as s "
+    "ON sender_id=s.id;";
 
+  test_value (db, statement, SQLITE_ROW, 1, -1, account, who, message, NULL);
+  test_value (db, statement, SQLITE_ROW, 2, 1, account, who, message, NULL);
+  test_value (db, statement, SQLITE_ROW, 3, -1, account, who, message, room);
+  test_value (db, statement, SQLITE_ROW, 4, 1, account, who, message, room);
+
+  sqlite3_close (db);
   chatty_history_close ();
+}
+
+static void
+export_sql_file (const char  *sql_path,
+                 const char  *file_name,
+                 sqlite3    **db)
+{
+  g_autofree char *export_file = NULL;
+  g_autofree char *input_file = NULL;
+  g_autofree char *content = NULL;
+  g_autoptr(GError) err = NULL;
+  char *error = NULL;
+  int status;
+
+  g_assert (sql_path && *sql_path);
+  g_assert (file_name && *file_name);
+  g_assert (db);
+
+  input_file = g_build_filename (sql_path, file_name, NULL);
+  export_file = g_test_build_filename (G_TEST_BUILT, file_name, NULL);
+  strcpy (export_file + strlen (export_file) - strlen ("sql"), "db");
+  g_remove (export_file);
+  status = sqlite3_open (export_file, db);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+  g_file_get_contents (input_file, &content, NULL, &err);
+  g_assert_no_error (err);
+
+  status = sqlite3_exec (*db, content, NULL, NULL, &error);
+  if (error)
+    g_warning ("%s error: %s", G_STRLOC, error);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+}
+
+static void
+test_history_migration_db (void)
+{
+  g_autoptr(GDir) dir = NULL;
+  g_autofree char *path = NULL;
+  g_autoptr(GError) error = NULL;
+  const char *name;
+
+  path = g_test_build_filename (G_TEST_DIST, "history-db", NULL);
+  dir = g_dir_open (path, 0, &error);
+  g_assert_no_error (error);
+
+  while ((name = g_dir_read_name (dir)) != NULL) {
+    g_autofree char *expected_file = NULL;
+    g_autofree char *input_file = NULL;
+    g_autofree char *input = NULL;
+    sqlite3 *db = NULL;
+    int status;
+
+    if (g_str_has_suffix (name, "v1.db"))
+      continue;
+
+    g_assert_true (g_str_has_suffix (name, "sql"));
+
+    if (strstr (name, "DE"))
+      chatty_settings_set_country_iso_code (chatty_settings_get_default (), "DE");
+    else if (strstr (name, "IN"))
+      chatty_settings_set_country_iso_code (chatty_settings_get_default (), "IN");
+    else
+      chatty_settings_set_country_iso_code (chatty_settings_get_default (), "US");
+
+    /* Export old version sql file */
+    export_sql_file (path, name, &db);
+    sqlite3_close (db);
+
+    /* Export migrated version sql file */
+    expected_file = g_strdelimit (g_strdup (name), "0", '1');
+    export_sql_file (path, expected_file, &db);
+
+    /* Open history with old db, which will result in db migration */
+    input_file = g_strdup (name);
+    strcpy (input_file + strlen (input_file) - strlen ("sql"), "db");
+    chatty_history_open (g_test_get_dir (G_TEST_BUILT), input_file);
+    chatty_history_close ();
+    g_free (input_file);
+
+    /* Attach old (now migrated) db with expected migrated db */
+    input_file = g_test_build_filename (G_TEST_BUILT, name, NULL);
+    strcpy (input_file + strlen (input_file) - strlen ("sql"), "db");
+    input = g_strconcat ("ATTACH '", input_file, "' as test;", NULL);
+    status = sqlite3_exec (db, input, NULL, NULL, NULL);
+    g_assert_cmpint (status, ==, SQLITE_OK);
+
+    compare_history_db (db);
+    sqlite3_close (db);
+  }
 }
 
 int
@@ -672,11 +909,13 @@ main (int   argc,
       char *argv[])
 {
   g_test_init (&argc, &argv, NULL);
+  g_setenv ("GSETTINGS_BACKEND", "memory", TRUE);
 
   g_test_add_func ("/history/new", test_history_new);
   g_test_add_func ("/history/message", test_history_message);
   g_test_add_func ("/history/raw_message", test_history_raw_message);
   g_test_add_func ("/history/db", test_history_db);
+  g_test_add_func ("/history/db_migration", test_history_migration_db);
 
   return g_test_run ();
 }

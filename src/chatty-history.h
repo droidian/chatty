@@ -78,13 +78,7 @@ gboolean       chatty_history_im_exists           (const char            *accoun
                                                    const char            *who);
 gboolean       chatty_history_chat_exists         (const char            *account,
                                                    const char            *room);
-gboolean       chatty_history_add_message         (const char            *account,
-                                                   const char            *room,
-                                                   const char            *who,
-                                                   const char            *message,
-                                                   char                 **uid,
-                                                   PurpleMessageFlags     flags,
-                                                   time_t                 time_stamp,
-                                                   PurpleConversationType type);
+gboolean       chatty_history_add_message         (ChattyChat            *chat,
+                                                   ChattyMessage         *message);
 
 G_END_DECLS

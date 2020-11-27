@@ -13,6 +13,7 @@ test_items = [
   'account',
   'history',
   'settings',
+  'utils',
 ]
 
 foreach item: test_items
@@ -20,7 +21,7 @@ foreach item: test_items
     item,
     item + '.c',
     include_directories: tests_inc,
-    link_with: libchatty,
+    link_with: libchatty.get_static_lib(),
     dependencies: chatty_deps,
   )
   test(item, t, env: env)

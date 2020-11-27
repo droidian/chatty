@@ -1,3 +1,55 @@
+chatty (0.2.0) amber-phone; urgency=high
+
+  [ Mohammed Sadiq ]
+  * chat-view: Use chatty-chat API to check if it's IM
+  * Add API to check if a number is possible
+  * utils: Improve parsing phone numbers
+  * tests: Add phone utils test
+  * chat-view: Html escape outgoing Telegram messages
+  * utils: Don't sanitize invalid numbers
+  * manager: Use existing buddy chat if available
+  * pp-buddy: Use contact name if available
+  * pp-chat: Use buddy contact name if available
+  * utils: Allow passing country code for number validation
+  * history: Implement new Database design
+  * contact: Return parent class protocol if possible
+  * utils: Add API to get direction from flags
+  * history: Pass ChattyMessage to add a new message
+  * new-chat-dialog: Add an empty search view
+  * utils: Fix direction_from_flag()
+  * manager: update protocols when first message is added
+  * manager: Update active-protocols when chat loads
+  * settings-dialog: Remove old rows before adding new ones
+  * utils: Add API to validate username and group name
+  * test: Add test for name validation
+  * settings-dialog: Add a minimal user id validation
+  * settings-dialog: Focus the right entry
+  * test: Reduce purple specific variables
+  * Port to libhandy-1
+  * README.md: Update links to libhandy
+  * settings-dialog: Port to use HdyPreferencesGroup
+  * window: Let sub menu be sensitive only if a chat is selected
+  * utils: Remove unused code
+  * dialog-join-muc: Fix ui file
+  * build: Test ui files
+  * Remove unused resources
+  * application: Fix resource path
+  * utils: Allow numbers prefixed with 'sms://'
+  * window: Show an error dialog for invalid numbers
+  * window: Fix logic to store contact
+  * window: Hide "Add contact" menu item once done
+
+  [ Guido Günther ]
+  * d/control: Update description
+
+  [ Seong-ho Cho ]
+  * po: Add Korean translation
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Mon, 16 Nov 2020 14:27:57 +0530
+
 chatty (0.1.17) amber-phone; urgency=medium
 
   [ Emin Tufan Çetin ]

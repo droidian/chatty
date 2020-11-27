@@ -44,7 +44,7 @@
  * which was written by Andrea Schäfer. */
 struct _ChattySettingsDialog
 {
-  HdyDialog       parent_instance;
+  GtkDialog       parent_instance;
 
   GtkWidget      *add_button;
   GtkWidget      *save_button;
@@ -61,8 +61,8 @@ struct _ChattySettingsDialog
   GtkWidget      *password_entry;
   GtkWidget      *edit_password_button;
 
+  GtkWidget      *protocol_list_group;
   GtkWidget      *protocol_list;
-  GtkWidget      *protocol_title_label;
   GtkWidget      *xmpp_radio_button;
   GtkWidget      *matrix_row;
   GtkWidget      *matrix_radio_button;
@@ -95,7 +95,7 @@ struct _ChattySettingsDialog
   gboolean visible;
 };
 
-G_DEFINE_TYPE (ChattySettingsDialog, chatty_settings_dialog, HDY_TYPE_DIALOG)
+G_DEFINE_TYPE (ChattySettingsDialog, chatty_settings_dialog, GTK_TYPE_DIALOG)
 
 
 static void
@@ -129,6 +129,11 @@ get_fp_list_own_cb (int         err,
         filtered_list = g_list_append (filtered_list, curr_p->data);
       }
     }
+
+    gtk_container_foreach (GTK_CONTAINER (self->fingerprint_list),
+                           (GtkCallback)gtk_widget_destroy, NULL);
+    gtk_container_foreach (GTK_CONTAINER (self->fingerprint_device_list),
+                           (GtkCallback)gtk_widget_destroy, NULL);
 
     for (curr_p = filtered_list; curr_p; curr_p = curr_p->next) {
       fp = (char *) g_hash_table_lookup(id_fp_table, curr_p->data);
@@ -316,12 +321,14 @@ settings_update_new_account_view (ChattySettingsDialog *self)
   if (gtk_widget_get_visible (self->matrix_row) ||
       gtk_widget_get_visible (self->telegram_row))
     {
-      gtk_label_set_text (GTK_LABEL (self->protocol_title_label), _("Select Protocol"));
+      hdy_preferences_group_set_title (HDY_PREFERENCES_GROUP (self->protocol_list_group),
+                                       _("Select Protocol"));
       gtk_widget_show (self->protocol_list);
     }
   else
     {
-      gtk_label_set_text (GTK_LABEL (self->protocol_title_label), _("Add XMPP account"));
+      hdy_preferences_group_set_title (HDY_PREFERENCES_GROUP (self->protocol_list_group),
+                                       _("Add XMPP account"));
       gtk_widget_hide (self->protocol_list);
     }
 
@@ -469,17 +476,23 @@ settings_avatar_button_clicked_cb (ChattySettingsDialog *self)
 }
 
 static void
-settings_account_id_changed_cb (ChattySettingsDialog *self,
-                                GtkEntry             *account_id_entry)
+settings_account_id_changed_cb (ChattySettingsDialog *self)
 {
   const gchar *id;
+  ChattyProtocol protocol;
 
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-  g_assert (GTK_IS_ENTRY (account_id_entry));
 
-  id = gtk_entry_get_text (account_id_entry);
+  id = gtk_entry_get_text (GTK_ENTRY (self->new_account_id_entry));
 
-  gtk_widget_set_sensitive (self->add_button, id && *id);
+  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->matrix_radio_button)))
+    protocol = CHATTY_PROTOCOL_MATRIX;
+  else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->telegram_radio_button)))
+    protocol = CHATTY_PROTOCOL_TELEGRAM;
+  else
+    protocol = CHATTY_PROTOCOL_XMPP;
+
+  gtk_widget_set_sensitive (self->add_button, chatty_utils_username_is_valid (id, protocol));
 }
 
 static void
@@ -547,7 +560,10 @@ settings_protocol_changed_cb (ChattySettingsDialog *self,
   else if (button == self->matrix_radio_button)
     gtk_entry_set_text (GTK_ENTRY (self->server_url_entry), "https://chat.librem.one");
 
-  gtk_widget_grab_focus (self->account_id_entry);
+  gtk_widget_grab_focus (self->new_account_id_entry);
+
+  /* Force re-check if id is valid */
+  settings_account_id_changed_cb (self);
 }
 
 static GtkWidget *
@@ -558,7 +574,8 @@ chatty_account_row_new (ChattyAccount *account)
   GtkWidget      *spinner;
   ChattyProtocol protocol;
 
-  row = hdy_action_row_new ();
+  row = HDY_ACTION_ROW (hdy_action_row_new ());
+  gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (row), TRUE);
   gtk_widget_show (GTK_WIDGET (row));
   g_object_set_data (G_OBJECT(row),
                      "row-account",
@@ -593,9 +610,9 @@ chatty_account_row_new (ChattyAccount *account)
                           account_enabled_switch, "active",
                           G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
 
-  hdy_action_row_set_title (row, chatty_account_get_username (CHATTY_ACCOUNT (account)));
+  hdy_preferences_row_set_title (HDY_PREFERENCES_ROW (row), chatty_account_get_username (CHATTY_ACCOUNT (account)));
   hdy_action_row_set_subtitle (row, chatty_account_get_protocol_name (CHATTY_ACCOUNT (account)));
-  hdy_action_row_add_action (row, account_enabled_switch);
+  gtk_container_add (GTK_CONTAINER (row), account_enabled_switch);
   hdy_action_row_set_activatable_widget (row, NULL);
 
   return GTK_WIDGET (row);
@@ -706,7 +723,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   object_class->finalize = chatty_settings_dialog_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-settings-dialog.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, add_button);
@@ -724,8 +741,8 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, password_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, edit_password_button);
 
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list_group);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_title_label);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, xmpp_radio_button);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_row);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_radio_button);
@@ -777,18 +794,6 @@ chatty_settings_dialog_init (ChattySettingsDialog *self)
                            self, G_CONNECT_SWAPPED);
 
   gtk_widget_init_template (GTK_WIDGET (self));
-
-  gtk_list_box_set_header_func (GTK_LIST_BOX (self->accounts_list_box),
-                                hdy_list_box_separator_header, NULL, NULL);
-  gtk_list_box_set_header_func (GTK_LIST_BOX (self->fingerprint_list),
-                                hdy_list_box_separator_header, NULL, NULL);
-  gtk_list_box_set_header_func (GTK_LIST_BOX (self->fingerprint_device_list),
-                                hdy_list_box_separator_header, NULL, NULL);
-
-  gtk_list_box_set_header_func (GTK_LIST_BOX (self->protocol_list),
-                                hdy_list_box_separator_header, NULL, NULL);
-  gtk_list_box_set_header_func (GTK_LIST_BOX (self->new_account_settings_list),
-                                hdy_list_box_separator_header, NULL, NULL);
 
   gtk_widget_set_visible (self->message_carbons_row,
                           chatty_manager_has_carbons_plugin (manager));

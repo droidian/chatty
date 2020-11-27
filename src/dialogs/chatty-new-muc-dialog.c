@@ -26,7 +26,7 @@ static void chatty_new_muc_name_check (ChattyNewMucDialog *self,
 
 struct _ChattyNewMucDialog
 {
-  HdyDialog  parent_instance;
+  GtkDialog  parent_instance;
 
   GtkWidget *accounts_list;
   GtkWidget *button_join_chat;
@@ -40,7 +40,7 @@ struct _ChattyNewMucDialog
 };
 
 
-G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, HDY_TYPE_DIALOG)
+G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, GTK_TYPE_DIALOG)
 
 
 static void
@@ -172,7 +172,7 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
 
   g_return_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self));
 
-  row = hdy_action_row_new ();
+  row = HDY_ACTION_ROW (hdy_action_row_new ());
   g_object_set_data (G_OBJECT(row),
                      "row-account",
                      (gpointer) account);
@@ -200,7 +200,7 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
                      (gpointer)prefix_radio_button);
 
   hdy_action_row_add_prefix (row, GTK_WIDGET(prefix_radio_button ));
-  hdy_action_row_set_title (row, chatty_account_get_username (CHATTY_ACCOUNT (account)));
+  hdy_preferences_row_set_title (HDY_PREFERENCES_ROW (row), chatty_account_get_username (CHATTY_ACCOUNT (account)));
 
   gtk_container_add (GTK_CONTAINER(self->accounts_list), GTK_WIDGET(row));
 
@@ -246,7 +246,7 @@ chatty_new_muc_dialog_class_init (ChattyNewMucDialogClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-dialog-join-muc.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyNewMucDialog, accounts_list);
@@ -266,10 +266,6 @@ static void
 chatty_new_muc_dialog_init (ChattyNewMucDialog *self)
 {
   gtk_widget_init_template (GTK_WIDGET(self));
-
-  gtk_list_box_set_header_func (GTK_LIST_BOX(self->accounts_list),
-                                hdy_list_box_separator_header,
-                                NULL, NULL);
 
   self->dummy_prefix_radio = gtk_radio_button_new_from_widget (GTK_RADIO_BUTTON(NULL));
 

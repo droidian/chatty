@@ -246,7 +246,7 @@ chatty_item_class_init (ChattyItemClass *klass)
                       CHATTY_PROTOCOL_NONE,
                       CHATTY_PROTOCOL_LAST,
                       CHATTY_PROTOCOL_NONE,
-                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS);
 
   g_object_class_install_properties (object_class, N_PROPS, properties);
 

@@ -18,6 +18,7 @@
 #include "chatty-xep-0313.h"
 #include "chatty-utils.h"
 #include "chatty-history.h"
+#include "chatty-pp-chat.h"
 #include "chatty-manager.h"
 #include "chatty-settings.h"
 
@@ -28,6 +29,7 @@
 #define NS_RSM "http://jabber.org/protocol/rsm"
 
 typedef struct {
+  PurpleConversation *conv;
   PurpleConvMessage p;
   char *id;
   PurpleConversationType type;
@@ -563,10 +565,12 @@ cb_chatty_mam_enabled_notify (GObject *obj,
  *
  */
 static void
-cb_chatty_mam_msg_wrote(PurpleAccount *pa, PurpleConvMessage *pcm,
+cb_chatty_mam_msg_wrote(PurpleConversation *conv,
+                        PurpleConvMessage *pcm,
                         char **uuid, PurpleConversationType type,
                         void *ctx)
 {
+  PurpleAccount *pa = conv->account;
   MamCtx *mamc = chatty_mam_ctx_get(pa);
   if(mamc == NULL)
     return;
@@ -594,6 +598,7 @@ cb_chatty_mam_msg_wrote(PurpleAccount *pa, PurpleConvMessage *pcm,
     mamc->cur_msg->p.flags = pcm->flags;
     pcm->flags |= PURPLE_MESSAGE_NO_LOG;
   }
+  mamc->cur_msg->conv = conv;
   mamc->cur_msg->type = type;
   mamc->cur_msg->p.alias = g_strdup(pcm->alias);
   mamc->cur_msg->p.when = pcm->when;
@@ -766,9 +771,33 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
   jabber_message_parse (js, message);
   if(stanza_id != NULL || mamc->cur_msg->p.what != NULL) {
     PurpleConvMessage *pcm = &(mamc->cur_msg->p);
+    PurpleConversation *conv = mamc->cur_msg->conv;
+    g_autoptr(ChattyMessage) chat_message = NULL;
+    g_autofree char *who = NULL;
 
-    chatty_history_add_message (pc->account->username, pcm->alias, pcm->who, pcm->what,
-                                (char**)&stanza_id, pcm->flags, pcm->when,  mamc->cur_msg->type);
+    if (!conv)
+      conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_ANY,
+                                                    pcm->alias ? pcm->alias : pcm->who,
+                                                    pc->account);
+
+    /* conv shall be missing only for IM chats */
+    if (!conv && !pcm->alias)
+        conv = purple_conversation_new (PURPLE_CONV_TYPE_IM,
+                                        pc->account, pcm->who);
+    if (pcm->who) {
+      if (chatty_chat_is_im (conv->ui_data) ||
+          !g_str_has_prefix (pcm->who, conv->name))
+        who = chatty_utils_jabber_id_strip (pcm->who);
+    }
+
+    if (!stanza_id)
+      stanza_id = g_uuid_string_random ();
+
+    chat_message = chatty_message_new (NULL, NULL, pcm->what, stanza_id, pcm->when,
+                                       chatty_utils_direction_from_flag (pcm->flags), 0);
+    if (chat_message && pcm->who && !(flags & PURPLE_MESSAGE_SEND))
+      chatty_message_set_user_name (chat_message, who ? who : pcm->who);
+    chatty_history_add_message (conv->ui_data, chat_message);
   }
   // Update last timestamp for account's archive
   if(mamq != NULL && mamq->to == NULL)

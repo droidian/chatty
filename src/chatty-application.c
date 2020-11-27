@@ -24,6 +24,7 @@
 #define G_LOG_DOMAIN "chatty-application"
 
 #include <glib/gi18n.h>
+#include <handy.h>
 
 #include "chatty-config.h"
 #include "chatty-window.h"
@@ -301,6 +302,8 @@ chatty_application_startup (GApplication *application)
 
   G_APPLICATION_CLASS (chatty_application_parent_class)->startup (application);
 
+  hdy_init ();
+
   g_set_application_name (_("Chats"));
 
   lfb_init (CHATTY_APP_ID, NULL);
@@ -311,7 +314,7 @@ chatty_application_startup (GApplication *application)
 
   self->css_provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_resource (self->css_provider,
-                                       "/sm/puri/chatty/css/style.css");
+                                       "/sm/puri/Chatty/css/style.css");
 
   g_action_map_add_action_entries (G_ACTION_MAP (self), app_entries,
                                    G_N_ELEMENTS (app_entries), self);

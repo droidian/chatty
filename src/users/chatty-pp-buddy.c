@@ -186,6 +186,9 @@ chatty_pp_buddy_get_name (ChattyItem *item)
 
   g_assert (CHATTY_IS_PP_BUDDY (self));
 
+  if (self->contact)
+    return chatty_item_get_name (CHATTY_ITEM (self->contact));
+
   if (self->chat_buddy) {
     const char *name;
 
@@ -566,7 +569,8 @@ chatty_pp_buddy_set_contact (ChattyPpBuddy *self,
   g_return_if_fail (CHATTY_IS_PP_BUDDY (self));
   g_return_if_fail (!contact || CHATTY_IS_CONTACT (contact));
 
-  g_set_object (&self->contact, contact);
+  if (g_set_object (&self->contact, contact))
+    g_object_notify (G_OBJECT (self), "name");
 }
 
 

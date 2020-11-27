@@ -88,7 +88,6 @@ struct _ChattyWindow
 G_DEFINE_TYPE (ChattyWindow, chatty_window, GTK_TYPE_APPLICATION_WINDOW)
 
 
-static void chatty_update_header (ChattyWindow *self);
 static void chatty_window_show_new_muc_dialog (ChattyWindow *self);
 
 
@@ -214,7 +213,7 @@ window_chat_changed_cb (ChattyWindow *self)
   model = chatty_manager_get_chat_list (self->manager);
   has_child = g_list_model_get_n_items (model) > 0;
 
-  gtk_widget_set_sensitive (self->header_sub_menu_button, has_child);
+  gtk_widget_set_sensitive (self->header_sub_menu_button, !!self->selected_item);
 
   /*
    * When the items are re-arranged, the selection will be lost.
@@ -308,7 +307,7 @@ window_chat_name_matches (ChattyItem   *item,
       return FALSE;
   }
 
-  if (hdy_leaflet_get_fold (HDY_LEAFLET (self->header_box)) == HDY_FOLD_FOLDED) {
+  if (hdy_leaflet_get_folded (HDY_LEAFLET (self->header_box))) {
     GListModel *message_list;
     guint n_items;
 
@@ -408,18 +407,6 @@ window_chat_row_activated_cb (GtkListBox    *box,
   chatty_window_open_item (self, self->selected_item);
 }
 
-
-static void
-header_visible_child_cb (GObject      *sender,
-                         GParamSpec   *pspec,
-                         ChattyWindow *self)
-{
-  g_assert (CHATTY_IS_WINDOW (self));
-
-  chatty_update_header (self);
-}
-
-
 static void
 window_search_changed_cb (ChattyWindow *self,
                           GtkEntry     *entry)
@@ -437,14 +424,14 @@ notify_fold_cb (GObject      *sender,
                 GParamSpec   *pspec,
                 ChattyWindow *self)
 {
-  HdyFold fold = hdy_leaflet_get_fold (HDY_LEAFLET (self->header_box));
+  gboolean folded = hdy_leaflet_get_folded (HDY_LEAFLET (self->header_box));
 
-  if (fold == HDY_FOLD_FOLDED)
+  if (folded)
     gtk_list_box_set_selection_mode (GTK_LIST_BOX (self->chats_listbox), GTK_SELECTION_NONE);
   else
     gtk_list_box_set_selection_mode (GTK_LIST_BOX (self->chats_listbox), GTK_SELECTION_SINGLE);
 
-  if (fold == HDY_FOLD_FOLDED) {
+  if (folded) {
     window_set_item (self, NULL);
     hdy_leaflet_set_visible_child_name (HDY_LEAFLET (self->content_box), "sidebar");
   } else if (self->selected_item) {
@@ -454,7 +441,6 @@ notify_fold_cb (GObject      *sender,
   }
 
   gtk_filter_changed (self->chat_filter, GTK_FILTER_CHANGE_DIFFERENT);
-  chatty_update_header (self);
 }
 
 
@@ -545,22 +531,6 @@ chatty_window_chat_list_select_first (ChattyWindow *self)
     chatty_window_change_view (self, CHATTY_VIEW_CHAT_LIST);
   }
 }
-
-
-static void
-chatty_update_header (ChattyWindow *self)
-{
-  GtkWidget *header_child = hdy_leaflet_get_visible_child (HDY_LEAFLET (self->header_box));
-  HdyFold fold = hdy_leaflet_get_fold (HDY_LEAFLET (self->header_box));
-
-  g_assert (CHATTY_IS_WINDOW (self));
-  g_assert (header_child == NULL || GTK_IS_HEADER_BAR (header_child));
-
-  hdy_header_group_set_focus (HDY_HEADER_GROUP (self->header_group), 
-                              fold == HDY_FOLD_FOLDED ? 
-                              GTK_HEADER_BAR (header_child) : NULL);
-}
-
 
 static void
 window_delete_buddy_clicked_cb (ChattyWindow *self)
@@ -685,14 +655,16 @@ window_add_contact_clicked_cb (ChattyWindow *self)
 
     who = purple_buddy_get_name (buddy);
 
-    number = chatty_utils_check_phonenumber (who);
+    number = chatty_utils_check_phonenumber (who, chatty_settings_get_country_iso_code (self->settings));
 
     if (number)
       contact = chatty_eds_find_by_number (chatty_eds, number);
 
-    if (contact)
+    if (!contact)
       chatty_dbus_gc_write_contact (who, number);
   }
+
+  gtk_widget_hide (self->menu_add_contact_button);
 }
 
 
@@ -715,7 +687,7 @@ window_add_in_contacts_clicked_cb (ChattyWindow *self)
   contact = purple_buddy_get_contact (buddy);
   alias = purple_contact_get_alias (contact);
 
-  number = chatty_utils_check_phonenumber (who);
+  number = chatty_utils_check_phonenumber (who, chatty_settings_get_country_iso_code (self->settings));
 
   chatty_dbus_gc_write_contact (alias, number);
 }
@@ -989,7 +961,7 @@ chatty_window_class_init (ChattyWindowClass *klass)
   widget_class->unmap = chatty_window_unmap;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-window.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, sub_header_label);
@@ -1033,7 +1005,6 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, window_add_in_contacts_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_leave_chat_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_delete_buddy_clicked_cb);
-  gtk_widget_class_bind_template_callback (widget_class, header_visible_child_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_search_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_chat_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_window_show_new_muc_dialog);
@@ -1097,7 +1068,7 @@ chatty_window_set_uri (ChattyWindow *self,
   if (!purple_account_is_connected (account))
     return;
 
-  who = chatty_utils_check_phonenumber (uri);
+  who = chatty_utils_check_phonenumber (uri, chatty_settings_get_country_iso_code (self->settings));
 
   chatty_eds = chatty_manager_get_eds (self->manager);
   contact = chatty_eds_find_by_number (chatty_eds, who);
@@ -1107,6 +1078,19 @@ chatty_window_set_uri (ChattyWindow *self,
   else
     alias = who;
 
+  if (!who) {
+    GtkWidget *dialog;
+
+    dialog = gtk_message_dialog_new (GTK_WINDOW (self),
+                                     GTK_DIALOG_MODAL,
+                                     GTK_MESSAGE_WARNING,
+                                     GTK_BUTTONS_CLOSE,
+                                     _("“%s” is not a valid phone number"), uri);
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
+
+    return;
+  }
   g_return_if_fail (who != NULL);
 
   buddy = purple_find_buddy (account, who);

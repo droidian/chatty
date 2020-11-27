@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: purism-chatty\n"
 "Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2020-08-17 15:25+0000\n"
-"PO-Revision-Date: 2020-08-17 19:15+0300\n"
+"POT-Creation-Date: 2020-11-12 15:25+0000\n"
+"PO-Revision-Date: 2020-11-13 15:33+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -20,7 +20,7 @@ msgstr ""
 "=4 && (n%100<10 || n%100>=20) ? 1 : 2)\n"
 
 #: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
-#: src/chatty-application.c:304 src/ui/chatty-window.ui:224
+#: src/chatty-application.c:304 src/ui/chatty-window.ui:225
 msgid "Chats"
 msgstr "Спілкування"
 
@@ -224,77 +224,66 @@ msgstr "і оператор може стягувати за нього спла
 
 #. Translators: Timestamp seconds suffix
 #: src/chatty-list-row.c:73
-#| msgid "s"
 msgctxt "timestamp-suffix-seconds"
 msgid "s"
 msgstr "с"
 
 #. Translators: Timestamp minute suffix
 #: src/chatty-list-row.c:75
-#| msgid "m"
 msgctxt "timestamp-suffix-minute"
 msgid "m"
 msgstr "хв"
 
 #. Translators: Timestamp minutes suffix
 #: src/chatty-list-row.c:77
-#| msgid "m"
 msgctxt "timestamp-suffix-minutes"
 msgid "m"
 msgstr "хв"
 
 #. Translators: Timestamp hour suffix
 #: src/chatty-list-row.c:79
-#| msgid "h"
 msgctxt "timestamp-suffix-hour"
 msgid "h"
 msgstr "г"
 
 #. Translators: Timestamp hours suffix
 #: src/chatty-list-row.c:81
-#| msgid "h"
 msgctxt "timestamp-suffix-hours"
 msgid "h"
 msgstr "г"
 
 #. Translators: Timestamp day suffix
 #: src/chatty-list-row.c:83
-#| msgid "d"
 msgctxt "timestamp-suffix-day"
 msgid "d"
 msgstr "д"
 
 #. Translators: Timestamp days suffix
 #: src/chatty-list-row.c:85
-#| msgid "d"
 msgctxt "timestamp-suffix-days"
 msgid "d"
 msgstr "д"
 
 #. Translators: Timestamp month suffix
 #: src/chatty-list-row.c:87
-#| msgid "mo"
 msgctxt "timestamp-suffix-month"
 msgid "mo"
 msgstr "м"
 
 #. Translators: Timestamp months suffix
 #: src/chatty-list-row.c:89
-#| msgid "mos"
 msgctxt "timestamp-suffix-months"
 msgid "mos"
 msgstr "міс"
 
 #. Translators: Timestamp year suffix
 #: src/chatty-list-row.c:91
-#| msgid "y"
 msgctxt "timestamp-suffix-year"
 msgid "y"
 msgstr "р"
 
 #. Translators: Timestamp years suffix
 #: src/chatty-list-row.c:93
-#| msgid "y"
 msgctxt "timestamp-suffix-years"
 msgid "y"
 msgstr "р"
@@ -321,32 +310,32 @@ msgstr "Модератор"
 msgid "Member"
 msgstr "Член"
 
-#: src/chatty-manager.c:879
+#: src/chatty-manager.c:899
 #, c-format
 msgid "New message from %s"
 msgstr "Нове повідомлення від %s"
 
-#: src/chatty-message-row.c:89
+#: src/chatty-message-row.c:94
 msgid "Copy"
 msgstr "Копіювати"
 
-#: src/chatty-notify.c:68
+#: src/chatty-notify.c:67
 msgid "Open Message"
 msgstr "Відкрити повідомлення"
 
-#: src/chatty-notify.c:73
+#: src/chatty-notify.c:72
 msgid "Message Received"
 msgstr "Надійшло повідомлення"
 
-#: src/chatty-notify.c:79
+#: src/chatty-notify.c:78
 msgid "Message Error"
 msgstr "Помилка повідомлення"
 
-#: src/chatty-notify.c:85
+#: src/chatty-notify.c:84
 msgid "Account Info"
 msgstr "Дані щодо облікового запису"
 
-#: src/chatty-notify.c:91
+#: src/chatty-notify.c:90
 msgid "Account Connected"
 msgstr "Обліковий запис з'єднано"
 
@@ -362,8 +351,8 @@ msgstr "Зберегти файл…"
 msgid "Open File..."
 msgstr "Відкрити файл…"
 
-#: src/chatty-purple-request.c:191 src/chatty-window.c:609
-#: src/dialogs/chatty-settings-dialog.c:447
+#: src/chatty-purple-request.c:191 src/chatty-window.c:600
+#: src/dialogs/chatty-settings-dialog.c:443
 #: src/dialogs/chatty-user-info-dialog.c:66 src/ui/chatty-dialog-join-muc.ui:16
 #: src/ui/chatty-dialog-muc-info.ui:56
 msgid "Cancel"
@@ -373,7 +362,7 @@ msgstr "Скасувати"
 msgid "Save"
 msgstr "Зберегти"
 
-#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:446
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:442
 #: src/dialogs/chatty-user-info-dialog.c:65
 msgid "Open"
 msgstr "Відкрити"
@@ -381,22 +370,21 @@ msgstr "Відкрити"
 #. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
 #. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
 #.
-#: src/chatty-utils.c:298
+#: src/chatty-utils.c:299
 msgid "%A %H∶%M"
 msgstr "%a %H∶%M"
 
 #. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
 #. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
 #.
-#: src/chatty-utils.c:303
-#| msgid "%A %I:%M %p"
+#: src/chatty-utils.c:304
 msgid "%A %I∶%M %p"
 msgstr "%a %I∶%M %p"
 
 #. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
 #. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
 #.
-#: src/chatty-utils.c:310
+#: src/chatty-utils.c:311
 msgid "%Y-%m-%d"
 msgstr "%d-%m-%Y"
 
@@ -437,31 +425,31 @@ msgstr ""
 msgid "Start chatting"
 msgstr "Почати спілкування"
 
-#: src/chatty-window.c:592
-msgid "Disconnect group chat"
-msgstr "Від'єднатися від групового спілкування"
-
-#: src/chatty-window.c:593
-msgid "This removes chat from chats list"
-msgstr "У результаті спілкування буде вилучено зі списку спілкувань"
-
-#: src/chatty-window.c:597
+#: src/chatty-window.c:585
 msgid "Delete chat with"
 msgstr "Вилучити спілкування з"
 
-#: src/chatty-window.c:598
+#: src/chatty-window.c:586
 msgid "This deletes the conversation history"
 msgstr "У результаті буде вилучено журнал спілкування"
 
-#: src/chatty-window.c:611
+#: src/chatty-window.c:588
+msgid "Disconnect group chat"
+msgstr "Від'єднатися від групового спілкування"
+
+#: src/chatty-window.c:589
+msgid "This removes chat from chats list"
+msgstr "У результаті спілкування буде вилучено зі списку спілкувань"
+
+#: src/chatty-window.c:602
 msgid "Delete"
 msgstr "Вилучити"
 
-#: src/chatty-window.c:839
+#: src/chatty-window.c:812
 msgid "An SMS and XMPP messaging client"
 msgstr "Клієнт обміну повідомленнями SMS і XMPP"
 
-#: src/chatty-window.c:846
+#: src/chatty-window.c:819
 msgid "translator-credits"
 msgstr "Юрій Чорноіван <yurchor@ukr.net>, 2020"
 
@@ -469,11 +457,11 @@ msgstr "Юрій Чорноіван <yurchor@ukr.net>, 2020"
 msgid "members"
 msgstr "учасники"
 
-#: src/dialogs/chatty-new-chat-dialog.c:134
+#: src/dialogs/chatty-new-chat-dialog.c:152
 msgid "Send To"
 msgstr "Надіслати"
 
-#: src/dialogs/chatty-new-chat-dialog.c:178
+#: src/dialogs/chatty-new-chat-dialog.c:196
 #, c-format
 msgid "Error opening GNOME Contacts: %s"
 msgstr "Помилка під час спроби відкрити «Контакти» GNOME: %s"
@@ -498,17 +486,17 @@ msgstr "З'єднання…"
 msgid "disconnected"
 msgstr "від'єднано"
 
-#: src/dialogs/chatty-settings-dialog.c:443
+#: src/dialogs/chatty-settings-dialog.c:439
 #: src/dialogs/chatty-user-info-dialog.c:62
 msgid "Set Avatar"
 msgstr "Встановити аватар"
 
-#: src/dialogs/chatty-settings-dialog.c:513
+#: src/dialogs/chatty-settings-dialog.c:509
 #: src/ui/chatty-settings-dialog.ui:477
 msgid "Delete Account"
 msgstr "Вилучити запис"
 
-#: src/dialogs/chatty-settings-dialog.c:516
+#: src/dialogs/chatty-settings-dialog.c:512
 #, c-format
 msgid "Delete account %s?"
 msgstr "Вилучити запис %s?"
@@ -541,7 +529,7 @@ msgstr "Нове групове спілкування"
 msgid "Join Chat"
 msgstr "Долучитися до спілкування"
 
-#: src/ui/chatty-dialog-join-muc.ui:81 src/ui/chatty-dialog-new-chat.ui:237
+#: src/ui/chatty-dialog-join-muc.ui:81 src/ui/chatty-dialog-new-chat.ui:298
 msgid "Select chat account"
 msgstr "Виберіть обліковий запис"
 
@@ -601,7 +589,7 @@ msgstr "Почати спілкування"
 msgid "New Contact"
 msgstr "Створити контакт"
 
-#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:125
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:126
 msgid "Add Contact"
 msgstr "Додати контакт"
 
@@ -609,15 +597,25 @@ msgstr "Додати контакт"
 msgid "Send To:"
 msgstr "Надіслати:"
 
-#: src/ui/chatty-dialog-new-chat.ui:288
+#: src/ui/chatty-dialog-new-chat.ui:225
+msgid "No Search Results"
+msgstr "Нічого не знайдено"
+
+#: src/ui/chatty-dialog-new-chat.ui:238
+msgid "Try different search, or type a valid number to create new chat"
+msgstr ""
+"Спробуйте інший критерій пошуку або введіть коректне число, щоб розпочати"
+" нове спілкування"
+
+#: src/ui/chatty-dialog-new-chat.ui:349
 msgid "Name (optional)"
 msgstr "Назва (необов’язково):"
 
-#: src/ui/chatty-dialog-new-chat.ui:328 src/ui/chatty-window.ui:151
+#: src/ui/chatty-dialog-new-chat.ui:389 src/ui/chatty-window.ui:152
 msgid "Add to Contacts"
 msgstr "Додати до контактів"
 
-#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:111
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:112
 msgid "Chat Details"
 msgstr "Параметри спілкування"
 
@@ -785,34 +783,34 @@ msgstr "Провайдер"
 msgid "About Chats"
 msgstr "Про «Спілкування»"
 
-#: src/ui/chatty-window.ui:58
+#: src/ui/chatty-window.ui:59
 msgid "New Message…"
 msgstr "Нове повідомлення…"
 
-#: src/ui/chatty-window.ui:71
+#: src/ui/chatty-window.ui:72
 msgid "New Group Message…"
 msgstr "Нове групове повідомлення…"
 
-#: src/ui/chatty-window.ui:84
+#: src/ui/chatty-window.ui:85
 msgid "New Bulk SMS…"
 msgstr "Нове пакетне SMS…"
 
-#: src/ui/chatty-window.ui:176
+#: src/ui/chatty-window.ui:177
 msgid "Leave Chat"
 msgstr "Полишити спілкування"
 
-#: src/ui/chatty-window.ui:189
+#: src/ui/chatty-window.ui:190
 msgid "Delete Chat"
 msgstr "Вилучити спілкування"
 
-#: src/users/chatty-contact.c:313
+#: src/users/chatty-contact.c:315
 msgid "Mobile: "
 msgstr "Мобільний: "
 
-#: src/users/chatty-contact.c:315
+#: src/users/chatty-contact.c:317
 msgid "Work: "
 msgstr "Робочий: "
 
-#: src/users/chatty-contact.c:317
+#: src/users/chatty-contact.c:319
 msgid "Other: "
 msgstr "Інший: "

@@ -15,12 +15,10 @@
          <class name="view"/>
         </style>
         <child>
-          <object class="HdyColumn">
+          <object class="HdyClamp">
             <property name="visible">True</property>
             <property name="margin-start">12</property>
             <property name="margin-end">12</property>
-            <property name="maximum-width">640</property>
-            <property name="linear-growth-width">640</property>
             <child>
               <object class="GtkBox" id="property">
                 <property name="visible">True</property>
@@ -69,11 +67,9 @@
     </child>
 
     <child>
-      <object class="HdyColumn">
+      <object class="HdyClamp">
         <property name="visible">True</property>
         <property name="margin">6</property>
-        <property name="maximum-width">600</property>
-        <property name="linear-growth-width">600</property>
         <child>
           <object class="GtkBox">
             <property name="visible">True</property>
@@ -169,7 +165,7 @@
 
           </object>
         </child>
-      </object> <!-- ./HdyColumn -->
+      </object> <!-- ./HdyClamp -->
     </child>
   </template>
 

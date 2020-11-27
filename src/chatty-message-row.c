@@ -193,7 +193,7 @@ chatty_message_row_class_init (ChattyMessageRowClass *klass)
   object_class->dispose = chatty_message_row_dispose;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-message-row.ui");
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, revealer);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, content_grid);

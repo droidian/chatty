@@ -11,23 +11,6 @@
 
 #define G_LOG_DOMAIN "chatty-history"
 
-#define CHAT_ID_IDX         1
-#define CHAT_TIMESTAMP_IDX  2
-#define CHAT_DIRECTION_IDX  3
-#define CHAT_ACCOUNT_IDX    4
-#define CHAT_ROOM_IDX       5
-#define CHAT_WHO_IDX        6
-#define CHAT_UID_IDX        7
-#define CHAT_MESSAGE_IDX    8
-
-#define IM_ID_IDX         1
-#define IM_TIMESTAMP_IDX  2
-#define IM_DIRECTION_IDX  3
-#define IM_ACCOUNT_IDX    4
-#define IM_WHO_IDX        5
-#define IM_UID_IDX        6
-#define IM_MESSAGE_IDX    7
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -35,7 +18,51 @@
 #include <sqlite3.h>
 
 #include "chatty-utils.h"
+#include "chatty-settings.h"
 #include "chatty-history.h"
+
+#define STRING(arg) STRING_VALUE(arg)
+#define STRING_VALUE(arg) #arg
+
+/* increment when DB changes */
+#define HISTORY_VERSION 1
+
+/* Shouldn't be modified, new values should be appended */
+#define CHATTY_ID_UNKNOWN_VALUE 0
+#define CHATTY_ID_PHONE_VALUE   1
+#define CHATTY_ID_EMAIL_VALUE   2
+#define CHATTY_ID_XMPP_VALUE    3
+#define CHATTY_ID_MATRIX_VALUE  4
+#define CHATTY_ID_SIP_VALUE     5
+#define CHATTY_ID_ICCID_VALUE   6
+
+/* Shouldn't be modified, new values should be appended */
+#define PROTOCOL_UNKNOWN   0
+#define PROTOCOL_SMS       1
+#define PROTOCOL_MMS       2
+#define PROTOCOL_XMPP      3
+#define PROTOCOL_MATRIX    4
+#define PROTOCOL_TELEGRAM  5
+#define PROTOCOL_SIP       6
+
+/* Chat thread type */
+#define THREAD_DIRECT_CHAT 0
+#define THREAD_GROUP_CHAT  1
+
+/* Shouldn't be modified, new values should be appended */
+#define MESSAGE_TYPE_UNKNOWN       0
+#define MESSAGE_TYPE_TEXT          1
+#define MESSAGE_TYPE_HTML_ESCAPED  2
+#define MESSAGE_TYPE_HTML          3
+#define MESSAGE_TYPE_MATRIX_HTML   4
+#define MESSAGE_TYPE_URL           6
+#define MESSAGE_TYPE_LOCATION      7
+#define MESSAGE_TYPE_FILE          8
+#define MESSAGE_TYPE_IMAGE         9
+#define MESSAGE_TYPE_VIDEO         10
+#define MESSAGE_TYPE_AUDIO         11
+/* Temporary until the link is parsed */
+#define MESSAGE_TYPE_LINK          20
 
 struct _ChattyHistory
 {
@@ -44,6 +71,7 @@ struct _ChattyHistory
   GAsyncQueue *queue;
   GThread     *worker_thread;
   sqlite3     *db;
+  char        *db_path;
 };
 
 /*
@@ -91,6 +119,86 @@ history_direction_to_value (ChattyMsgDirection direction)
   }
 }
 
+static int
+history_protocol_to_value (ChattyProtocol protocol)
+{
+  switch (protocol) {
+  case CHATTY_PROTOCOL_SMS:
+    return PROTOCOL_SMS;
+
+  case CHATTY_PROTOCOL_MMS:
+    return PROTOCOL_MMS;
+
+  case CHATTY_PROTOCOL_MATRIX:
+    return PROTOCOL_MATRIX;
+
+  case CHATTY_PROTOCOL_XMPP:
+    return PROTOCOL_XMPP;
+
+  case CHATTY_PROTOCOL_TELEGRAM:
+    return PROTOCOL_TELEGRAM;
+
+  case CHATTY_PROTOCOL_ANY:
+  case CHATTY_PROTOCOL_NONE:
+  case CHATTY_PROTOCOL_CALL:
+  case CHATTY_PROTOCOL_DELTA:
+  case CHATTY_PROTOCOL_THREEPL:
+  default:
+    g_return_val_if_reached (0);
+  }
+}
+
+static int
+history_protocol_to_type_value (ChattyProtocol protocol)
+{
+  switch (protocol) {
+  case CHATTY_PROTOCOL_SMS:
+  case CHATTY_PROTOCOL_MMS:
+  case CHATTY_PROTOCOL_TELEGRAM:
+    return CHATTY_ID_PHONE_VALUE;
+
+  case CHATTY_PROTOCOL_MATRIX:
+    return CHATTY_ID_MATRIX_VALUE;
+
+  case CHATTY_PROTOCOL_XMPP:
+    return CHATTY_ID_XMPP_VALUE;
+
+  case CHATTY_PROTOCOL_CALL:
+  case CHATTY_PROTOCOL_ANY:
+  case CHATTY_PROTOCOL_NONE:
+  case CHATTY_PROTOCOL_DELTA:
+  case CHATTY_PROTOCOL_THREEPL:
+  default:
+    g_return_val_if_reached (0);
+  }
+}
+
+#if 0
+static int
+id_type_to_value (ChattyIdType type)
+{
+  switch (type) {
+  case CHATTY_ID_UNKNOWN:
+    return CHATTY_ID_UNKNOWN_VALUE;
+
+  case CHATTY_ID_PHONE:
+    return CHATTY_ID_PHONE_VALUE;
+
+  case CHATTY_ID_EMAIL:
+    return CHATTY_ID_EMAIL_VALUE;
+
+  case CHATTY_ID_MATRIX:
+    return CHATTY_ID_MATRIX_VALUE;
+
+  case CHATTY_ID_XMPP:
+    return CHATTY_ID_XMPP_VALUE;
+
+  default:
+    g_return_val_if_reached (0);
+  }
+}
+#endif
+
 static void
 warn_if_sql_error (int         status,
                    const char *message)
@@ -125,64 +233,42 @@ history_bind_int (sqlite3_stmt *statement,
   warn_if_sql_error (status, message);
 }
 
+
 static int
-chatty_history_create_chat_schema (ChattyHistory *self,
-                                   GTask         *task)
+chatty_history_get_db_version (ChattyHistory *self,
+                               GTask         *task)
 {
-  const char *sql;
-  char *error = NULL;
-  int status;
+  sqlite3_stmt *stmt;
+  int status, version = -1;
 
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
   g_assert (g_thread_self () == self->worker_thread);
   g_assert (self->db);
 
-  sql = "CREATE TABLE IF NOT EXISTS chatty_chat("  \
-    "id                 INTEGER     NOT NULL    PRIMARY KEY AUTOINCREMENT," \
-    "timestamp          INTEGER     NOT_NULL," \
-    "direction          INTEGER     NOT NULL," \
-    "account            TEXT        NOT NULL," \
-    "room               TEXT        NOT_NULL," \
-    "who                TEXT,"  \
-    "uid                TEXT        NOT_NULL," \
-    "message            TEXT," \
-    "UNIQUE (timestamp, message)"
-    ");";
+  sqlite3_prepare_v2 (self->db, "PRAGMA user_version;", -1, &stmt, NULL);
+  status = sqlite3_step (stmt);
 
-  status = sqlite3_exec (self->db, sql, NULL, NULL, &error);
-
-  if (status != SQLITE_OK) {
+  if (status == SQLITE_ROW)
+    version = sqlite3_column_int (stmt, 0);
+  else
     g_task_return_new_error (task,
                              G_IO_ERROR,
                              G_IO_ERROR_FAILED,
-                             "Error creating chatty_im table. errno: %d, desc: %s. %s",
-                             status, sqlite3_errstr (status), error);
-    return status;
-  }
+                             "Error getting database version errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+  sqlite3_finalize (stmt);
 
-  // The archiving entity is room jid, uid may only be unique within entity scope
-  sql = "CREATE UNIQUE INDEX IF NOT EXISTS chatty_chat_room_uid ON chatty_chat(room, uid);";
-  status = sqlite3_exec (self->db, sql, NULL, NULL, &error);
-
-  if (status != SQLITE_OK) {
-    g_task_return_new_error (task,
-                             G_IO_ERROR,
-                             G_IO_ERROR_FAILED,
-                             "Error creating chatty_im table. errno: %d, desc: %s. %s",
-                             status, sqlite3_errstr (status), error);
-  }
-
-  return status;
+  return version;
 }
 
-
-static int
-chatty_history_create_im_schema (ChattyHistory *self,
-                                 GTask         *task)
+static gboolean
+chatty_history_create_schema (ChattyHistory *self,
+                              GTask         *task)
 {
-  const char *sql;
   char *error = NULL;
+  const char *sql;
+  sqlite3 *db;
   int status;
 
   g_assert (CHATTY_IS_HISTORY (self));
@@ -190,41 +276,1076 @@ chatty_history_create_im_schema (ChattyHistory *self,
   g_assert (g_thread_self () == self->worker_thread);
   g_assert (self->db);
 
-  sql = "CREATE TABLE IF NOT EXISTS chatty_im("  \
-    "id                 INTEGER     NOT NULL    PRIMARY KEY AUTOINCREMENT," \
-    "timestamp          INTEGER     NOT_NULL,"  \
-    "direction          INTEGER     NOT NULL," \
-    "account            TEXT        NOT_NULL," \
-    "who                TEXT        NOT_NULL," \
-    "uid                TEXT        NOT_NULL," \
-    "message            TEXT,"                 \
-    "UNIQUE (timestamp, message)"
-    ");";
+  /* XXX: SELECT * FROM files sounds better, WHERE file.id != x feels better too.
+   * So what to name? file or files?
+   */
+  sql = "BEGIN TRANSACTION;"
+    "CREATE TABLE IF NOT EXISTS files ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "name TEXT NOT NULL, "
+    "url TEXT, "
+    "path TEXT, "
+    "mime_type TEXT, "
+    "size INTEGER);"
+
+    "CREATE TABLE IF NOT EXISTS media ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "file_id INTEGER NOT NULL UNIQUE, "
+    "thumbnail_id INTEGER REFERENCES media(id), "
+    "width INTEGER, "
+    "height INTEGER, "
+    "FOREIGN KEY(file_id) REFERENCES files(id));"
+
+    /* TODO: Someday */
+    /* "CREATE TABLE IF NOT EXISTS devices (" */
+    /* "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " */
+    /* "device TEXT NOT NULL UNIQUE, " */
+    /* "name TEXT);" */
+
+    "CREATE TABLE IF NOT EXISTS users ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "username TEXT NOT NULL, "
+    "alias TEXT, "
+    "avatar_id INTEGER REFERENCES media(id), "
+    "type INTEGER NOT NULL, "
+    /* For phone numbers */
+    "UNIQUE (username, type));"
+
+    "CREATE TABLE IF NOT EXISTS accounts ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "user_id INTEGER NOT NULL REFERENCES users(id), "
+    "password TEXT, "
+    "enabled INTEGER DEFAULT 0, "
+    "protocol INTEGER NOT NULL, "
+    "UNIQUE (user_id, protocol));"
+
+    "INSERT OR IGNORE INTO users(username,type) VALUES "
+    "('SMS'," STRING (CHATTY_ID_PHONE_VALUE) "),"
+    "('MMS'," STRING (CHATTY_ID_PHONE_VALUE) ");"
+
+    "INSERT OR IGNORE INTO accounts(user_id,protocol) "
+    "SELECT users.id,"
+    "CASE "
+    "WHEN users.username='SMS' "
+    "THEN " STRING (PROTOCOL_SMS) " "
+    "ELSE " STRING (PROTOCOL_MMS) " "
+    "END "
+    "FROM users;"
+
+    "CREATE TABLE IF NOT EXISTS threads ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "name TEXT NOT NULL, "
+    "alias TEXT, "
+    "avatar_id INTEGER REFERENCES media(id), "
+    "account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE, "
+    "type INTEGER NOT NULL, "
+    "encrypted INTEGER DEFAULT 0, "
+    "UNIQUE (name, account_id, type));"
+
+    "CREATE TABLE IF NOT EXISTS thread_members ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE, "
+    "user_id INTEGER NOT NULL REFERENCES users(id), "
+    "UNIQUE (thread_id, user_id));"
+
+    "CREATE TABLE IF NOT EXISTS messages ("
+    "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+    "uid TEXT NOT NULL, "
+    "thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE, "
+    "sender_id INTEGER REFERENCES users(id), "
+    "user_alias TEXT, "
+    "body TEXT NOT NULL, "
+    "body_type INTEGER NOT NULL, "
+    "direction INTEGER NOT NULL, "
+    "time INTEGER NOT NULL, "
+    "status INTEGER, "
+    "encrypted INTEGER DEFAULT 0, "
+    "UNIQUE (uid, thread_id, body, time));"
+
+    /* Alter threads after the messages table is created */
+    "ALTER TABLE threads ADD COLUMN last_read_id INTEGER REFERENCES messages(id);"
+
+    "COMMIT;";
 
   status = sqlite3_exec (self->db, sql, NULL, NULL, &error);
 
-  if (status != SQLITE_OK) {
-    g_task_return_new_error (task,
-                             G_IO_ERROR,
-                             G_IO_ERROR_FAILED,
-                             "Error creating chatty_im table. errno: %d, desc: %s. %s",
-                             status, sqlite3_errstr (status), error);
-    return status;
-  }
+  if (status == SQLITE_OK)
+    return TRUE;
 
-  // The archiving entity is bare jid, uid may only be unique within entity scope
-  sql = "CREATE UNIQUE INDEX IF NOT EXISTS chatty_im_acc_uid ON chatty_im(account, uid);";
+  db = g_steal_pointer (&self->db);
+  sqlite3_close (db);
+  g_task_return_new_error (task,
+                           G_IO_ERROR,
+                           G_IO_ERROR_FAILED,
+                           "Error creating tables. errno: %d, desc: %s. %s",
+                           status, sqlite3_errstr (status), error);
+  sqlite3_free (error);
+
+  return FALSE;
+}
+
+static gboolean
+chatty_history_update_version (ChattyHistory *self,
+                               GTask         *task)
+{
+  char *error = NULL;
+  const char *sql;
+  int status;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+  g_assert (self->db);
+
+  sql = "PRAGMA user_version = " STRING (HISTORY_VERSION) ";";
+
   status = sqlite3_exec (self->db, sql, NULL, NULL, &error);
 
-  if (status != SQLITE_OK) {
+  if (status == SQLITE_OK)
+    return TRUE;
+
+  g_task_return_new_error (task,
+                           G_IO_ERROR,
+                           G_IO_ERROR_FAILED,
+                           "Error setting db version. errno: %d, desc: %s. %s",
+                           status, sqlite3_errstr (status), error);
+  sqlite3_free (error);
+
+  return FALSE;
+}
+
+static int
+insert_or_ignore_user (ChattyHistory  *self,
+                       ChattyProtocol  protocol,
+                       const char     *who,
+                       GTask          *task)
+{
+  g_autofree char *phone = NULL;
+  sqlite3_stmt *stmt;
+  int status, id = 0;
+
+  if (!who || !*who)
+    return 0;
+
+  if (protocol & (CHATTY_PROTOCOL_SMS | CHATTY_PROTOCOL_MMS | CHATTY_PROTOCOL_TELEGRAM)) {
+    char *country;
+
+    country = g_object_get_data (G_OBJECT (task), "country-code");
+    phone = chatty_utils_check_phonenumber (who, country);
+  }
+
+  sqlite3_prepare_v2 (self->db,
+                      "INSERT OR IGNORE INTO users(username,type) "
+                      "VALUES(?,?);",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, phone ? phone : who, "binding when adding phone number");
+  history_bind_int (stmt, 2, history_protocol_to_type_value (protocol), "binding when adding phone number");
+
+  sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  /* We can't use last_row_id as we may ignore the last insert */
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT users.id FROM users "
+                      "WHERE users.username=? AND type=?;",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, phone ? phone : who, "binding when getting users");
+  history_bind_int (stmt, 2, history_protocol_to_type_value (protocol), "binding when getting users");
+  status = sqlite3_step (stmt);
+
+  if (status == SQLITE_ROW)
+    id = sqlite3_column_int (stmt, 0);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_ROW)
     g_task_return_new_error (task,
                              G_IO_ERROR,
                              G_IO_ERROR_FAILED,
-                             "Error creating chatty_im table. errno: %d, desc: %s. %s",
-                             status, sqlite3_errstr (status), error);
+                             "Error inserting into users. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+  return id;
+}
+
+static int
+insert_or_ignore_account (ChattyHistory  *self,
+                          ChattyProtocol  protocol,
+                          int             user_id,
+                          GTask          *task)
+{
+  sqlite3_stmt *stmt;
+  int status, id = 0;
+
+  if (!user_id)
+    g_return_val_if_reached (0);
+
+  sqlite3_prepare_v2 (self->db,
+                      "INSERT OR IGNORE INTO accounts(user_id,protocol) "
+                      "VALUES(?,?);",
+                      -1, &stmt, NULL);
+  history_bind_int (stmt, 1, user_id, "binding when adding account");
+  history_bind_int (stmt, 2, history_protocol_to_value (protocol), "binding when adding account");
+  sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  /* We can't use last_row_id as we may ignore the last insert */
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT accounts.id FROM accounts "
+                      "WHERE user_id=? AND protocol=?;",
+                      -1, &stmt, NULL);
+  history_bind_int (stmt, 1, user_id, "binding when getting account");
+  history_bind_int (stmt, 2, history_protocol_to_value (protocol), "binding when getting account");
+  status = sqlite3_step (stmt);
+
+  if (status == SQLITE_ROW)
+    id = sqlite3_column_int (stmt, 0);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_ROW)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Error inserting into users. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+  return id;
+}
+
+static int
+get_thread_id (ChattyHistory *self,
+               ChattyChat    *chat)
+{
+  sqlite3_stmt *stmt;
+  int status, id = 0;
+
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT threads.id FROM threads "
+                      "INNER JOIN accounts "
+                      "ON accounts.id=account_id "
+                      "INNER JOIN users "
+                      "ON users.username=? AND accounts.user_id=users.id "
+                      "AND threads.name=? AND threads.type=?;",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, chatty_chat_get_username (chat), "binding when getting thread");
+  history_bind_text (stmt, 2, chatty_chat_get_chat_name (chat), "binding when getting thread");
+  history_bind_int (stmt, 3, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
+                    "binding when adding phone number");
+  status = sqlite3_step (stmt);
+
+  if (status == SQLITE_ROW)
+    id = sqlite3_column_int (stmt, 0);
+  sqlite3_finalize (stmt);
+
+  return id;
+}
+
+static int
+insert_or_ignore_thread (ChattyHistory *self,
+                         ChattyChat    *chat,
+                         GTask         *task)
+{
+  sqlite3_stmt *stmt;
+  int user_id, account_id;
+  int status, id = 0;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+  g_assert (self->db);
+
+  user_id = insert_or_ignore_user (self,
+                                   chatty_item_get_protocols (CHATTY_ITEM (chat)),
+                                   chatty_chat_get_username (chat),
+                                   task);
+  if (!user_id)
+    return 0;
+
+  account_id = insert_or_ignore_account (self,
+                                         chatty_item_get_protocols (CHATTY_ITEM (chat)),
+                                         user_id, task);
+
+  if (!account_id)
+    return 0;
+
+  sqlite3_prepare_v2 (self->db,
+                      "INSERT INTO threads(name,alias,account_id,type) "
+                      "VALUES(?,?,?,?);",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, chatty_chat_get_chat_name (chat), "binding when adding thread");
+  history_bind_text (stmt, 2, chatty_chat_get_chat_name (chat), "binding when adding thread");
+  history_bind_int (stmt, 3, account_id, "binding when adding thread");
+  history_bind_int (stmt, 4, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
+                    "binding when adding thread");
+  sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  /* We can't use last_row_id as we may ignore the last insert */
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT threads.id FROM threads "
+                      "WHERE name=? AND account_id=? AND type=?;",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, chatty_chat_get_chat_name (chat), "binding when getting thread");
+  history_bind_int (stmt, 2, account_id, "binding when getting thread");
+  history_bind_int (stmt, 3, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
+                    "binding when getting thread");
+  status = sqlite3_step (stmt);
+
+  if (status == SQLITE_ROW)
+    id = sqlite3_column_int (stmt, 0);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_ROW)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Error inserting into users. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+  return id;
+}
+
+static void
+chatty_history_backup (ChattyHistory *self)
+{
+  g_autoptr(GFile) backup_db = NULL;
+  g_autoptr(GFile) old_db = NULL;
+  g_autofree char *backup_name = NULL;
+  g_autoptr(GError) error = NULL;
+
+  backup_name = g_strdup_printf ("%s.%ld", self->db_path, time (NULL));
+  g_info ("Copying database for backup");
+
+  old_db = g_file_new_for_path (self->db_path);
+  backup_db = g_file_new_for_path (backup_name);
+  g_file_copy (old_db, backup_db, G_FILE_COPY_NONE, NULL, NULL, NULL, &error);
+  g_info ("Copying database complete");
+
+  if (error &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+    g_critical ("Error creating DB backup: %s", error->message);
+}
+
+static gboolean
+history_add_phone_user (ChattyHistory *self,
+                        GTask         *task,
+                        const char    *username,
+                        const char    *alias)
+{
+  sqlite3_stmt *stmt;
+  int status;
+
+  sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO users(username,alias,type) "
+                      "VALUES(?,?,"STRING(CHATTY_ID_PHONE_VALUE)");",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, username, "binding when adding user");
+  history_bind_text (stmt, 2, alias, "binding when adding user");
+  status = sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_DONE)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Error inserting into accounts. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+
+  return status == SQLITE_DONE;
+}
+
+static gboolean
+history_add_phone_account (ChattyHistory *self,
+                           GTask         *task,
+                           const char    *account,
+                           int            protocol)
+{
+  sqlite3_stmt *stmt;
+  int status;
+
+  sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO accounts(user_id,protocol)"
+                      "VALUES((SELECT users.id FROM users WHERE username=?),?);",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, account, "binding when adding account");
+  history_bind_int (stmt, 2, protocol, "binding when adding account");
+  status = sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_DONE)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Error inserting into accounts. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+
+  return status == SQLITE_DONE;
+}
+
+static gboolean
+history_add_thread (ChattyHistory *self,
+                    GTask         *task,
+                    const char    *account,
+                    const char    *room,
+                    const char    *alias,
+                    int            chat_type)
+{
+  sqlite3_stmt *stmt;
+  int status;
+
+  sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO threads(name,alias,account_id,type) "
+                      "SELECT ?,?,accounts.id,? "
+                      "FROM users "
+                      "INNER JOIN accounts ON accounts.user_id=users.id "
+                      "AND users.username=?;",
+                      -1, &stmt, NULL);
+
+  history_bind_text (stmt, 1, room, "binding when adding thread");
+  history_bind_text (stmt, 2, alias, "binding when adding thread");
+  history_bind_int (stmt, 3, chat_type, "binding when adding thread");
+  history_bind_text (stmt, 4, account, "binding when adding thread");
+  status = sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_DONE)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Error inserting into accounts. errno: %d, desc: %s",
+                             status, sqlite3_errstr (status));
+
+  return status == SQLITE_DONE;
+}
+
+static gboolean
+chatty_history_migrate_db_to_v1 (ChattyHistory *self,
+                                 GTask         *task)
+{
+  char *error = NULL;
+  int status;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+
+  chatty_history_backup (self);
+
+  if (!chatty_history_create_schema (self, task))
+    return FALSE;
+
+  status = sqlite3_exec (self->db,
+                         "BEGIN TRANSACTION;"
+
+                         /*** Users ***/
+                         /* XMPP IM accounts */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT account," STRING(CHATTY_ID_XMPP_VALUE) " FROM chatty_im "
+                         /* A Rough match for XMPP accounts */
+                         "WHERE chatty_im.account GLOB '[^@+]*' "
+                         "AND chatty_im.account!='SMS' "
+                         "AND chatty_im.who GLOB '[^@+]*@*';"
+
+                         /* XMPP MUC accounts */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT account," STRING(CHATTY_ID_XMPP_VALUE) " FROM chatty_chat "
+                         /* A Rough match for XMPP accounts */
+                         "WHERE chatty_chat.account GLOB '[^@+]*' "
+                         "AND chatty_chat.room GLOB '[^@+]*@*';"
+
+                         /* SMS account */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT account," STRING(CHATTY_ID_PHONE_VALUE) " FROM chatty_im "
+                         "WHERE account='SMS';"
+
+                         /* Matrix accounts */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT account," STRING(CHATTY_ID_MATRIX_VALUE) " FROM chatty_chat "
+                         /* A Rough match for Matrix chat */
+                         "WHERE chatty_chat.room GLOB '!?*:?*' "
+                         "AND chatty_chat.account NOT GLOB '?*@?*' "
+                         "AND chatty_chat.account NOT GLOB '+?*' "
+                         "AND chatty_chat.account!='SMS';"
+
+                         /* XMPP IM users */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT substr(who,0,"
+                         "CASE "
+                         "WHEN instr(who, '/') > 0 THEN instr(who, '/') "
+                         "ELSE length(who) + 1 "
+                         "END),"
+                         STRING(CHATTY_ID_XMPP_VALUE) " FROM chatty_im "
+                         /* A Rough match for XMPP users */
+                         "WHERE chatty_im.account GLOB '[^@+]*' "
+                         "AND chatty_im.account!='SMS' "
+                         "AND chatty_im.who GLOB '[^@]*@*';"
+
+                         /* XMPP MUC users */
+                         "INSERT OR IGNORE INTO users(username,type) "
+                         "SELECT DISTINCT "
+                         /* A Rough match for XMPP users */
+                         "CASE "
+                         "  WHEN chatty_chat.who LIKE chatty_chat.room || '/%' THEN chatty_chat.who "
+                         "  WHEN chatty_chat.who LIKE '%/%' THEN substr(who,0,instr(who, '/')) "
+                         "  ELSE chatty_chat.who "
+                         "END,"
+                         STRING(CHATTY_ID_XMPP_VALUE) " FROM chatty_chat "
+                         "WHERE chatty_chat.account GLOB '[^@+]*' "
+                         "AND chatty_chat.who GLOB '[^@]*@*' "
+                         "AND chatty_chat.room GLOB '[^@]*@*';"
+
+                         /* Matrix chat users */
+                         "INSERT OR IGNORE INTO users (username,type) "
+                         "SELECT DISTINCT who,"
+                         STRING(CHATTY_ID_MATRIX_VALUE) " FROM chatty_chat "
+                         /* A Rough match for users that are not regular phone numbers */
+                         "WHERE chatty_chat.room GLOB '!?*:?*' "
+                         "AND chatty_chat.who GLOB '@?*:?*' "
+                         /* Skip possible Telegram accounts */
+                         "AND chatty_chat.account NOT GLOB '+[0-9]*';"
+
+                         /*** Accounts ***/
+                         /* We have exactly one account for SMS */
+                         "INSERT OR IGNORE INTO accounts(user_id,protocol,enabled) "
+                         "SELECT DISTINCT users.id," STRING(PROTOCOL_SMS) ",1 FROM users "
+                         "WHERE users.username='SMS';"
+
+                         /* XMPP IM accounts */
+                         "INSERT OR IGNORE INTO accounts(user_id,protocol) "
+                         "SELECT DISTINCT users.id," STRING(PROTOCOL_XMPP) " FROM users "
+                         "INNER JOIN chatty_im "
+                         "ON chatty_im.account=users.username "
+                         "AND users.type='" STRING(CHATTY_ID_XMPP_VALUE) "';"
+
+                         /* XMPP MUC accounts */
+                         "INSERT OR IGNORE INTO accounts(user_id,protocol) "
+                         "SELECT DISTINCT users.id," STRING(PROTOCOL_XMPP) " FROM users "
+                         "INNER JOIN chatty_chat "
+                         "ON chatty_chat.account=users.username "
+                         "AND users.type=" STRING(CHATTY_ID_XMPP_VALUE) ";"
+
+                         /* XMPP MUC accounts */
+                         "INSERT OR IGNORE INTO accounts(user_id,protocol) "
+                         "SELECT DISTINCT users.id," STRING(PROTOCOL_MATRIX) " FROM users "
+                         "INNER JOIN chatty_chat "
+                         "ON chatty_chat.account=users.username "
+                         "AND users.type=" STRING(CHATTY_ID_MATRIX_VALUE) ";"
+
+                         /*** Threads ***/
+                         /* XMPP IM chats */
+                         "INSERT OR IGNORE INTO threads(name,account_id,type) "
+                         "SELECT DISTINCT substr(who,0,"
+                         "CASE "
+                         "WHEN instr(who, '/') > 0 THEN instr(who, '/') "
+                         "ELSE length(who) + 1 "
+                         "END),"
+                         "accounts.id," STRING(THREAD_DIRECT_CHAT) " "
+                         "FROM chatty_im "
+                         "INNER JOIN accounts "
+                         "  ON accounts.user_id=users.id "
+                         "INNER JOIN users "
+                         "  ON users.username=chatty_im.account "
+                         "WHERE users.type=" STRING(CHATTY_ID_XMPP_VALUE) ";"
+
+                         /* XMPP MUC chats */
+                         "INSERT OR IGNORE INTO threads(name,account_id,type) "
+                         "SELECT DISTINCT room,"
+                         "accounts.id," STRING(THREAD_GROUP_CHAT) " "
+                         "FROM chatty_chat "
+                         "INNER JOIN accounts "
+                         "  ON accounts.user_id=users.id "
+                         "INNER JOIN users "
+                         "  ON users.username=chatty_chat.account "
+                         "WHERE users.type=" STRING(CHATTY_ID_XMPP_VALUE) ";"
+
+                         /* Matrix chats */
+                         "INSERT OR IGNORE INTO threads(name,account_id,type) "
+                         "SELECT DISTINCT room,accounts.id," STRING(THREAD_GROUP_CHAT) " "
+                         "FROM chatty_chat "
+                         "INNER JOIN accounts "
+                         "  ON accounts.user_id=users.id "
+                         "INNER JOIN users "
+                         "  ON users.username=chatty_chat.account "
+                         "WHERE users.type=" STRING(CHATTY_ID_MATRIX_VALUE) ";"
+
+                         /* Telegram IM chats */
+                         "INSERT OR IGNORE INTO threads(name,account_id,type) "
+                         "SELECT DISTINCT who,accounts.id," STRING(THREAD_DIRECT_CHAT) " "
+                         "FROM chatty_im "
+                         "INNER JOIN accounts "
+                         "  ON accounts.user_id=users.id "
+                         "INNER JOIN users "
+                         "  ON users.username=chatty_im.account "
+                         "WHERE chatty_im.account!='SMS' AND users.type=" STRING(CHATTY_ID_PHONE_VALUE) ";"
+
+                         /* Telegram MUC chats */
+                         "INSERT OR IGNORE INTO threads(name,account_id,type) "
+                         "SELECT DISTINCT room,accounts.id," STRING(THREAD_GROUP_CHAT) " "
+                         "FROM chatty_chat "
+                         "INNER JOIN accounts "
+                         "  ON accounts.user_id=users.id "
+                         "INNER JOIN users "
+                         "  ON users.username=chatty_chat.account "
+                         "WHERE users.type=" STRING(CHATTY_ID_PHONE_VALUE) ";"
+
+                         /*** Thread Members ***/
+                         /* XMPP IM chat members */
+                         "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                         "SELECT DISTINCT threads.id,u.id FROM chatty_im "
+                         "INNER JOIN threads "
+                         "ON chatty_im.who LIKE threads.name || '%' "
+                         "INNER JOIN users As a "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN accounts "
+                         "ON accounts.user_id=a.id AND a.username=chatty_im.account "
+                         "AND a.type=" STRING(CHATTY_ID_XMPP_VALUE) " "
+                         "INNER JOIN users AS u "
+                         "ON chatty_im.who LIKE u.username || '%';"
+
+                         /* XMPP MUC members */
+                         "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                         "SELECT DISTINCT threads.id,u.id FROM chatty_chat "
+                         "INNER JOIN threads "
+                         "ON chatty_chat.room=threads.name "
+                         "INNER JOIN accounts "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN users AS a "
+                         "ON accounts.user_id=a.id AND a.username=chatty_chat.account "
+                         "AND a.type=" STRING(CHATTY_ID_XMPP_VALUE) " "
+                         "INNER JOIN users AS u "
+                         "ON chatty_chat.who=u.username "
+                         "OR chatty_chat.who LIKE u.username || '/%' "
+                         "OR chatty_chat.who LIKE chatty_chat.room || '/' || u.username "
+                         "WHERE chatty_chat.direction!=-1;"
+
+                         /* Matrix chat members */
+                         "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                         "SELECT DISTINCT threads.id,u.id FROM chatty_chat "
+                         "INNER JOIN threads "
+                         "ON chatty_chat.room=threads.name "
+                         "INNER JOIN users As a "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN accounts "
+                         "ON accounts.user_id=a.id AND a.username=chatty_chat.account "
+                         "AND a.type=" STRING(CHATTY_ID_MATRIX_VALUE) " "
+                         "INNER JOIN users AS u "
+                         "ON u.username NOT NULL AND chatty_chat.who=u.username;"
+
+                         /*** Messages ***/
+                         /* XMPP IM messages */
+                         "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                         /* Always assume HTML */
+                         "SELECT DISTINCT uid,threads.id,u.id,message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                         "FROM chatty_im "
+                         "INNER JOIN threads "
+                         "ON chatty_im.who LIKE threads.name || '%' "
+                         "INNER JOIN users As a "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN accounts "
+                         "ON accounts.user_id=a.id AND a.username=chatty_im.account "
+                         "INNER JOIN users AS u "
+                         "ON chatty_im.who LIKE u.username || '%' "
+                         "WHERE chatty_im.account GLOB '[^@]*@*' "
+                         "ORDER BY timestamp ASC, chatty_im.id ASC;"
+
+                         /* XMPP MUC chat messages */
+                         "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                         /* Always assume HTML */
+                         "SELECT DISTINCT uid,threads.id,"
+                         "CASE "
+                         "WHEN chatty_chat.direction=-1 THEN a.id "
+                         "WHEN chatty_chat.who=NULL THEN NULL "
+                         "ELSE u.id "
+                         "END,"
+                         "message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                         "FROM chatty_chat "
+                         "INNER JOIN threads "
+                         "ON chatty_chat.room LIKE threads.name || '%' "
+                         "INNER JOIN accounts "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN users As a "
+                         "ON accounts.user_id=a.id AND a.username=chatty_chat.account "
+                         "LEFT JOIN users AS u "
+                         "ON chatty_chat.who=u.username "
+                         "OR chatty_chat.who LIKE u.username || '/%' "
+                         "OR chatty_chat.who LIKE chatty_chat.room || '/' || u.username "
+                         "WHERE chatty_chat.account GLOB '[^@]*@*' "
+                         "ORDER BY timestamp ASC, chatty_chat.id ASC;"
+
+                         /* Matrix chat messages */
+                         "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                         /* Always assume HTML */
+                         "SELECT DISTINCT uid,threads.id,"
+                         "CASE "
+                         "WHEN chatty_chat.direction=-1 AND chatty_chat.who=NULL THEN a.id "
+                         "WHEN chatty_chat.direction=-1 THEN u.id "
+                         "WHEN chatty_chat.who=NULL THEN NULL "
+                         "ELSE u.id "
+                         "END,"
+                         "message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                         "FROM chatty_chat "
+                         "INNER JOIN threads "
+                         "ON chatty_chat.room=threads.name "
+                         "INNER JOIN accounts "
+                         "ON threads.account_id=accounts.id "
+                         "INNER JOIN users As a "
+                         "ON accounts.user_id=a.id AND a.username=chatty_chat.account "
+                         "LEFT JOIN users AS u "
+                         "ON chatty_chat.who=u.username "
+                         "WHERE chatty_chat.room GLOB '!?*:?*' "
+                         "AND chatty_chat.who IS NULL or chatty_chat.who GLOB '@?*:?*' "
+                         "ORDER BY timestamp ASC, chatty_chat.id ASC;"
+
+                         "COMMIT;",
+                         NULL, NULL, &error);
+
+  if (!e_phone_number_is_supported ())
+    g_debug ("Not compiled with libphonenumber");
+
+  if (status == SQLITE_OK) {
+    sqlite3_stmt *stmt;
+
+    /* Get all numbers in international format */
+    status = sqlite3_prepare_v2 (self->db,
+                                 /* Telegram IM */
+                                 "SELECT DISTINCT account,who FROM chatty_im "
+                                 "WHERE account GLOB '+[0-9]*[^@]*[0-9]';",
+                                 -1, &stmt, NULL);
+    if (status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "BEGIN TRANSACTION;", NULL, NULL, &error);
+
+    while (sqlite3_step (stmt) == SQLITE_ROW) {
+      g_autofree char *account_number = NULL;
+      g_autofree char *sender_number = NULL;
+      sqlite3_stmt *insert_stmt = NULL;
+      const char *account, *sender;
+
+      account = (gpointer)sqlite3_column_text (stmt, 0);
+      sender = (gpointer)sqlite3_column_text (stmt, 1);
+
+      account_number = chatty_utils_check_phonenumber (account, NULL);
+      sender_number  = chatty_utils_check_phonenumber (sender, NULL);
+
+      if (!history_add_phone_user (self, task,
+                                   account_number ? account_number : account,
+                                   !account_number ? account: NULL))
+        return FALSE;
+
+      /* Fill in accounts */
+      if (!history_add_phone_account (self, task,
+                                      account_number ? account_number : account,
+                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_SMS : PROTOCOL_TELEGRAM))
+        return FALSE;
+
+      if (!history_add_phone_user (self, task,
+                                   sender_number ? sender_number : sender,
+                                   !sender_number ? sender: NULL))
+        return FALSE;
+
+      if (!history_add_thread (self, task,
+                               account_number ? account_number : account,
+                               sender_number ? sender_number : sender,
+                               !sender_number ? sender: NULL,
+                               THREAD_DIRECT_CHAT))
+        return FALSE;
+
+      /* Fill in messages */
+      sqlite3_prepare_v2 (self->db,
+                          "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                          "SELECT DISTINCT uid,threads.id,u.id,message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                          "FROM chatty_im "
+                          "INNER JOIN threads "
+                          "ON threads.name=? AND chatty_im.who=? "
+                          "INNER JOIN accounts "
+                          "ON threads.account_id=accounts.id "
+                          "INNER JOIN users AS a "
+                          "ON accounts.user_id=a.id AND a.username=? AND chatty_im.account=? "
+                          "INNER JOIN users as u "
+                          "ON u.username=? "
+                          "ORDER BY timestamp ASC, chatty_im.id ASC;",
+                          -1, &insert_stmt, NULL);
+
+      history_bind_text (insert_stmt, 1, sender_number ? sender_number : sender, "binding when adding message");
+      history_bind_text (insert_stmt, 2, sender, "binding when adding message");
+      history_bind_text (insert_stmt, 3, account_number ? account_number : account, "binding when adding message");
+      history_bind_text (insert_stmt, 4, account, "binding when adding message");
+      history_bind_text (insert_stmt, 5, sender_number ? sender_number : sender, "binding when adding message");
+      status = sqlite3_step (insert_stmt);
+      sqlite3_finalize (insert_stmt);
+    }
+
+    sqlite3_exec (self->db,
+                  "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                  "SELECT DISTINCT threads.id,u.id FROM threads "
+                  "INNER JOIN users AS u "
+                  "ON threads.name=u.username "
+                  "AND u.type="STRING(CHATTY_ID_PHONE_VALUE) ";",
+                  NULL, NULL, &error);
+
+    if (status == SQLITE_DONE || status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "COMMIT;", NULL, NULL, &error);
+
+    sqlite3_finalize (stmt);
   }
 
-  return status;
+  if (status == SQLITE_OK) {
+    sqlite3_stmt *stmt;
+    status = sqlite3_prepare_v2 (self->db,
+                                 /* Telegram Chats */
+                                 "SELECT DISTINCT account,who,room FROM chatty_chat "
+                                 "WHERE account GLOB '+[0-9]*[^@:.]*[0-9]';",
+                                 -1, &stmt, NULL);
+
+    if (status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "BEGIN TRANSACTION;", NULL, NULL, &error);
+
+    while (sqlite3_step (stmt) == SQLITE_ROW) {
+      g_autofree char *account_number = NULL;
+      g_autofree char *sender_number = NULL;
+      sqlite3_stmt *insert_stmt = NULL;
+      const char *account, *sender, *room;
+
+      account = (gpointer)sqlite3_column_text (stmt, 0);
+      sender = (gpointer)sqlite3_column_text (stmt, 1);
+      room = (gpointer)sqlite3_column_text (stmt, 2);
+
+      account_number = chatty_utils_check_phonenumber (account, NULL);
+      sender_number  = chatty_utils_check_phonenumber (sender, NULL);
+
+      if (!history_add_phone_user (self, task,
+                                   account_number ? account_number : account,
+                                   !account_number ? account: NULL))
+        return FALSE;
+
+      /* Fill in accounts */
+      if (!history_add_phone_account (self, task,
+                                      account_number ? account_number : account,
+                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_SMS : PROTOCOL_TELEGRAM))
+        return FALSE;
+
+      if (sender &&
+          !history_add_phone_user (self, task,
+                                   sender_number ? sender_number : sender,
+                                   !sender_number ? sender: NULL))
+        return FALSE;
+
+      if (!history_add_thread (self, task,
+                               account_number ? account_number : account,
+                               room, room, THREAD_GROUP_CHAT))
+        return FALSE;
+
+      /* Fill in messages with no author */
+      sqlite3_prepare_v2 (self->db,
+                          "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                          "SELECT DISTINCT uid,threads.id,"
+                          "CASE "
+                          "WHEN chatty_chat.direction=-1 THEN a.id "
+                          "WHEN chatty_chat.who=NULL THEN NULL "
+                          "END,"
+                          "message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                          "FROM chatty_chat "
+                          "INNER JOIN threads "
+                          "ON threads.name=chatty_chat.room AND threads.name=? "
+                          "INNER JOIN accounts "
+                          "ON threads.account_id=accounts.id "
+                          "INNER JOIN users AS a "
+                          "ON accounts.user_id=a.id AND a.username=? AND chatty_chat.account=? "
+                          "AND chatty_chat.who IS NULL "
+                          "ORDER BY timestamp ASC, chatty_chat.id ASC;",
+                          -1, &insert_stmt, NULL);
+
+      history_bind_text (insert_stmt, 1, room, "binding when adding message");
+      history_bind_text (insert_stmt, 2, account_number ? account_number : account, "binding when adding message");
+      history_bind_text (insert_stmt, 3, account, "binding when adding message");
+      status = sqlite3_step (insert_stmt);
+      sqlite3_finalize (insert_stmt);
+
+      /* Fill in messages with author */
+      sqlite3_prepare_v2 (self->db,
+                          "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                          "SELECT DISTINCT uid,threads.id,u.id,"
+                          "message," STRING(MESSAGE_TYPE_HTML_ESCAPED) ",timestamp,direction "
+                          "FROM chatty_chat "
+                          "INNER JOIN threads "
+                          "ON threads.name=chatty_chat.room AND threads.name=? "
+                          "INNER JOIN accounts "
+                          "ON threads.account_id=accounts.id "
+                          "INNER JOIN users AS a "
+                          "ON accounts.user_id=a.id AND a.username=? AND chatty_chat.account=? "
+                          "INNER JOIN users as u "
+                          "ON u.username=? AND chatty_chat.who=? "
+                          "AND chatty_chat.who NOT NULL "
+                          "AND chatty_chat.direction!=-1 "
+                          "ORDER BY timestamp ASC, chatty_chat.id ASC;",
+                          -1, &insert_stmt, NULL);
+
+      history_bind_text (insert_stmt, 1, room, "binding when adding threads");
+      history_bind_text (insert_stmt, 2, account_number ? account_number : account, "binding when adding phone number");
+      history_bind_text (insert_stmt, 3, account, "binding when adding phone number");
+      history_bind_text (insert_stmt, 4, sender_number ? sender_number : sender, "binding when adding threads");
+      history_bind_text (insert_stmt, 5, sender, "binding when adding threads");
+      status = sqlite3_step (insert_stmt);
+      sqlite3_finalize (insert_stmt);
+
+      /* Fill in chat thread members */
+      sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                          "SELECT DISTINCT threads.id,u.id FROM threads "
+                          "INNER JOIN accounts "
+                          "ON threads.account_id=accounts.id "
+                          "INNER JOIN users AS a "
+                          "ON accounts.user_id=a.id AND a.username=? "
+                          "INNER JOIN chatty_chat "
+                          "ON chatty_chat.account=? "
+                          "AND threads.name=chatty_chat.room AND threads.name=? "
+                          "INNER JOIN users AS u "
+                          "ON u.type=" STRING(CHATTY_ID_PHONE_VALUE) " "
+                          "AND u.username=? AND chatty_chat.who=?;",
+                          -1, &insert_stmt, NULL);
+
+      history_bind_text (insert_stmt, 1, account_number ? account_number : account, "binding when adding thread member");
+      history_bind_text (insert_stmt, 2, account, "binding when adding thread member");
+      history_bind_text (insert_stmt, 3, room, "binding when adding thread member");
+      history_bind_text (insert_stmt, 4, sender_number ? sender_number : sender, "binding when adding thread member");
+      history_bind_text (insert_stmt, 5, sender, "binding when adding thread member");
+      status = sqlite3_step (insert_stmt);
+      sqlite3_finalize (insert_stmt);
+    }
+
+    sqlite3_exec (self->db,
+                  "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                  "SELECT DISTINCT threads.id,u.id FROM threads "
+                  "INNER JOIN users AS u "
+                  "ON threads.name=u.username "
+                  "AND u.type="STRING(CHATTY_ID_PHONE_VALUE) ";",
+                  NULL, NULL, &error);
+
+    if (status == SQLITE_DONE || status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "COMMIT;", NULL, NULL, &error);
+
+    sqlite3_finalize (stmt);
+  }
+
+  if (status == SQLITE_OK) {
+    sqlite3_stmt *stmt;
+    status = sqlite3_prepare_v2 (self->db,
+                                 /* SMS users with phone numbers sorted */
+                                 "SELECT DISTINCT generated.who FROM "
+                                 "(SELECT who,id FROM chatty_im WHERE account='SMS' ORDER BY id ASC) "
+                                 "AS generated ORDER BY generated.id;",
+                                 -1, &stmt, NULL);
+
+    if (status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "BEGIN TRANSACTION;", NULL, NULL, &error);
+
+    while (sqlite3_step (stmt) == SQLITE_ROW) {
+      g_autofree char *sender_number = NULL;
+      sqlite3_stmt *insert_stmt = NULL;
+      const char *sender, *country;
+
+      sender = (gpointer)sqlite3_column_text (stmt, 0);
+      country = g_object_get_data (G_OBJECT (task), "country-code");
+
+      sender_number  = chatty_utils_check_phonenumber (sender, country);
+
+      history_add_phone_user (self, task,
+                              sender_number ? sender_number : sender,
+                              NULL);
+
+      history_add_thread (self, task, "SMS",
+                          sender_number ? sender_number : sender,
+                          sender, THREAD_DIRECT_CHAT);
+
+      /* Fill in messages with no author */
+      sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO messages(uid,thread_id,sender_id,body,body_type,time,direction) "
+                          "SELECT DISTINCT uid,threads.id,u.id,message," STRING(MESSAGE_TYPE_TEXT) ",timestamp,direction "
+                          "FROM chatty_im "
+                          "INNER JOIN threads "
+                          "ON threads.name=? AND chatty_im.who=? "
+                          "INNER JOIN accounts "
+                          "ON threads.account_id=accounts.id "
+                          "INNER JOIN users AS a "
+                          "ON accounts.user_id=a.id AND a.username=chatty_im.account "
+                          "AND chatty_im.account='SMS' "
+                          "INNER JOIN users as u "
+                          "ON u.username=? "
+                          "ORDER BY timestamp ASC, chatty_im.id ASC;",
+                          -1, &insert_stmt, NULL);
+
+      history_bind_text (insert_stmt, 1, sender_number ? sender_number : sender, "binding when adding message");
+      history_bind_text (insert_stmt, 2, sender, "binding when adding message");
+      history_bind_text (insert_stmt, 3, sender_number ? sender_number : sender, "binding when adding message");
+      status = sqlite3_step (insert_stmt);
+      sqlite3_finalize (insert_stmt);
+    }
+
+    sqlite3_exec (self->db,
+                  "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                  "SELECT DISTINCT threads.id,u.id FROM threads "
+                  "INNER JOIN users AS u "
+                  "ON threads.name=u.username "
+                  "AND u.type="STRING(CHATTY_ID_PHONE_VALUE) ";",
+                  NULL, NULL, &error);
+
+    if (status == SQLITE_DONE || status == SQLITE_OK)
+      status = sqlite3_exec (self->db, "COMMIT;", NULL, NULL, &error);
+
+    sqlite3_finalize (stmt);
+  }
+
+  /* Drop old tables */
+  if (status == SQLITE_OK)
+    status = sqlite3_exec (self->db,
+                           "BEGIN TRANSACTION;"
+                           "DROP TABLE chatty_chat;"
+                           "DROP TABLE chatty_im;"
+                           "COMMIT;", NULL, NULL, &error);
+
+  if (status == SQLITE_OK || status == SQLITE_DONE) {
+    /* Update user_version pragma */
+    if (!chatty_history_update_version (self, task))
+      return FALSE;
+    return TRUE;
+  }
+
+  g_task_return_new_error (task,
+                           G_IO_ERROR,
+                           G_IO_ERROR_FAILED,
+                           "Error setting db version. errno: %d, desc: %s. %s",
+                           status, sqlite3_errstr (status), error);
+  sqlite3_free (error);
+
+  return FALSE;
+}
+
+static gboolean
+chatty_history_migrate (ChattyHistory *self,
+                        GTask         *task)
+{
+  int version;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+  g_assert (self->db);
+
+  version = chatty_history_get_db_version (self, task);
+
+  if (version == HISTORY_VERSION)
+    return TRUE;
+
+  switch (version) {
+  case -1:  /* Error */
+    return FALSE;
+
+  case 0:
+    if (!chatty_history_migrate_db_to_v1 (self, task))
+      return FALSE;
+    break;
+
+  default:
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Failed to migrate from version %d, unknown version",
+                             version);
+    return FALSE;
+  }
+
+  return TRUE;
 }
 
 static void
@@ -235,6 +1356,7 @@ history_open_db (ChattyHistory *self,
   g_autofree char *db_path = NULL;
   sqlite3 *db;
   int status;
+  gboolean db_exists;
 
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
@@ -247,26 +1369,29 @@ history_open_db (ChattyHistory *self,
   g_assert (file_name && *file_name);
 
   g_mkdir_with_parents (dir, S_IRWXU);
-  db_path = g_build_filename (dir, file_name, NULL);
+  self->db_path = g_build_filename (dir, file_name, NULL);
 
-  status = sqlite3_open (db_path, &db);
+  db_exists = g_file_test (self->db_path, G_FILE_TEST_EXISTS);
+  status = sqlite3_open (self->db_path, &db);
 
   if (status == SQLITE_OK) {
     self->db = db;
-    status = chatty_history_create_chat_schema (self, task);
 
-    if (status == SQLITE_OK)
-      status = chatty_history_create_im_schema (self, task);
+    if (db_exists) {
+      if (!chatty_history_migrate (self, task))
+        return;
+    } else {
+      if (!chatty_history_create_schema (self, task))
+        return;
 
-    if (status == SQLITE_OK)
-      g_task_return_boolean (task, TRUE);
+      if (!chatty_history_update_version (self, task))
+        return;
+    }
+
+    sqlite3_exec (self->db, "PRAGMA foreign_keys = ON;", NULL, NULL, NULL);
+    g_task_return_boolean (task, TRUE);
   } else {
-    sqlite3_close (db);
-    g_task_return_new_error (task,
-                             G_IO_ERROR,
-                             G_IO_ERROR_FAILED,
-                             "Database could not be opened. errno: %d, desc: %s",
-                             status, sqlite3_errstr (status));
+    g_task_return_boolean (task, FALSE);
   }
 }
 
@@ -314,37 +1439,30 @@ history_close_db (ChattyHistory *self,
 static guint
 get_id_for_message (ChattyHistory *self,
                     ChattyChat    *chat,
-                    ChattyMessage *message)
+                    ChattyMessage *message,
+                    int           *thread_id)
 {
-  const char *uuid, *who;
+  const char *uuid;
   sqlite3_stmt *stmt;
   int status;
   guint id = INT_MAX;
 
-  if (!CHATTY_IS_MESSAGE (message) || !CHATTY_IS_CHAT (chat))
-    return id;
-
   g_assert (g_thread_self () == self->worker_thread);
+  g_assert (thread_id);
+
+  *thread_id = get_thread_id (self, chat);
+
+  if (!CHATTY_IS_MESSAGE (message) || !CHATTY_IS_CHAT (chat) || !*thread_id)
+    return id;
 
   uuid = chatty_message_get_uid (message);
 
   if (!uuid || !*uuid)
     return id;
 
-  if (chatty_chat_is_im (chat))
-    who = chatty_chat_get_username (chat);
-  else
-    who = chatty_chat_get_chat_name (chat);
-
-  if (chatty_chat_is_im (chat))
-    status = sqlite3_prepare_v2 (self->db, "SELECT id FROM chatty_im WHERE uid=(?) AND account=(?)", -1, &stmt, NULL);
-  else
-    status = sqlite3_prepare_v2 (self->db, "SELECT id FROM chatty_chat WHERE uid=(?) AND room=(?)", -1, &stmt, NULL);
-
-  warn_if_sql_error (status, "preparing to get id");
-
-  history_bind_text (stmt, 1, uuid, "binding when getting id");
-  history_bind_text (stmt, 2, who, "binding when getting id");
+  sqlite3_prepare_v2 (self->db, "SELECT id FROM messages WHERE thread_id=? AND uid=?", -1, &stmt, NULL);
+  history_bind_int (stmt, 1, *thread_id, "binding when getting id");
+  history_bind_text (stmt, 2, uuid, "binding when getting id");
 
   status = sqlite3_step (stmt);
   warn_if_sql_error (status, "finding message for id");
@@ -360,11 +1478,11 @@ get_id_for_message (ChattyHistory *self,
 static GPtrArray *
 get_messages_before_id (ChattyHistory *self,
                         ChattyChat    *chat,
+                        int            thread_id,
                         guint          since_id,
                         guint          limit)
 {
   GPtrArray *messages = NULL;
-  const char *chat_name, *account;
   sqlite3_stmt *stmt;
   int status;
 
@@ -373,22 +1491,17 @@ get_messages_before_id (ChattyHistory *self,
   g_assert (g_thread_self () == self->worker_thread);
   g_assert (limit != 0);
 
-  account = chatty_chat_get_username (chat);
-  chat_name = chatty_chat_get_chat_name (chat);
-
-  if (chatty_chat_is_im (chat))
-    status = sqlite3_prepare_v2 (self->db, "SELECT timestamp,direction,message,uid FROM chatty_im "
-                                 "WHERE account=(?) AND who=(?) AND id < (?) AND message != \"\" ORDER BY timestamp DESC, id DESC LIMIT (?)", -1, &stmt, NULL);
-  else
-    status = sqlite3_prepare_v2 (self->db, "SELECT timestamp,direction,message,uid,who FROM chatty_chat "
-                                 "WHERE account=(?) AND room=(?) AND id < (?) AND message != \"\" ORDER BY timestamp DESC, id DESC LIMIT (?)", -1, &stmt, NULL);
-
-  warn_if_sql_error (status, "preparing to get messages");
-
-  history_bind_text (stmt, 1, account, "binding when getting messages");
-  history_bind_text (stmt, 2, chat_name, "binding when getting messages");
-  history_bind_int (stmt, 3, since_id, "binding when getting messages");
-  history_bind_int (stmt, 4, limit, "binding when getting messages");
+  status = sqlite3_prepare_v2 (self->db, "SELECT time,direction,body,uid,users.username FROM messages "
+                               "LEFT JOIN users "
+                               "ON messages.sender_id=users.id "
+                               "WHERE thread_id=? "
+                               "AND messages.id < ? "
+                               "AND body NOT NULL AND body !='' "
+                               "ORDER BY time DESC, messages.id DESC LIMIT ?;",
+                               -1, &stmt, NULL);
+  history_bind_int (stmt, 1, thread_id, "binding when getting messages");
+  history_bind_int (stmt, 2, since_id, "binding when getting messages");
+  history_bind_int (stmt, 3, limit, "binding when getting messages");
 
   while (sqlite3_step (stmt) == SQLITE_ROW) {
     ChattyMessage *message;
@@ -428,6 +1541,7 @@ history_get_messages (ChattyHistory *self,
   ChattyChat *chat;
   guint since_id;
   guint limit;
+  int thread_id;
 
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
@@ -448,8 +1562,8 @@ history_get_messages (ChattyHistory *self,
   g_assert (!start || CHATTY_IS_MESSAGE (start));
   g_assert (CHATTY_IS_CHAT (chat));
 
-  since_id = get_id_for_message (self, chat, start);
-  messages = get_messages_before_id (self, chat, since_id, limit);
+  since_id = get_id_for_message (self, chat, start, &thread_id);
+  messages = get_messages_before_id (self, chat, thread_id, since_id, limit);
   g_task_return_pointer (task, messages, (GDestroyNotify)g_ptr_array_unref);
 }
 
@@ -460,8 +1574,9 @@ history_add_message (ChattyHistory *self,
   ChattyMessage *message;
   ChattyChat *chat;
   sqlite3_stmt *stmt;
-  const char *account, *who, *uid, *msg;
+  const char *who, *uid, *msg;
   ChattyMsgDirection direction;
+  int thread_id = 0, sender_id = 0;
   int status, dir;
   time_t time_stamp;
 
@@ -481,7 +1596,6 @@ history_add_message (ChattyHistory *self,
   g_assert (CHATTY_IS_CHAT (chat));
   g_assert (CHATTY_IS_MESSAGE (message));
 
-  account = chatty_chat_get_username (chat);
   who = chatty_message_get_user_name (message);
   uid = chatty_message_get_uid (message);
   msg = chatty_message_get_text (message);
@@ -489,32 +1603,35 @@ history_add_message (ChattyHistory *self,
   direction = chatty_message_get_msg_direction (message);
   dir = history_direction_to_value (direction);
 
-  if (chatty_chat_is_im (chat))
-    status = sqlite3_prepare_v2 (self->db, "INSERT INTO chatty_im VALUES (?, ?, ?, ?, ?, ?, ?)", -1, &stmt, NULL);
-  else
-    status = sqlite3_prepare_v2 (self->db, "INSERT INTO chatty_chat VALUES (?, ?, ?, ?, ?, ?, ?, ?)", -1, &stmt, NULL);
-
-  warn_if_sql_error (status, "preparing statement when adding message");
-
-  if (chatty_chat_is_im (chat)) {
-    history_bind_text (stmt, IM_ACCOUNT_IDX, account, "binding when adding IM message");
-    history_bind_text (stmt, IM_WHO_IDX, who, "binding when adding IM message");
-    history_bind_text (stmt, IM_UID_IDX, uid, "binding when adding IM message");
-    history_bind_text (stmt, IM_MESSAGE_IDX, msg, "binding when adding IM message");
-    history_bind_int (stmt, IM_TIMESTAMP_IDX, time_stamp, "binding when adding IM message");
-    history_bind_int (stmt, IM_DIRECTION_IDX, dir, "binding when adding IM message");
-  } else {
-    const char *room;
-
-    room = chatty_chat_get_chat_name (chat);
-    history_bind_text (stmt, CHAT_ACCOUNT_IDX, account, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_ROOM_IDX, room, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_WHO_IDX, who, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_UID_IDX, uid, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_MESSAGE_IDX, msg, "binding when adding CHAT message");
-    history_bind_int (stmt, CHAT_TIMESTAMP_IDX, time_stamp, "binding when adding CHAT message");
-    history_bind_int (stmt, CHAT_DIRECTION_IDX, dir, "binding when adding CHAT message");
+  /* TODO: check if this is good */
+  if (!who || !*who) {
+    if (direction == CHATTY_DIRECTION_OUT)
+      who = chatty_chat_get_username (chat);
+    else if (direction == CHATTY_DIRECTION_IN && chatty_chat_is_im (chat))
+      who = chatty_chat_get_chat_name (chat);
   }
+
+  thread_id = insert_or_ignore_thread (self, chat, task);
+  if (!thread_id)
+    return;
+
+  sender_id = insert_or_ignore_user (self, chatty_item_get_protocols (CHATTY_ITEM (chat)), who, task);
+  sqlite3_prepare_v2 (self->db,
+                      "INSERT INTO messages(uid,thread_id,sender_id,body,body_type,direction,time) "
+                      "VALUES(?1,?2,?3,?4,?5,?6,?7);",
+                      -1, &stmt, NULL);
+
+  history_bind_text (stmt, 1, uid, "binding when adding message");
+  history_bind_int (stmt, 2, thread_id, "binding when adding message");
+  if (sender_id)
+    history_bind_int (stmt, 3, sender_id, "binding when adding message");
+  history_bind_text (stmt, 4, msg, "binding when adding message");
+  if (chatty_item_get_protocols (CHATTY_ITEM (chat)) == CHATTY_PROTOCOL_SMS)
+    history_bind_int (stmt, 5, MESSAGE_TYPE_TEXT, "binding when adding message");
+  else
+    history_bind_int (stmt, 5, MESSAGE_TYPE_HTML_ESCAPED, "binding when adding message");
+  history_bind_int (stmt, 6, dir, "binding when adding message");
+  history_bind_int (stmt, 7, time_stamp, "binding when adding message");
 
   status = sqlite3_step (stmt);
   sqlite3_finalize (stmt);
@@ -562,15 +1679,20 @@ history_delete_chat (ChattyHistory *self,
 
   account = chatty_chat_get_username (chat);
 
-  if (chatty_chat_is_im (chat))
-    status = sqlite3_prepare_v2 (self->db, "DELETE FROM chatty_im WHERE account=(?) AND who=(?)", -1, &stmt, NULL);
-  else
-    status = sqlite3_prepare_v2 (self->db, "DELETE FROM chatty_chat WHERE account=(?) AND room=(?)", -1, &stmt, NULL);
+  status = sqlite3_prepare_v2 (self->db,
+                               "DELETE FROM threads "
+                               "WHERE threads.type=? AND threads.name=? "
+                               "AND threads.account_id IN ("
+                               "SELECT accounts.id FROM accounts "
+                               "INNER JOIN users "
+                               "ON accounts.id=threads.account_id "
+                               "AND users.id=accounts.user_id AND users.username=?);",
+                               -1, &stmt, NULL);
 
-  warn_if_sql_error (status, "preparing statement when deleting chat");
-
-  history_bind_text (stmt, 1, account, "binding when deleting message");
-  history_bind_text (stmt, 2, chat_name, "binding when deleting message");
+  history_bind_int (stmt, 1, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
+                    "binding when deleting thread");
+  history_bind_text (stmt, 2, chat_name, "binding when deleting thread");
+  history_bind_text (stmt, 3, account, "binding when deleting thread");
 
   status = sqlite3_step (stmt);
   sqlite3_finalize (stmt);
@@ -595,17 +1717,18 @@ history_get_chat_timestamp (ChattyHistory *self,
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
 
-  status = sqlite3_prepare_v2 (self->db, "SELECT timestamp FROM chatty_chat WHERE uid=(?) AND room=(?) LIMIT 1", -1, &stmt, NULL);
-  warn_if_sql_error (status, "preparing statement when getting timestamp");
-
   uuid = g_object_get_data (G_OBJECT (task), "uuid");
   room = g_object_get_data (G_OBJECT (task), "room");
 
   g_assert (uuid);
   g_assert (room);
 
-  history_bind_text (stmt, 1, uuid, "binding when getting timestamp");
-  history_bind_text (stmt, 2, room, "binding when getting timestamp");
+  sqlite3_prepare_v2 (self->db, "SELECT time FROM messages "
+                      "INNER JOIN threads "
+                      "ON threads.name=? "
+                      "WHERE uid=? LIMIT 1;", -1, &stmt, NULL);
+  history_bind_text (stmt, 1, room, "binding when getting timestamp");
+  history_bind_text (stmt, 2, uuid, "binding when getting timestamp");
 
   if (sqlite3_step (stmt) == SQLITE_ROW)
     timestamp = sqlite3_column_int (stmt, 0);
@@ -627,14 +1750,20 @@ history_get_im_timestamp (ChattyHistory *self,
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
 
-  status = sqlite3_prepare_v2 (self->db, "SELECT timestamp FROM chatty_im WHERE uid=(?) AND account=(?) LIMIT 1", -1, &stmt, NULL);
-  warn_if_sql_error (status, "preparing statement when getting timestamp");
-
   uuid = g_object_get_data (G_OBJECT (task), "uuid");
   account = g_object_get_data (G_OBJECT (task), "account");
 
-  history_bind_text (stmt, 1, uuid, "binding when getting timestamp");
-  history_bind_text (stmt, 2, account, "binding when getting timestamp");
+  sqlite3_prepare_v2 (self->db, "SELECT time FROM messages "
+                      "INNER JOIN threads "
+                      "ON threads.account_id=accounts.id "
+                      "INNER JOIN accounts "
+                      "ON accounts.user_id=users.id "
+                      "INNER JOIN users "
+                      "ON users.id=accounts.user_id AND users.username=? "
+                      "WHERE messages.uid=? LIMIT 1",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, account, "binding when getting timestamp");
+  history_bind_text (stmt, 2, uuid, "binding when getting timestamp");
 
   if (sqlite3_step (stmt) == SQLITE_ROW)
     timestamp = sqlite3_column_int (stmt, 0);
@@ -656,14 +1785,21 @@ history_get_last_message_time (ChattyHistory *self,
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
 
-  status = sqlite3_prepare_v2 (self->db, "SELECT max(timestamp),max(id) FROM chatty_chat WHERE account=(?) AND room=(?)", -1, &stmt, NULL);
-  warn_if_sql_error (status, "preparing statement when getting timestamp");
-
   account = g_object_get_data (G_OBJECT (task), "account");
   room = g_object_get_data (G_OBJECT (task), "room");
 
-  history_bind_text (stmt, 1, account, "binding when getting timestamp");
-  history_bind_text (stmt, 2, room, "binding when getting timestamp");
+  status = sqlite3_prepare_v2 (self->db,
+                               "SELECT max(time),messages.id FROM messages "
+                               "INNER JOIN threads "
+                               "ON threads.name=? AND messages.thread_id=threads.id "
+                               "INNER JOIN accounts "
+                               "ON accounts.id=threads.account_id "
+                               "INNER JOIN users "
+                               "ON users.id=accounts.user_id AND users.username=? "
+                               "ORDER BY messages.id DESC LIMIT 1;",
+                               -1, &stmt, NULL);
+  history_bind_text (stmt, 1, room, "binding when getting timestamp");
+  history_bind_text (stmt, 2, account, "binding when getting timestamp");
 
   if (sqlite3_step (stmt) == SQLITE_ROW)
     timestamp = sqlite3_column_int (stmt, 0);
@@ -693,19 +1829,23 @@ history_exists (ChattyHistory *self,
   g_assert (account);
   g_assert (room || who);
 
-  if (who)
-    status = sqlite3_prepare_v2 (self->db, "SELECT timestamp FROM chatty_im WHERE account=(?) AND who=(?) LIMIT 1", -1, &stmt, NULL);
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT time FROM messages "
+                      "INNER JOIN threads "
+                      "ON threads.name=? "
+                      "INNER JOIN accounts "
+                      "ON threads.account_id=accounts.id "
+                      "INNER JOIN users "
+                      "ON users.id=accounts.user_id AND users.username=? "
+                      "WHERE messages.thread_id=threads.id LIMIT 1;",
+                      -1, &stmt, NULL);
+
+  if (room)
+    history_bind_text (stmt, 1, room, "binding when getting timestamp");
   else
-    status = sqlite3_prepare_v2 (self->db, "SELECT timestamp FROM chatty_chat WHERE account=(?) AND room=(?) LIMIT 1", -1, &stmt, NULL);
+    history_bind_text (stmt, 1, who, "binding when getting timestamp");
 
-  warn_if_sql_error (status, "preparing statement when getting timestamp");
-
-  history_bind_text (stmt, 1, account, "binding when getting timestamp");
-
-  if (who)
-    history_bind_text (stmt, 2, who, "binding when getting timestamp");
-  else
-    history_bind_text (stmt, 2, room, "binding when getting timestamp");
+  history_bind_text (stmt, 2, account, "binding when getting timestamp");
 
   if (sqlite3_step (stmt) == SQLITE_ROW)
     found = TRUE;
@@ -714,67 +1854,6 @@ history_exists (ChattyHistory *self,
   warn_if_sql_error (status, "finalizing when getting timestamp");
 
   g_task_return_boolean (task, found);
-}
-
-static void
-history_add_raw_message (ChattyHistory *self,
-                         GTask         *task)
-{
-  const char *account, *room, *who, *msg, *uid;
-  sqlite3_stmt *stmt;
-  int status, time_stamp, direction;
-  PurpleConversationType type;
-
-  g_assert (CHATTY_IS_HISTORY (self));
-  g_assert (G_IS_TASK (task));
-
-  if (!self->db) {
-    g_task_return_new_error (task,
-                             G_IO_ERROR, G_IO_ERROR_FAILED,
-                             "Error: Database not opened");
-    return;
-  }
-
-  account = g_object_get_data (G_OBJECT (task), "account");
-  room = g_object_get_data (G_OBJECT (task), "room");
-  type = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "type"));
-  who = g_object_get_data (G_OBJECT (task), "who");
-  msg = g_object_get_data (G_OBJECT (task), "message");
-  uid = g_object_get_data (G_OBJECT (task), "uid");
-  time_stamp = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "time"));
-  direction = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "dir"));
-
-  g_assert (account);
-  g_assert (uid);
-
-  if (type == PURPLE_CONV_TYPE_CHAT)
-    status = sqlite3_prepare_v2 (self->db, "INSERT INTO chatty_chat VALUES (?, ?, ?, ?, ?, ?, ?, ?)", -1, &stmt, NULL);
-  else
-    status = sqlite3_prepare_v2 (self->db, "INSERT INTO chatty_im VALUES (?, ?, ?, ?, ?, ?, ?)", -1, &stmt, NULL);
-
-  warn_if_sql_error (status, "preparing statement when adding raw message");
-
-  if (type == PURPLE_CONV_TYPE_CHAT) {
-    history_bind_text (stmt, CHAT_ACCOUNT_IDX, account, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_ROOM_IDX, room, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_WHO_IDX, who, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_UID_IDX, uid, "binding when adding CHAT message");
-    history_bind_text (stmt, CHAT_MESSAGE_IDX, msg, "binding when adding CHAT message");
-    history_bind_int (stmt, CHAT_TIMESTAMP_IDX, time_stamp, "binding when adding CHAT message");
-    history_bind_int (stmt, CHAT_DIRECTION_IDX, direction, "binding when adding CHAT message");
-  } else {
-    history_bind_text (stmt, IM_ACCOUNT_IDX, account, "binding when adding IM message");
-    history_bind_text (stmt, IM_WHO_IDX, who, "binding when adding IM message");
-    history_bind_text (stmt, IM_UID_IDX, uid, "binding when adding IM message");
-    history_bind_text (stmt, IM_MESSAGE_IDX, msg, "binding when adding IM message");
-    history_bind_int (stmt, IM_TIMESTAMP_IDX, time_stamp, "binding when adding IM message");
-    history_bind_int (stmt, IM_DIRECTION_IDX, direction, "binding when adding IM message");
-  }
-
-  status = sqlite3_step (stmt);
-  sqlite3_finalize (stmt);
-
-  g_task_return_boolean (task, status == SQLITE_DONE);
 }
 
 static gpointer
@@ -819,6 +1898,7 @@ chatty_history_finalize (GObject *object)
     g_warning ("Database not closed");
 
   g_clear_pointer (&self->queue, g_async_queue_unref);
+  g_free (self->db_path);
 
   G_OBJECT_CLASS (chatty_history_parent_class)->finalize (object);
 }
@@ -878,6 +1958,7 @@ chatty_history_open_async (ChattyHistory       *self,
                            gpointer             user_data)
 {
   GTask *task;
+  const char *country;
 
   g_return_if_fail (CHATTY_IS_HISTORY (self));
   g_return_if_fail (dir || !*dir);
@@ -893,11 +1974,13 @@ chatty_history_open_async (ChattyHistory       *self,
                                         chatty_history_worker,
                                         self);
 
+  country = chatty_settings_get_country_iso_code (chatty_settings_get_default ());
   task = g_task_new (self, NULL, callback, user_data);
   g_task_set_source_tag (task, chatty_history_open_async);
   g_task_set_task_data (task, history_open_db, NULL);
   g_object_set_data_full (G_OBJECT (task), "dir", dir, g_free);
   g_object_set_data_full (G_OBJECT (task), "file-name", g_strdup (file_name), g_free);
+  g_object_set_data_full (G_OBJECT (task), "country-code", g_strdup (country), g_free);
 
   g_async_queue_push (self->queue, task);
 }
@@ -1494,13 +2577,12 @@ chatty_history_chat_exists (const char *account,
 /**
  * chatty_history_add_message:
  * @account: a valid account name
- * @room: A room name or %NULL for IM chats
+ * @chat: A #ChattyChat
  * @who: A user name or %NULL
  * @message The chat message to store
  * @uid: (inout): A pointer to uid string for the @message
  * @flags: A #PurpleMessageFlags
  * @time_stamp: A unix time
- * @type: A #PurpleConversationType
  *
  * Store a message to database.  If @flags has
  * %PURPLE_MESSAGE_NO_LOG set, this method returns
@@ -1514,59 +2596,15 @@ chatty_history_chat_exists (const char *account,
  * %FALSE otherwise.
  */
 gboolean
-chatty_history_add_message (const char              *account,
-                            const char              *room,
-                            const char              *who,
-                            const char              *message,
-                            char                   **uid,
-                            PurpleMessageFlags       flags,
-                            time_t                   time_stamp,
-                            PurpleConversationType   type)
+chatty_history_add_message (ChattyChat    *chat,
+                            ChattyMessage *message)
 {
   ChattyHistory *self;
   g_autoptr(GTask) task = NULL;
-  int dir = 0;
-
-  g_return_val_if_fail (account, FALSE);
-  g_return_val_if_fail (uid, FALSE);
-
-  if (type == PURPLE_CONV_TYPE_CHAT)
-    g_return_val_if_fail (room, FALSE);
-
-  if (type == PURPLE_CONV_TYPE_IM)
-    g_return_val_if_fail (who, FALSE);
 
   self = chatty_history_get_default ();
-  g_return_val_if_fail (self->db, FALSE);
-
-  /* Don’t save if marked so */
-  if (flags & PURPLE_MESSAGE_NO_LOG)
-    return FALSE;
-
-  /* direction of message */
-  if (flags & PURPLE_MESSAGE_SYSTEM)
-    dir = 0;
-  else if (flags & PURPLE_MESSAGE_RECV)
-    dir = 1;
-  else if (flags & PURPLE_MESSAGE_SEND)
-    dir = -1;
-
-  if (!*uid)
-    *uid = g_uuid_string_random ();
-
   task = g_task_new (NULL, NULL, NULL, NULL);
-  g_object_ref (task);
-  g_task_set_task_data (task, history_add_raw_message, NULL);
-  g_object_set_data_full (G_OBJECT (task), "account", g_strdup (account), g_free);
-  g_object_set_data_full (G_OBJECT (task), "room", g_strdup (room), g_free);
-  g_object_set_data_full (G_OBJECT (task), "who", g_strdup (who), g_free);
-  g_object_set_data_full (G_OBJECT (task), "message", g_strdup (message), g_free);
-  g_object_set_data_full (G_OBJECT (task), "uid", g_strdup (*uid), g_free);
-  g_object_set_data (G_OBJECT (task), "dir", GINT_TO_POINTER (dir));
-  g_object_set_data (G_OBJECT (task), "time", GINT_TO_POINTER (time_stamp));
-  g_object_set_data (G_OBJECT (task), "type", GINT_TO_POINTER (type));
-
-  g_async_queue_push (self->queue, task);
+  chatty_history_add_message_async (self, chat, message, finish_cb, task);
 
   /* Wait until the task is completed */
   while (!g_task_get_completed (task))

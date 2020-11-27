@@ -49,7 +49,6 @@ struct _ChattyContact
 G_DEFINE_TYPE (ChattyContact, chatty_contact, CHATTY_TYPE_ITEM)
 
 
-/* Always assume it’s a phone number, we create only such contacts */
 static ChattyProtocol
 chatty_contact_get_protocols (ChattyItem *item)
 {
@@ -57,7 +56,10 @@ chatty_contact_get_protocols (ChattyItem *item)
 
   g_assert (CHATTY_IS_CONTACT (self));
 
-  return self->protocol;
+  if (self->protocol != CHATTY_PROTOCOL_NONE)
+    return self->protocol;
+
+  return CHATTY_ITEM_CLASS (chatty_contact_parent_class)->get_protocols (item);
 }
 
 
