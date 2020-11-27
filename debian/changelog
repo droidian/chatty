@@ -1,3 +1,12 @@
+chatty (0.2.0-1) unstable; urgency=medium
+
+  [ Evangelos Ribeiro Tzaras ]
+  * Update to version 0.2.0
+  [ Henry-Nicolas Tourneur ]
+  * Fix incorrect recommend package name (Closes: #973832)
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Fri, 27 Nov 2020 11:04:40 +0100
+
 chatty (0.1.17-1) unstable; urgency=medium
 
   [ Evangelos Ribeiro Tzaras ]
