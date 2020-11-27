@@ -24,13 +24,12 @@
 
 #pragma once
 
-#define HANDY_USE_UNSTABLE_API
 #include <handy.h>
 
 G_BEGIN_DECLS
 
 #define CHATTY_TYPE_SETTINGS_DIALOG (chatty_settings_dialog_get_type())
-G_DECLARE_FINAL_TYPE (ChattySettingsDialog, chatty_settings_dialog, CHATTY, SETTINGS_DIALOG, HdyDialog)
+G_DECLARE_FINAL_TYPE (ChattySettingsDialog, chatty_settings_dialog, CHATTY, SETTINGS_DIALOG, GtkDialog)
 
 GtkWidget *chatty_settings_dialog_new (GtkWindow *parent_window);
 

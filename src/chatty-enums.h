@@ -25,6 +25,22 @@ typedef enum
 } ChattyStatus;
 
 /**
+ * ChattyIdType:
+ *
+ * The type of ID used.  This can be different
+ * from protocol.  Say, a user may use a phone
+ * number to log in to a matrix account.
+ */
+typedef enum
+{
+  CHATTY_ID_UNKNOWN,
+  CHATTY_ID_PHONE,
+  CHATTY_ID_EMAIL,
+  CHATTY_ID_MATRIX,
+  CHATTY_ID_XMPP
+} ChattyIdType;
+
+/**
  * ChattyProtocol:
  *
  * Protocols supported/implemented by #ChattyUser
@@ -100,3 +116,17 @@ typedef enum
   CHATTY_STATUS_SENDING_FAILED,
   CHATTY_STATUS_DELIVERY_FAILED
 } ChattyMsgStatus;
+
+typedef enum
+{
+  CHATTY_MESSAGE_UNKNOWN,
+  CHATTY_MESSAGE_TEXT,
+  CHATTY_MESSAGE_HTML,
+  CHATTY_MESSAGE_HTML_ESCAPED,
+  CHATTY_MESSAGE_MATRIX_HTML,
+  CHATTY_MESSAGE_LOCATION,
+  CHATTY_MESSAGE_FILE,
+  CHATTY_MESSAGE_IMAGE,
+  CHATTY_MESSAGE_VIDEO,
+  chatty_message_AUDIO,
+} ChattyMsgType;

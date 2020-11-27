@@ -18,7 +18,7 @@ For an explicit list of dependencies check the Build-Depends entry in the
 [debian/control](https://source.puri.sm/Librem5/chatty/blob/master/debian/control#5)
 file.
 
-Libhandy (libhandy-0.0-dev) is available in [PureOS][0] and  Debian's
+Libhandy (libhandy-1-dev) is available in [PureOS][0] and  Debian's
 [experimental distribution][1].  If you don't want to fetch it from there you
 can [build it from souce][2].
 
@@ -115,6 +115,6 @@ If you don't have an XMPP account yet and want to subscribe to a service then pl
 - XEP-0313: Message Archive Management
 - XEP-0363: HTTP File Upload
 
-[0]: http://software.pureos.net/search_pkg?term=libhandy-0.0-dev
-[1]: https://packages.debian.org/search?keywords=libhandy-0.0-dev
+[0]: http://software.pureos.net/search_pkg?term=libhandy-1-dev
+[1]: https://packages.debian.org/search?keywords=libhandy-1-dev
 [2]: https://source.puri.sm/Librem5/libhandy

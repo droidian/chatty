@@ -473,6 +473,18 @@ chatty_pp_chat_get_name (ChattyItem *item)
 
   g_assert (CHATTY_IS_PP_CHAT (self));
 
+  /* If available, return locally saved contact name for SMS chats */
+  if (self->buddy &&
+      chatty_item_get_protocols (CHATTY_ITEM (item)) == CHATTY_PROTOCOL_SMS) {
+    PurpleBlistNode *node;
+
+    node = PURPLE_BLIST_NODE (self->buddy);
+
+    if (node->ui_data &&
+        chatty_pp_buddy_get_contact (node->ui_data))
+      return chatty_item_get_name (node->ui_data);
+  }
+
   if (self->pp_chat)
     name = purple_chat_get_name (self->pp_chat);
   else if (self->buddy)

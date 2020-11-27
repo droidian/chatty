@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="3.16"/>
-  <template class="ChattyUserInfoDialog" parent="HdyDialog">
+  <template class="ChattyUserInfoDialog" parent="GtkDialog">
     <property name="modal">True</property>
     <property name="can_focus">False</property>
     <property name="default_width">360</property>
@@ -30,7 +30,7 @@
                 <property name="orientation">vertical</property>
                 <property name="visible">True</property>
                 <child>
-                  <object class="HdyColumn">
+                  <object class="HdyClamp">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="halign">fill</property>
@@ -40,7 +40,7 @@
                     <property name="margin-end">12</property>
                     <property name="margin-top">24</property>
                     <property name="expand">True</property>
-                    <property name="maximum-width">400</property>
+                    <property name="maximum-size">400</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
@@ -202,7 +202,7 @@
                             <property name="expand">True</property>
                             <property name="selection-mode">none</property>
                             <style>
-                              <class name="frame"/>
+                              <class name="content"/>
                             </style>
                             <child>
                               <object class="HdyActionRow">
@@ -210,7 +210,7 @@
                                 <property name="visible">True</property>
                                 <property name="selectable">False</property>
                                 <property name="activatable">False</property>
-                                <child type="action">
+                                <child>
                                   <object class="GtkSwitch" id="switch_notify">
                                     <property name="can_focus">True</property>
                                     <property name="valign">center</property>
@@ -228,7 +228,7 @@
                                 <property name="selectable">False</property>
                                 <property name="activatable">False</property>
                                 <property name="visible" bind-source="listbox_fps" bind-property="visible" bind-flags="sync-create"/>
-                                <child type="action">
+                                <child>
                                   <object class="GtkSwitch" id="switch_encrypt">
                                     <property name="can_focus">True</property>
                                     <property name="valign">center</property>
@@ -264,7 +264,7 @@
                             <signal name="add" handler="list_fps_changed_cb" swapped="yes"/>
                             <signal name="remove" handler="list_fps_changed_cb" swapped="yes"/>
                             <style>
-                              <class name="frame"/>
+                              <class name="content"/>
                             </style>
                           </object>
                         </child>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ChattySettingsDialog" parent="HdyDialog">
+  <template class="ChattySettingsDialog" parent="GtkDialog">
     <property name="default-height">480</property>
     <property name="default-width">360</property>
     <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
@@ -97,12 +97,13 @@
                         <property name="selection-mode">none</property>
                         <signal name="row-activated" handler="account_list_row_activated_cb" swapped="yes"/>
                         <style>
-                          <class name="frame"/>
+                          <class name="content"/>
                         </style>
                         <child>
                           <object class="HdyActionRow" id="add_account_row">
                             <property name="visible">True</property>
                             <property name="title" translatable="yes">Add new account…</property>
+                            <property name="activatable">True</property>
                           </object>
                         </child>
                       </object>
@@ -122,7 +123,7 @@
                         <property name="title" translatable="yes">Message Receipts</property>
                         <property name="subtitle" translatable="yes">Confirm received messages</property>
                         <property name="activatable-widget">send_receipts_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="send_receipts_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -137,7 +138,7 @@
                         <property name="title" translatable="yes">Message Archive Management</property>
                         <property name="subtitle" translatable="yes">Sync conversations with chat server</property>
                         <property name="activatable-widget">message_archive_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="message_archive_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -152,7 +153,7 @@
                         <property name="title" translatable="yes">Message Carbon Copies</property>
                         <property name="subtitle" translatable="yes">Share chat history among devices</property>
                         <property name="activatable-widget">message_carbons_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="message_carbons_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -167,7 +168,7 @@
                         <property name="title" translatable="yes">Typing Notification</property>
                         <property name="subtitle" translatable="yes">Send typing messages</property>
                         <property name="activatable-widget">typing_notification_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="typing_notification_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -190,7 +191,7 @@
                         <property name="title" translatable="yes">Indicate Offline Contacts</property>
                         <property name="subtitle" translatable="yes">Grey out avatars from offline contacts</property>
                         <property name="activatable-widget">indicate_offline_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="indicate_offline_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -205,7 +206,7 @@
                         <property name="title" translatable="yes">Indicate Idle Contacts</property>
                         <property name="subtitle" translatable="yes">Blur avatars from idle contacts</property>
                         <property name="activatable-widget">indicate_idle_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="indicate_idle_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -220,7 +221,7 @@
                         <property name="title" translatable="yes">Indicate Unknown Contacts</property>
                         <property name="subtitle" translatable="yes">Color unknown contact ID red</property>
                         <property name="activatable-widget">indicate_unknown_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="indicate_unknown_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -243,7 +244,7 @@
                         <property name="title" translatable="yes">Graphical Emoticons</property>
                         <property name="subtitle" translatable="yes">Convert ASCII emoticons</property>
                         <property name="activatable-widget">convert_smileys_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="convert_smileys_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -258,7 +259,7 @@
                         <property name="title" translatable="yes">Return = Send Message</property>
                         <property name="subtitle" translatable="yes">Send message with return key</property>
                         <property name="activatable-widget">return_sends_switch</property>
-                        <child type="action">
+                        <child>
                           <object class="GtkSwitch" id="return_sends_switch">
                             <property name="visible">True</property>
                             <property name="valign">center</property>
@@ -275,233 +276,206 @@
             </child>
 
             <child>
-              <object class="GtkScrolledWindow">
+              <object class="HdyPreferencesPage">
                 <property name="visible">True</property>
-                <property name="propagate_natural_height">True</property>
-                <property name="kinetic-scrolling">True</property>
-                <property name="hscrollbar_policy">never</property>
-                <property name="expand">True</property>
                 <child>
-                  <object class="HdyColumn">
+                  <object class="HdyPreferencesGroup">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="margin-bottom">32</property>
-                    <property name="margin-start">32</property>
-                    <property name="margin-end">32</property>
-                    <property name="margin-top">24</property>
-                    <property name="expand">True</property>
-                    <property name="maximum-width">400</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkButton" id="avatar_button">
                         <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
+                        <property name="halign">center</property>
                         <property name="can_focus">False</property>
-                        <property name="valign">start</property>
-                        <property name="expand">True</property>
+                        <property name="focus_on_click">False</property>
+                        <property name="receives_default">False</property>
+                        <property name="margin_bottom">24</property>
+                        <signal name="clicked" handler="settings_avatar_button_clicked_cb" swapped="yes"/>
                         <child>
-                          <object class="GtkButton" id="avatar_button">
+                          <object class="ChattyAvatar" id="avatar_image">
                             <property name="visible">True</property>
-                            <property name="halign">center</property>
-                            <property name="can_focus">False</property>
-                            <property name="focus_on_click">False</property>
-                            <property name="receives_default">False</property>
-                            <property name="margin_bottom">24</property>
-                            <signal name="clicked" handler="settings_avatar_button_clicked_cb" swapped="yes"/>
-                            <child>
-                              <object class="ChattyAvatar" id="avatar_image">
-                                <property name="visible">True</property>
-                                <property name="pixel_size">96</property>
-                              </object>
-                            </child>
+                            <property name="pixel_size">96</property>
                           </object>
                         </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkGrid">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="margin_bottom">24</property>
+                        <property name="row_spacing">12</property>
+                        <property name="column_spacing">6</property>
                         <child>
-                          <object class="GtkGrid">
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Account ID</property>
+                            <property name="xalign">1</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="margin_bottom">24</property>
-                            <property name="row_spacing">12</property>
-                            <property name="column_spacing">6</property>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="label" translatable="yes">Account ID</property>
-                                <property name="xalign">1</property>
-                                <property name="visible">True</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">0</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="account_id_entry">
-                                <property name="activates_default">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="visible">True</property>
-                                <property name="sensitive">False</property>
-                                <style>
-                                  <class name="entry_hide"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">0</property>
-                                <property name="width">2</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="label" translatable="yes">Protocol</property>
-                                <property name="xalign">1</property>
-                                <property name="visible">True</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">1</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="account_protocol_label">
-                                <property name="visible">True</property>
-                                <property name="xalign">0</property>
-                                <property name="ellipsize">end</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">1</property>
-                                <property name="width">2</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="label" translatable="yes">Status</property>
-                                <property name="xalign">1</property>
-                                <property name="visible">True</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">2</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="status_label">
-                                <property name="xalign">0</property>
-                                <property name="ellipsize">end</property>
-                                <property name="visible">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">2</property>
-                                <property name="width">2</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="label" translatable="yes">Password</property>
-                                <property name="xalign">1</property>
-                                <property name="visible">True</property>
-                                <style>
-                                  <class name="dim-label"/>
-                                </style>
-                              </object>
-                              <packing>
-                                <property name="left_attach">0</property>
-                                <property name="top_attach">3</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="password_entry">
-                                <property name="hexpand">True</property>
-                                <property name="input_purpose">password</property>
-                                <property name="sensitive">False</property>
-                                <property name="visible">True</property>
-                                <property name="visibility">False</property>
-                                <property name="primary_icon_sensitive">False</property>
-                                <property name="secondary_icon_activatable">True</property>
-                                <property name="secondary_icon_name">eye-not-looking-symbolic</property>
-                                <property name="secondary_icon_sensitive">True</property>
-                                <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">3</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="edit_password_button">
-                                <property name="can-focus">False</property>
-                                <property name="margin-right">12</property>
-                                <property name="valign">center</property>
-                                <property name="visible">True</property>
-                                <signal name="clicked" handler="settings_edit_password_clicked_cb" swapped="yes"/>
-                                <child>
-                                  <object class="GtkImage">
-                                    <property name="icon-name">document-edit-symbolic</property>
-                                    <property name="icon-size">1</property>
-                                    <property name="visible">True</property>
-                                  </object>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="left_attach">2</property>
-                                <property name="top_attach">3</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="delete_account_button">
-                                <property name="halign">start</property>
-                                <property name="margin_top">12</property>
-                                <property name="label" translatable="yes">Delete Account</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <signal name="clicked" handler="settings_delete_account_clicked_cb" swapped="yes"/>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">4</property>
-                              </packing>
-                            </child>
+                            <style>
+                             <class name="dim-label"/>
+                            </style>
                           </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="account_id_entry">
+                            <property name="activates_default">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <style>
+                             <class name="entry_hide"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">0</property>
+                            <property name="width">2</property>
+                            <property name="height">1</property>
+                          </packing>
                         </child>
                         <child>
                           <object class="GtkLabel">
-                            <property name="visible">False</property>
-                            <property name="can_focus">False</property>
-                            <property name="expand">True</property>
-                            <property name="label" translatable="yes">Own Fingerprint</property>
-                            <property name="justify">left</property>
-                            <property name="halign">start</property>
-                            <property name="margin-top">24</property>
-                            <property name="margin-bottom">12</property>
-                            <property name="visible" bind-source="fingerprint_list" bind-property="visible" bind-flags="sync-create"/>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                            </attributes>
+                            <property name="label" translatable="yes">Protocol</property>
+                            <property name="xalign">1</property>
+                            <property name="visible">True</property>
+                            <style>
+                             <class name="dim-label"/>
+                            </style>
                           </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">1</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
                         </child>
+                        <child>
+                          <object class="GtkLabel" id="account_protocol_label">
+                            <property name="visible">True</property>
+                            <property name="xalign">0</property>
+                            <property name="ellipsize">end</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">1</property>
+                            <property name="width">2</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Status</property>
+                            <property name="xalign">1</property>
+                            <property name="visible">True</property>
+                            <style>
+                             <class name="dim-label"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">2</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="status_label">
+                            <property name="xalign">0</property>
+                            <property name="ellipsize">end</property>
+                            <property name="visible">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">2</property>
+                            <property name="width">2</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Password</property>
+                            <property name="xalign">1</property>
+                            <property name="visible">True</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">3</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="password_entry">
+                            <property name="hexpand">True</property>
+                            <property name="input_purpose">password</property>
+                            <property name="sensitive">False</property>
+                            <property name="visible">True</property>
+                            <property name="visibility">False</property>
+                            <property name="primary_icon_sensitive">False</property>
+                            <property name="secondary_icon_activatable">True</property>
+                            <property name="secondary_icon_name">eye-not-looking-symbolic</property>
+                            <property name="secondary_icon_sensitive">True</property>
+                            <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">3</property>
+                            <property name="width">1</property>
+                            <property name="height">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="edit_password_button">
+                            <property name="can-focus">False</property>
+                            <property name="margin-right">12</property>
+                            <property name="valign">center</property>
+                            <property name="visible">True</property>
+                            <signal name="clicked" handler="settings_edit_password_clicked_cb" swapped="yes"/>
+                            <child>
+                              <object class="GtkImage">
+                                <property name="icon-name">document-edit-symbolic</property>
+                                <property name="icon-size">1</property>
+                                <property name="visible">True</property>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="left_attach">2</property>
+                            <property name="top_attach">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="delete_account_button">
+                            <property name="halign">start</property>
+                            <property name="margin_top">12</property>
+                            <property name="label" translatable="yes">Delete Account</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <signal name="clicked" handler="settings_delete_account_clicked_cb" swapped="yes"/>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">4</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                    <child>
+                      <object class="HdyPreferencesGroup">
+                        <property name="visible" bind-source="fingerprint_list" bind-property="visible" bind-flags="sync-create"/>
+                        <property name="title" translatable="yes">Own Fingerprint</property>
                         <child>
                           <object class="GtkListBox" id="fingerprint_list">
                             <property name="visible">False</property>
@@ -509,25 +483,15 @@
                             <property name="expand">True</property>
                             <property name="selection-mode">none</property>
                             <style>
-                              <class name="frame"/>
+                              <class name="content"/>
                             </style>
                           </object>
                         </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">False</property>
-                            <property name="expand">True</property>
-                            <property name="label" translatable="yes">Other Devices</property>
-                            <property name="justify">left</property>
-                            <property name="halign">start</property>
-                            <property name="margin-top">24</property>
-                            <property name="margin-bottom">12</property>
-                            <property name="visible" bind-source="fingerprint_device_list" bind-property="visible" bind-flags="sync-create"/>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                            </attributes>
-                          </object>
-                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="HdyPreferencesGroup">
+                        <property name="visible" bind-source="fingerprint_device_list" bind-property="visible" bind-flags="sync-create"/>
                         <child>
                           <object class="GtkListBox" id="fingerprint_device_list">
                             <property name="visible">False</property>
@@ -535,14 +499,12 @@
                             <property name="expand">True</property>
                             <property name="selection-mode">none</property>
                             <style>
-                              <class name="frame"/>
+                              <class name="content"/>
                             </style>
                           </object>
                         </child>
                       </object>
                     </child>
-                  </object>
-                </child>
               </object>
               <packing>
                 <property name="name">edit-account-view</property>
@@ -550,191 +512,160 @@
             </child>
 
             <child>
-              <object class="GtkScrolledWindow">
-                <property name="propagate_natural_height">True</property>
-                <property name="kinetic-scrolling">True</property>
-                <property name="hscrollbar_policy">never</property>
-                <property name="expand">True</property>
+              <object class="HdyPreferencesPage">
                 <property name="visible">True</property>
                 <child>
-                  <object class="HdyColumn">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="halign">fill</property>
-                    <property name="valign">fill</property>
-                    <property name="margin-bottom">24</property>
-                    <property name="margin-start">32</property>
-                    <property name="margin-end">24</property>
-                    <property name="margin-top">32</property>
-                    <property name="expand">True</property>
-                    <property name="maximum-width">600</property>
+                  <object class="HdyPreferencesGroup" id="protocol_list_group">
+                    <property name="visible">true</property>
                     <child>
-                      <object class="GtkBox">
-                        <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
+                      <object class="GtkListBox" id="protocol_list">
+                        <property name="visible">False</property>
                         <property name="can_focus">False</property>
-                        <property name="valign">start</property>
-                        <property name="expand">True</property>
+                        <property name="selection-mode">none</property>
+                        <property name="margin-bottom">24</property>
+                        <style>
+                          <class name="content"/>
+                        </style>
                         <child>
-                          <object class="GtkLabel" id="protocol_title_label">
+                          <object class="HdyActionRow">
+                            <property name="activatable_widget">xmpp_radio_button</property>
+                            <property name="title" translatable="yes">XMPP</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="expand">True</property>
-                            <property name="justify">left</property>
-                            <property name="halign">start</property>
-                            <property name="margin-bottom">12</property>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                            </attributes>
+                            <child type="prefix">
+                              <object class="GtkRadioButton" id="xmpp_radio_button">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
+                              </object>
+                            </child>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkListBox" id="protocol_list">
+                          <object class="HdyActionRow" id="matrix_row">
+                            <property name="activatable_widget">matrix_radio_button</property>
+                            <property name="title" translatable="yes">Matrix</property>
                             <property name="visible">False</property>
-                            <property name="can_focus">False</property>
-                            <property name="expand">True</property>
-                            <property name="selection-mode">none</property>
-                            <property name="margin-bottom">24</property>
-                            <style>
-                              <class name="frame"/>
-                            </style>
-                            <child>
-                              <object class="HdyActionRow">
-                                <property name="activatable_widget">xmpp_radio_button</property>
-                                <property name="title" translatable="yes">XMPP</property>
+                            <child type="prefix">
+                              <object class="GtkRadioButton" id="matrix_radio_button">
                                 <property name="visible">True</property>
-                                <child type="prefix">
-                                  <object class="GtkRadioButton" id="xmpp_radio_button">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="HdyActionRow" id="matrix_row">
-                                <property name="activatable_widget">matrix_radio_button</property>
-                                <property name="title" translatable="yes">Matrix</property>
-                                <property name="visible">False</property>
-                                <child type="prefix">
-                                  <object class="GtkRadioButton" id="matrix_radio_button">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="group">xmpp_radio_button</property>
-                                    <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="HdyActionRow" id="telegram_row">
-                                <property name="activatable_widget">telegram_radio_button</property>
-                                <property name="title" translatable="yes">Telegram</property>
-                                <property name="visible">False</property>
-                                <child type="prefix">
-                                  <object class="GtkRadioButton" id="telegram_radio_button">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="group">xmpp_radio_button</property>
-                                    <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
-                                  </object>
-                                </child>
+                                <property name="can_focus">True</property>
+                                <property name="group">xmpp_radio_button</property>
+                                <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
                               </object>
                             </child>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkListBox" id="new_account_settings_list">
+                          <object class="HdyActionRow" id="telegram_row">
+                            <property name="activatable_widget">telegram_radio_button</property>
+                            <property name="title" translatable="yes">Telegram</property>
+                            <property name="visible">False</property>
+                            <child type="prefix">
+                              <object class="GtkRadioButton" id="telegram_radio_button">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="group">xmpp_radio_button</property>
+                                <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible">true</property>
+                    <child>
+                      <object class="GtkListBox" id="new_account_settings_list">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="expand">True</property>
+                        <property name="selection-mode">none</property>
+                        <property name="margin-bottom">24</property>
+                        <style>
+                          <class name="content"/>
+                        </style>
+                        <child>
+                          <object class="HdyActionRow">
+                            <property name="selectable">False</property>
+                            <property name="activatable">False</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="expand">True</property>
-                            <property name="selection-mode">none</property>
-                            <property name="margin-bottom">24</property>
-                            <style>
-                              <class name="frame"/>
-                            </style>
-                            <child>
-                              <object class="HdyActionRow">
-                                <property name="selectable">False</property>
-                                <property name="activatable">False</property>
+                            <child type="prefix">
+                              <object class="GtkLabel">
+                                <property name="label" translatable="no">User ID</property>
+                                <property name="xalign">1</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child type="prefix">
-                                  <object class="GtkLabel">
-                                    <property name="label" translatable="no">User ID</property>
-                                    <property name="xalign">1</property>
-                                    <property name="visible">True</property>
-                                    <property name="halign">start</property>
-                                  </object>
-                                </child>
-                                <child type="action">
-                                  <object class="GtkEntry" id="new_account_id_entry">
-                                    <property name="activates_default">True</property>
-                                    <property name="hexpand">False</property>
-                                    <property name="visible">True</property>
-                                    <property name="halign">end</property>
-                                    <property name="valign">center</property>
-                                    <signal name="changed" handler="settings_account_id_changed_cb" swapped="yes"/>
-                                  </object>
-                                </child>
+                                <property name="halign">start</property>
                               </object>
                             </child>
                             <child>
-                              <object class="HdyActionRow">
-                                <property name="selectable">False</property>
-                                <property name="activatable">False</property>
-                                <property name="visible" bind-source="server_url_entry" bind-property="visible" bind-flags="sync-create"/>
-                                <property name="can_focus">False</property>
-                                <child type="prefix">
-                                  <object class="GtkLabel">
-                                    <property name="label" translatable="yes">Provider</property>
-                                    <property name="xalign">1</property>
-                                    <property name="visible">True</property>
-                                    <property name="halign">start</property>
-                                  </object>
-                                </child>
-                                <child type="action">
-                                  <object class="GtkEntry" id="server_url_entry">
-                                    <property name="activates_default">True</property>
-                                    <property name="hexpand">False</property>
-                                    <property name="visible">False</property>
-                                    <property name="halign">end</property>
-                                    <property name="valign">center</property>
-                                  </object>
-                                </child>
+                              <object class="GtkEntry" id="new_account_id_entry">
+                                <property name="activates_default">True</property>
+                                <property name="hexpand">False</property>
+                                <property name="visible">True</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <signal name="changed" handler="settings_account_id_changed_cb" swapped="yes"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="HdyActionRow">
+                            <property name="selectable">False</property>
+                            <property name="activatable">False</property>
+                            <property name="visible" bind-source="server_url_entry" bind-property="visible" bind-flags="sync-create"/>
+                            <property name="can_focus">False</property>
+                            <child type="prefix">
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Provider</property>
+                                <property name="xalign">1</property>
+                                <property name="visible">True</property>
+                                <property name="halign">start</property>
                               </object>
                             </child>
                             <child>
-                              <object class="HdyActionRow">
-                                <property name="selectable">False</property>
-                                <property name="activatable">False</property>
+                              <object class="GtkEntry" id="server_url_entry">
+                                <property name="activates_default">True</property>
+                                <property name="hexpand">False</property>
+                                <property name="visible">False</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="HdyActionRow">
+                            <property name="selectable">False</property>
+                            <property name="activatable">False</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child type="prefix">
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Password</property>
+                                <property name="xalign">1</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <child type="prefix">
-                                  <object class="GtkLabel">
-                                    <property name="label" translatable="yes">Password</property>
-                                    <property name="xalign">1</property>
-                                    <property name="visible">True</property>
-                                    <property name="halign">start</property>
-                                  </object>
-                                </child>
-                                <child type="action">
-                                  <object class="GtkEntry" id="new_password_entry">
-                                    <property name="visible">True</property>
-                                    <property name="halign">end</property>
-                                    <property name="valign">center</property>
-                                    <property name="input_purpose">password</property>
-                                    <property name="activates_default">True</property>
-                                    <property name="hexpand">False</property>
-                                    <property name="visibility">False</property>
-                                    <property name="primary_icon_sensitive">False</property>
-                                    <property name="secondary_icon_activatable">True</property>
-                                    <property name="secondary_icon_name">eye-not-looking-symbolic</property>
-                                    <property name="secondary_icon_sensitive">True</property>
-                                    <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
-                                  </object>
-                                </child>
+                                <property name="halign">start</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="new_password_entry">
+                                <property name="visible">True</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="input_purpose">password</property>
+                                <property name="activates_default">True</property>
+                                <property name="hexpand">False</property>
+                                <property name="visibility">False</property>
+                                <property name="primary_icon_sensitive">False</property>
+                                <property name="secondary_icon_activatable">True</property>
+                                <property name="secondary_icon_name">eye-not-looking-symbolic</property>
+                                <property name="secondary_icon_sensitive">True</property>
+                                <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
                               </object>
                             </child>
                           </object>
@@ -748,7 +679,6 @@
                 <property name="name">add-account-view</property>
               </packing>
             </child>
-
           </object>
         </child>
 

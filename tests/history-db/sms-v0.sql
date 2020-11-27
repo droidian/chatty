@@ -1,0 +1,38 @@
+BEGIN TRANSACTION;
+CREATE TABLE chatty_im(
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  timestamp INTEGER NOT_NULL,
+  direction INTEGER NOT NULL,
+  account TEXT NOT_NULL,
+  who TEXT NOT_NULL,
+  uid TEXT NOT_NULL,
+  message TEXT,
+  UNIQUE (timestamp, message)
+);
+CREATE TABLE chatty_chat(
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  timestamp INTEGER NOT_NULL,
+  direction INTEGER NOT NULL,
+  account TEXT NOT NULL,
+  room TEXT NOT_NULL,
+  who TEXT,
+  uid TEXT NOT_NULL,
+  message TEXT,
+  UNIQUE (timestamp, message)
+);
+CREATE UNIQUE INDEX chatty_im_acc_uid ON chatty_im(account, uid);
+CREATE UNIQUE INDEX chatty_chat_room_uid ON chatty_chat(room, uid);
+
+INSERT INTO chatty_im VALUES(NULL,1600074685,1,'SMS','+12133210011','259478cf-64b3-44e1-9b1c-5d1773edc601','Hi');
+INSERT INTO chatty_im VALUES(NULL,1600074686,-1,'SMS','(213) 321-0011','22be2899-8c1e-4501-ab33-979c356a6764','Hello');
+INSERT INTO chatty_im VALUES(NULL,1600074687,-1,'SMS','+1 213 321 0011','af65adc0-2d80-4de8-83bb-9bf9ea4ebd5d','How are you?');
+INSERT INTO chatty_im VALUES(NULL,1600074789,1,'SMS','+12133210011','1a1cbd44-7526-4032-9665-45aee085ab65','I''m fine');
+INSERT INTO chatty_im VALUES(NULL,1600074800,1,'SMS','Mobile@5G','601f2a66-e6a6-4083-9dce-e5d78fb57520','Get Unlimitted 5G');
+INSERT INTO chatty_im VALUES(NULL,1600074802,1,'SMS','5555','4dafafd9-734c-4f86-b1ec-09aa327b8a88','Free unlimitted internet 4 99$');
+INSERT INTO chatty_im VALUES(NULL,1600074809,1,'SMS','Mobile@5G','271fe95c-5d47-4ffe-ae62-7f2f6b749711','Get Unlimmtted 5G');
+INSERT INTO chatty_im VALUES(NULL,1600075652,1,'SMS','+919876121212','1218070f-c820-40e1-bd33-5099d894683a','Hello');
+INSERT INTO chatty_im VALUES(NULL,1600075658,-1,'SMS','+919876121212','9abcc777-5b06-4570-9b83-48603a49add2','Hi.');
+INSERT INTO chatty_im VALUES(NULL,1600075789,-1,'SMS','(213) 345-6789','c5b99952-5517-4620-8f28-fb97f5017cee','May I call you?');
+INSERT INTO chatty_im VALUES(NULL,1600075889,1,'SMS','+12133456789','f098e603-5ac1-4d5a-bcad-c7fe84c91252','Sure, you may call me');
+
+COMMIT;

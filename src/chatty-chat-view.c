@@ -366,16 +366,12 @@ chat_view_message_row_new (ChattyMessage  *message,
 {
   GtkWidget *row;
   ChattyProtocol protocol;
-  gboolean is_im = TRUE;
 
   g_assert (CHATTY_IS_MESSAGE (message));
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  if (self->message_type == CHATTY_MSG_TYPE_MUC)
-    is_im = FALSE;
-
   protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
-  row = chatty_message_row_new (message, protocol, is_im);
+  row = chatty_message_row_new (message, protocol, chatty_chat_is_im (self->chat));
   chatty_message_row_set_alias (CHATTY_MESSAGE_ROW (row),
                                 chatty_message_get_user_alias (message));
 
@@ -703,7 +699,8 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
     }
 
     if (protocol == CHATTY_PROTOCOL_MATRIX ||
-        protocol == CHATTY_PROTOCOL_XMPP)
+        protocol == CHATTY_PROTOCOL_XMPP ||
+        protocol == CHATTY_PROTOCOL_TELEGRAM)
       escaped = purple_markup_escape_text (message, -1);
 
     if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM) {
@@ -893,7 +890,7 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
   widget_class->map = chatty_chat_view_map;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/sm/puri/chatty/"
+                                               "/sm/puri/Chatty/"
                                                "ui/chatty-chat-view.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, message_list);

@@ -9,55 +9,246 @@
 #include <glib/gi18n.h>
 #include "chatty-manager.h"
 #include "chatty-settings.h"
+#include "chatty-phone-utils.h"
 #include "chatty-utils.h"
 #include <libebook-contacts/libebook-contacts.h>
 #include <gdesktop-enums.h>
 
 
-static const char *avatar_colors[] = {
-  "E57373", "F06292", "BA68C8", "9575CD",
-  "7986CB", "64B5F6", "4FC3F7", "4DD0E1",
-  "4DB6AC", "81C784", "AED581", "DCE775",
-  "FFD54F", "FFB74D", "FF8A65", "A1887F"
-};
+#define DIGITS      "0123456789"
+#define ASCII_CAPS  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#define ASCII_SMALL "abcdefghijklmnopqrstuvwxyz"
 
-
-char* 
-chatty_utils_check_phonenumber (const char *phone_number)
+/*
+ * matrix_id_is_valid:
+ * @name: A string
+ * @prefix: The allowed prefix
+ *
+ * Check if @name is a valid username
+ * or channel name
+ *
+ * @prefix should be one of ‘#’ or ‘@’.
+ *
+ * See https://matrix.org/docs/spec/appendices#id12
+ */
+static gboolean
+matrix_id_is_valid (const char *name,
+                    char        prefix)
 {
-  ChattySettings *settings;
+  guint len;
+
+  if (!name || !*name)
+    return FALSE;
+
+  if (prefix != '@' && prefix != '#')
+    return FALSE;
+
+  if (*(name + 1) == ':')
+    return FALSE;
+
+  if (prefix == '@' && *name != '@')
+    return FALSE;
+
+  /* Group name can have '#' or '!' (Group id) as prefix */
+  if (prefix == '#' && *name != '#' && *name != '!')
+    return FALSE;
+
+  len = strlen (name);
+
+  if (len > 255)
+    return FALSE;
+
+  if (strspn (name + 1, DIGITS ASCII_CAPS ASCII_SMALL ":._=/-") != len - 1)
+    return FALSE;
+
+  if (len >= 4 &&
+      *(name + len - 1) != ':' &&
+      !strchr (name + 1, prefix) &&
+      strchr (name, ':'))
+    return TRUE;
+
+  return FALSE;
+}
+
+char *
+chatty_utils_check_phonenumber (const char *phone_number,
+                                const char *country)
+{
   EPhoneNumber      *number;
-  g_autofree char   *stripped = NULL;
+  g_autofree char   *raw = NULL;
+  char              *stripped;
   char              *result;
   g_autoptr(GError)  err = NULL;
+
+  g_debug ("%s number %s", G_STRLOC, phone_number);
 
   if (!phone_number || !*phone_number)
     return NULL;
 
-  stripped = g_uri_unescape_string (phone_number, NULL);
+  raw = g_uri_unescape_string (phone_number, NULL);
 
-  settings = chatty_settings_get_default ();
-  number = e_phone_number_from_string (stripped,
-                                       chatty_settings_get_country_iso_code (settings),
-                                       &err);
+  if (g_str_has_prefix (raw, "sms:"))
+    stripped = raw + strlen ("sms:");
+  else
+    stripped = raw;
 
-  if (!number || !e_phone_number_is_supported ()) {
-    g_debug ("%s %s: %s", __func__, phone_number, err->message);
+  /* Skip sms:// */
+  while (*stripped == '/')
+    stripped++;
 
-    result = NULL;
-  } else {
-    if (g_strrstr (phone_number, "+")) {
-      result = e_phone_number_to_string (number, E_PHONE_NUMBER_FORMAT_E164);
-    } else {
-      result = e_phone_number_to_string (number, E_PHONE_NUMBER_FORMAT_NATIONAL);
-    }
+  if (strspn (stripped, "+()- 0123456789") != strlen (stripped))
+    return NULL;
+
+  if (!e_phone_number_is_supported ()) {
+    g_warning ("evolution-data-server built without libphonenumber support");
+    return NULL;
   }
+
+  number = e_phone_number_from_string (stripped, country, &err);
+
+  if (!number) {
+    g_debug ("Error parsing ‘%s’ for country ‘%s’: %s", phone_number, country, err->message);
+
+    return NULL;
+  }
+
+  if (*phone_number != '+' &&
+      !chatty_phone_utils_is_valid (phone_number, country))
+    result = e_phone_number_to_string (number, E_PHONE_NUMBER_FORMAT_NATIONAL);
+  else
+    result = e_phone_number_to_string (number, E_PHONE_NUMBER_FORMAT_E164);
 
   e_phone_number_free (number);
 
   return result;
 }
 
+/**
+ * chatty_utils_username_is_valid:
+ * @name: A string
+ * @protocol: A #ChattyProtocol flag
+ *
+ * Check if @name is a valid username for the given
+ * @protocol(s). Please note that only rudimentary
+ * checks are done for the validation process.
+ *
+ * Currently, %CHATTY_PROTOCOL_XMPP, %CHATTY_PROTOCOL_SMS
+ * and %CHATTY_PROTOCOL_MATRIX or their combinations are
+ * supported for @protocol.
+ *
+ * Returns: A #ChattyProtocol with all valid protocols
+ * set.
+ */
+ChattyProtocol
+chatty_utils_username_is_valid (const char     *name,
+                                ChattyProtocol  protocol)
+{
+  ChattyProtocol valid = 0;
+  guint len;
+
+  if (!name)
+    return valid;
+
+  len = strlen (name);
+  if (len < 3)
+    return valid;
+
+  if (protocol & CHATTY_PROTOCOL_XMPP) {
+    const char *at_char, *at_char_end;
+
+    at_char = strchr (name, '@');
+    at_char_end = strrchr (name, '@');
+
+    /* Consider valid if @name has only one ‘@’ and @name
+     * doesn’t start nor end with a ‘@’
+     * See https://xmpp.org/rfcs/rfc3920.html#addressing
+     */
+    /* XXX: We are ignoring one valid case.  ie, domain alone
+     * or domain/resource */
+    if (at_char &&
+        /* Should not begin with ‘@’ */
+        *name != '@' &&
+        /* should not end with ‘@’ */
+        *(at_char + 1) &&
+        /* We require exact one ‘@’ */
+        at_char == at_char_end)
+      valid |= CHATTY_PROTOCOL_XMPP;
+  }
+
+  if (protocol & CHATTY_PROTOCOL_MATRIX) {
+    if (matrix_id_is_valid (name, '@'))
+      valid |= CHATTY_PROTOCOL_MATRIX;
+  }
+
+  if (protocol & CHATTY_PROTOCOL_TELEGRAM && *name == '+') {
+    /* country code doesn't matter as we use international format numbers */
+    if (chatty_phone_utils_is_valid (name, "US"))
+      valid |= CHATTY_PROTOCOL_TELEGRAM;
+  }
+
+  if (protocol & CHATTY_PROTOCOL_SMS && len < 20) {
+    const char *end;
+    guint end_len;
+
+    end = name;
+    if (*end == '+')
+      end++;
+
+    end_len = strspn (end, "0123456789- ()");
+
+    if (*name == '+')
+      end_len++;
+
+    if (end_len == len)
+      valid |= CHATTY_PROTOCOL_SMS;
+  }
+
+  return valid;
+}
+
+/**
+ * chatty_utils_groupname_is_valid:
+ * @name: A string
+ * @protocol: A #ChattyProtocol flag
+ *
+ * Check if @name is a valid group name for the given
+ * @protocol(s).  Please note that only rudimentary checks
+ * are done for the validation process.
+ *
+ * Currently %CHATTY_PROTOCOL_XMPP and %CHATTY_PROTOCOL_MATRIX
+ * or their combinations are supported for @protocol.
+ *
+ * Returns: A #ChattyProtocol with all valid protocols
+ * set.
+ */
+ChattyProtocol
+chatty_utils_groupname_is_valid (const char     *name,
+                                 ChattyProtocol  protocol)
+{
+  ChattyProtocol valid = 0;
+  guint len;
+
+  if (!name)
+    return valid;
+
+  len = strlen (name);
+  if (len < 3)
+    return valid;
+
+  if (protocol & CHATTY_PROTOCOL_XMPP) {
+    if (chatty_utils_username_is_valid (name, CHATTY_PROTOCOL_XMPP))
+      valid |= CHATTY_PROTOCOL_XMPP;
+  }
+
+  if (protocol & CHATTY_PROTOCOL_MATRIX) {
+    /* Consider valid if @name starts with ‘#’ and has only one
+     * ‘#’, has ‘:’, and has atleast 4 chars*/
+    if (matrix_id_is_valid (name, '#'))
+      valid |= CHATTY_PROTOCOL_MATRIX;
+  }
+
+  return valid;
+}
 
 char *
 chatty_utils_jabber_id_strip (const char *name)
@@ -234,20 +425,6 @@ chatty_utils_create_fingerprint_row (const char *fp,
   return GTK_WIDGET(row);
 }
 
-const char *
-chatty_utils_get_color_for_str (const char *str)
-{
-  guint hash;
-
-  if (!str)
-    str = "";
-
-  hash = g_str_hash (str);
-
-  return avatar_colors[hash % G_N_ELEMENTS (avatar_colors)];
-}
-
-
 char *
 chatty_utils_get_human_time (time_t unix_time)
 {
@@ -327,4 +504,19 @@ chatty_utils_get_conv_blist_node (PurpleConversation *conv)
     break;
   }
   return node;
+}
+
+ChattyMsgDirection
+chatty_utils_direction_from_flag (PurpleMessageFlags flag)
+{
+  if (flag & PURPLE_MESSAGE_SYSTEM)
+    return CHATTY_DIRECTION_SYSTEM;
+
+  if (flag & PURPLE_MESSAGE_SEND)
+    return CHATTY_DIRECTION_OUT;
+
+  if (flag & PURPLE_MESSAGE_RECV)
+    return CHATTY_DIRECTION_IN;
+
+  g_return_val_if_reached (CHATTY_DIRECTION_UNKNOWN);
 }

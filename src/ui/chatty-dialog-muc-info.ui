@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="3.16"/>
-  <template class="ChattyMucInfoDialog" parent="HdyDialog">
+  <template class="ChattyMucInfoDialog" parent="GtkDialog">
     <property name="modal">True</property>
     <property name="can_focus">False</property>
     <property name="default_width">360</property>
@@ -105,7 +105,7 @@
                 <property name="vhomogeneous">False</property>
                 <property name="transition_type">slide-left-right</property>
                 <child>
-                  <object class="HdyColumn">
+                  <object class="HdyClamp">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="halign">fill</property>
@@ -115,7 +115,6 @@
                     <property name="margin-end">12</property>
                     <property name="margin-top">12</property>
                     <property name="expand">True</property>
-                    <property name="maximum-width">600</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
@@ -232,49 +231,45 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkFrame">
+                          <object class="GtkListBox" id="list_muc_settings">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="expand">True</property>
+                            <property name="selection-mode">none</property>
                             <property name="margin-bottom">32</property>
+                            <style>
+                              <class name="content"/>
+                            </style>
                             <child>
-                              <object class="GtkListBox" id="list_muc_settings">
+                              <object class="HdyActionRow">
+                                <property name="title" translatable="yes">Notifications</property>
+                                <property name="subtitle" translatable="yes">Show notification badge</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="expand">True</property>
-                                <property name="selection-mode">none</property>
+                                <property name="selectable">False</property>
+                                <property name="activatable-widget">switch_prefs_notifications</property>
                                 <child>
-                                  <object class="HdyActionRow">
-                                    <property name="title" translatable="yes">Notifications</property>
-                                    <property name="subtitle" translatable="yes">Show notification badge</property>
+                                  <object class="GtkSwitch" id="switch_prefs_notifications">
+                                    <property name="can_focus">True</property>
+                                    <property name="valign">center</property>
                                     <property name="visible">True</property>
-                                    <property name="selectable">False</property>
-                                    <property name="activatable">False</property>
-                                    <child type="action">
-                                      <object class="GtkSwitch" id="switch_prefs_notifications">
-                                        <property name="can_focus">True</property>
-                                        <property name="valign">center</property>
-                                        <property name="visible">True</property>
-                                        <signal name="notify::active" handler="switch_prefs_notify_changed_cb" swapped="yes"/>
-                                      </object>
-                                    </child>
+                                    <signal name="notify::active" handler="switch_prefs_notify_changed_cb" swapped="yes"/>
                                   </object>
                                 </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="HdyActionRow">
+                                <property name="title" translatable="yes">Status Messages</property>
+                                <property name="subtitle" translatable="yes">Show status messages in chat</property>
+                                <property name="visible">True</property>
+                                <property name="selectable">False</property>
+                                <property name="activatable-widget">switch_prefs_status</property>
                                 <child>
-                                  <object class="HdyActionRow">
-                                    <property name="title" translatable="yes">Status Messages</property>
-                                    <property name="subtitle" translatable="yes">Show status messages in chat</property>
+                                  <object class="GtkSwitch" id="switch_prefs_status">
+                                    <property name="can_focus">True</property>
+                                    <property name="valign">center</property>
                                     <property name="visible">True</property>
-                                    <property name="selectable">False</property>
-                                    <property name="activatable">False</property>
-                                    <child type="action">
-                                      <object class="GtkSwitch" id="switch_prefs_status">
-                                        <property name="can_focus">True</property>
-                                        <property name="valign">center</property>
-                                        <property name="visible">True</property>
-                                        <signal name="notify::active" handler="switch_prefs_state_changed_cb" swapped="yes"/>
-                                      </object>
-                                    </child>
+                                    <signal name="notify::active" handler="switch_prefs_state_changed_cb" swapped="yes"/>
                                   </object>
                                 </child>
                               </object>
@@ -316,7 +311,7 @@
                     <property name="orientation">vertical</property>
                     <property name="visible">True</property>
                     <child>
-                      <object class="HdyColumn">
+                      <object class="HdyClamp">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">fill</property>
@@ -326,7 +321,6 @@
                         <property name="margin-end">12</property>
                         <property name="margin-top">32</property>
                         <property name="expand">True</property>
-                        <property name="maximum-width">600</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>

@@ -111,6 +111,8 @@ static GHashTable *ui_info = NULL;
 #define PURPLE_GLIB_READ_COND  (G_IO_IN | G_IO_HUP | G_IO_ERR)
 #define PURPLE_GLIB_WRITE_COND (G_IO_OUT | G_IO_HUP | G_IO_ERR | G_IO_NVAL)
 
+static void manager_update_protocols (ChattyManager *self);
+
 static int
 manager_sort_chat_item (ChattyChat *a,
                         ChattyChat *b,
@@ -209,8 +211,10 @@ manager_load_messages_cb (GObject      *object,
       model = chatty_chat_get_messages (item);
 
       /* If at least one message is loaded, don’t add again. */
-      if (g_list_model_get_n_items (model) == 0)
+      if (g_list_model_get_n_items (model) == 0) {
         chatty_pp_chat_prepend_messages (CHATTY_PP_CHAT (item), messages);
+        manager_update_protocols (self);
+      }
     }
 
   } else if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
@@ -832,7 +836,21 @@ chatty_conv_write_conversation (PurpleConversation *conv,
 
     pcm.who = chatty_utils_jabber_id_strip(who);
   } else {
-    pcm.who = chatty_pp_chat_get_buddy_name (CHATTY_PP_CHAT (chat), who);
+    ChattyProtocol protocol;
+
+    protocol = chatty_item_get_protocols (CHATTY_ITEM (chat));
+
+    if (protocol == CHATTY_PROTOCOL_MATRIX ||
+        protocol == CHATTY_PROTOCOL_XMPP)
+      pcm.who = chatty_pp_chat_get_buddy_name (CHATTY_PP_CHAT (chat), who);
+    else
+      pcm.who = g_strdup (who);
+
+    if (protocol == CHATTY_PROTOCOL_XMPP &&
+        !g_str_has_prefix (pcm.who, conv->name)) {
+      g_autofree char *temp = pcm.who;
+      pcm.who = chatty_utils_jabber_id_strip (pcm.who);
+    }
   }
 
   // No reason to go further if we ignore system/status
@@ -851,27 +869,12 @@ chatty_conv_write_conversation (PurpleConversation *conv,
 
   // If anyone wants to suppress archiving - feel free to set NO_LOG flag
   purple_signal_emit (chatty_manager_get_default (),
-                      "conversation-write", account, &pcm, &uuid, type);
+                      "conversation-write", conv, &pcm, &uuid, type);
   g_debug("Posting message id:%s flags:%d type:%d from:%s",
           uuid, pcm.flags, type, pcm.who);
 
-  /*
-   * This is default fallback history handler.  Other plugins may
-   * intercept “conversation-write” and suppress it if they handle
-   * history on their own (eg. MAM).  If %PURPLE_MESSAGE_NO_LOG is
-   * set in @flags, it won't be saved to database.
-   */
-  if (!(pcm.flags & PURPLE_MESSAGE_NO_LOG)) {
-    const char *chat_name;
-
-    chat_name = pcm.who;
-
-    if (chatty_chat_is_im (chat))
-      chat_name = chatty_chat_get_chat_name (chat);
-
-    chatty_history_add_message (account->username, pcm.alias, chat_name,
-                                pcm.what, &uuid, pcm.flags, pcm.when, type);
-    }
+  if (!uuid)
+    uuid = g_uuid_string_random ();
 
   if (*message != '\0') {
 
@@ -923,8 +926,30 @@ chatty_conv_write_conversation (PurpleConversation *conv,
       chatty_pp_chat_append_message (CHATTY_PP_CHAT (chat), chat_message);
     }
 
+    if (chat_message && pcm.who && !(flags & PURPLE_MESSAGE_SEND))
+      chatty_message_set_user_name (chat_message, pcm.who);
+
+    /*
+     * This is default fallback history handler.  Other plugins may
+     * intercept “conversation-write” and suppress it if they handle
+     * history on their own (eg. MAM).  If %PURPLE_MESSAGE_NO_LOG is
+     * set in @flags, it won't be saved to database.
+     */
+    if (!(pcm.flags & PURPLE_MESSAGE_NO_LOG) && chat_message)
+      chatty_history_add_message (chat, chat_message);
+
     chatty_chat_set_unread_count (chat, chatty_chat_get_unread_count (chat) + 1);
     gtk_sorter_changed (self->chat_sorter, GTK_SORTER_ORDER_TOTAL);
+  }
+
+  if (chat) {
+    GListModel *messages;
+
+    messages = chatty_chat_get_messages (chat);
+
+    /* The first message was added, notify so that chat list in main window updates */
+    if (g_list_model_get_n_items (messages) == 1)
+      manager_update_protocols (self);
   }
 
   g_free (pcm.who);
@@ -1073,6 +1098,7 @@ manager_buddy_added_cb (PurpleBuddy   *pp_buddy,
                         ChattyManager *self)
 {
   g_autoptr(ChattyChat) chat = NULL;
+  PurpleConversation *conv;
   ChattyPpAccount *account;
   ChattyPpBuddy *buddy;
   ChattyContact *contact;
@@ -1096,7 +1122,19 @@ manager_buddy_added_cb (PurpleBuddy   *pp_buddy,
   contact = chatty_eds_find_by_number (self->chatty_eds, id);
   chatty_pp_buddy_set_contact (buddy, contact);
 
-  chat = (ChattyChat *)chatty_pp_chat_new_im_chat (pp_account, pp_buddy);
+  conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_IM,
+                                                pp_buddy->name,
+                                                pp_account);
+  if (conv)
+    chat = conv->ui_data;
+
+  if (chat) {
+    g_object_ref (chat);
+    chatty_pp_chat_set_purple_conv (CHATTY_PP_CHAT (chat), conv);
+  } else {
+    chat = (ChattyChat *)chatty_pp_chat_new_im_chat (pp_account, pp_buddy);
+  }
+
   chatty_history_get_messages_async (chatty_history_get_default (), chat, NULL, 1,
                                      manager_load_messages_cb,
                                      g_object_ref (self));
@@ -1342,6 +1380,10 @@ auto_join_chat_cb (gpointer data)
         prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(purple_find_prpl (purple_account_get_protocol_id (account)));
         components = purple_chat_get_components (chat);
         chat_name = prpl_info->get_chat_name(components);
+
+        if (!chat_name || !*chat_name)
+          continue;
+
         chatty_conv_add_history_since_component(components, account->username, chat_name);
 
         serv_join_chat (purple_account_get_connection (account),
@@ -1675,7 +1717,7 @@ chatty_manager_initialize_libpurple (ChattyManager *self)
                           purple_marshal_VOID__POINTER_POINTER_POINTER_UINT,
                           NULL, 4,
                           purple_value_new(PURPLE_TYPE_SUBTYPE,
-                                           PURPLE_SUBTYPE_ACCOUNT),
+                                           PURPLE_SUBTYPE_CONVERSATION),
                           purple_value_new (PURPLE_TYPE_BOXED,
                                             "PurpleConvMessage *"),
                           purple_value_new(PURPLE_TYPE_POINTER),
