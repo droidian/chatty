@@ -18,22 +18,18 @@ chatty_icon_pixbuf_from_data (const guchar *buf,
                               gsize         count)
 {
   GdkPixbuf       *pixbuf;
-  GdkPixbufLoader *loader;
-  GError          *error = NULL;
+  g_autoptr(GdkPixbufLoader) loader = NULL;
+  g_autoptr(GError) error = NULL;
 
   loader = gdk_pixbuf_loader_new ();
 
   if (!gdk_pixbuf_loader_write (loader, buf, count, &error)) {
     g_debug ("%s: pixbuf_loder_write failed: %s", __func__, error->message);
-    g_object_unref (G_OBJECT(loader));
-    g_error_free (error);
     return NULL;
   }
 
   if (!gdk_pixbuf_loader_close (loader, &error)) {
     g_debug ("%s: pixbuf_loder_close failed: %s", __func__, error->message);
-    g_object_unref (G_OBJECT(loader));
-    g_error_free (error);
     return NULL;
   }
 
@@ -41,14 +37,10 @@ chatty_icon_pixbuf_from_data (const guchar *buf,
 
   if (!pixbuf) {
     g_debug ("%s: pixbuf creation failed", __func__);
-    g_object_unref (G_OBJECT(loader));
     return NULL;
   }
 
-  g_object_ref (pixbuf);
-  g_object_unref (G_OBJECT(loader));
-
-  return pixbuf;
+  return g_object_ref (pixbuf);
 }
 
 
@@ -232,7 +224,7 @@ chatty_icon_get_buddy_icon (PurpleBlistNode *node,
     int                  pango_width, pango_height;
     char                 tmp[4];
     char                *initial_char;
-    g_autofree gchar    *font;
+    g_autofree char     *font = NULL;
 
     g_utf8_strncpy (tmp, name, 1);
     initial_char = g_utf8_strup (tmp, 1);
@@ -390,25 +382,21 @@ GIcon *
 chatty_icon_get_gicon_from_pixbuf (GdkPixbuf *pixbuf)
 {
   GIcon  *icon;
-  GBytes *bytes;
-  gchar  *buffer;
+  g_autoptr(GBytes) bytes = NULL;
+  g_autofree char *buffer = NULL;
   gsize   size;
-  GError *error = NULL;
+  g_autoptr(GError) error = NULL;
 
   gdk_pixbuf_save_to_buffer (pixbuf, &buffer, &size, "png", &error, NULL);
 
   if (error != NULL) {
     g_debug ("%s: Could not save pixbuf to buffer: %s", __func__, error->message);
-    g_error_free (error);
 
     return NULL;
   }
 
   bytes = g_bytes_new (buffer, size);
   icon = g_bytes_icon_new (bytes);
-
-  g_free (buffer);
-  g_bytes_unref (bytes);
 
   return icon;
 }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyFpRow" parent="GtkListBoxRow">
+    <property name="visible">1</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">1</property>
+        <property name="margin">6</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkLabel" id="device_id">
+            <property name="visible">1</property>
+            <property name="halign">start</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+            <attributes>
+              <attribute name="scale" value="0.8333"/>
+            </attributes>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="device_fp">
+            <property name="visible">1</property>
+            <property name="halign">start</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

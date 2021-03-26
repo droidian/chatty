@@ -34,6 +34,7 @@
 #include "chatty-application.h"
 #include "chatty-settings.h"
 #include "chatty-history.h"
+#include "chatty-log.h"
 
 #define LIBFEEDBACK_USE_UNSTABLE_API
 #include <libfeedback.h>
@@ -51,7 +52,6 @@ struct _ChattyApplication
 
   GtkWidget      *main_window;
   ChattySettings *settings;
-  GtkCssProvider *css_provider;
   ChattyManager  *manager;
 
   char *uri;
@@ -60,19 +60,38 @@ struct _ChattyApplication
   gboolean daemon;
   gboolean show_window;
   gboolean enable_debug;
-  gboolean enable_verbose;
 };
 
 G_DEFINE_TYPE (ChattyApplication, chatty_application, GTK_TYPE_APPLICATION)
 
+static gboolean    cmd_verbose_cb   (const char *option_name,
+                                     const char *value,
+                                     gpointer    data,
+                                     GError     **error);
+
 static GOptionEntry cmd_options[] = {
-  { "version", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Show release version"), NULL },
+  { "version", 0, G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Show release version"), NULL },
   { "daemon", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Start in daemon mode"), NULL },
   { "nologin", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Disable all accounts"), NULL },
   { "debug", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Enable libpurple debug messages"), NULL },
-  { "verbose", 'V', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, NULL, N_("Enable verbose libpurple debug messages"), NULL },
+  { "verbose", 'v', G_OPTION_FLAG_NO_ARG, G_OPTION_ARG_CALLBACK, cmd_verbose_cb,
+    N_("Enable verbose libpurple debug messages"), NULL },
   { NULL }
 };
+
+static gboolean
+cmd_verbose_cb (const char  *option_name,
+                const char  *value,
+                gpointer     data,
+                GError     **error)
+{
+  chatty_log_increase_verbosity ();
+
+  purple_debug_set_enabled (TRUE);
+  purple_debug_set_verbose (TRUE);
+
+  return TRUE;
+}
 
 static int
 run_dialog_and_destroy (GtkDialog *dialog)
@@ -221,7 +240,6 @@ chatty_application_finalize (GObject *object)
   ChattyApplication *self = (ChattyApplication *)object;
 
   g_clear_handle_id (&self->open_uri_id, g_source_remove);
-  g_clear_object (&self->css_provider);
   g_clear_object (&self->manager);
 
   G_OBJECT_CLASS (chatty_application_parent_class)->finalize (object);
@@ -262,17 +280,14 @@ chatty_application_command_line (GApplication            *application,
     g_debug ("Enable daemon mode");
   }
 
-  if (g_variant_dict_contains (options, "nologin")) {
+  if (g_variant_dict_contains (options, "nologin"))
     chatty_manager_disable_auto_login (chatty_manager_get_default (), TRUE);
-  } else if (g_variant_dict_contains (options, "debug")) {
+
+  if (g_variant_dict_contains (options, "debug"))
     self->enable_debug = TRUE;
-  } else if (g_variant_dict_contains (options, "verbose")) {
-    self->enable_debug = TRUE;
-    self->enable_verbose = TRUE;
-  }
 
   purple_debug_set_enabled (self->enable_debug);
-  purple_debug_set_verbose (self->enable_verbose);
+  purple_debug_set_verbose (chatty_log_get_verbosity () > 0);
 
   arguments = g_application_command_line_get_arguments (command_line, &argc);
 
@@ -292,36 +307,46 @@ static void
 chatty_application_startup (GApplication *application)
 {
   ChattyApplication *self = (ChattyApplication *)application;
+  g_autoptr(GtkCssProvider) provider = NULL;
   g_autofree char *db_path = NULL;
+  g_autofree char *dir = NULL;
   static const GActionEntry app_entries[] = {
     { "show-window", chatty_application_show_window },
   };
 
   self->daemon = FALSE;
-  self->manager = g_object_ref (chatty_manager_get_default ());
+  self->manager = chatty_manager_get_default ();
 
   G_APPLICATION_CLASS (chatty_application_parent_class)->startup (application);
+
+  g_info ("%s %s, git version: %s", PACKAGE_NAME, PACKAGE_VERSION, GIT_VERSION);
 
   hdy_init ();
 
   g_set_application_name (_("Chats"));
 
+  dir = g_build_filename (g_get_user_cache_dir (), "chatty", "matrix", "files", "thumbnail", NULL);
+  g_mkdir_with_parents (dir, S_IRWXU);
+
   lfb_init (CHATTY_APP_ID, NULL);
   db_path =  g_build_filename (purple_user_dir(), "chatty", "db", NULL);
-  chatty_history_open (db_path, "chatty-history.db");
+  chatty_history_open (chatty_manager_get_history (self->manager),
+                       db_path, "chatty-history.db");
 
   self->settings = chatty_settings_get_default ();
+  if (chatty_settings_get_experimental_features (self->settings))
+    g_warning ("Experimental features enabled");
 
-  self->css_provider = gtk_css_provider_new ();
-  gtk_css_provider_load_from_resource (self->css_provider,
+  provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_resource (provider,
                                        "/sm/puri/Chatty/css/style.css");
+  gtk_style_context_add_provider_for_screen (gdk_screen_get_default(),
+                                             GTK_STYLE_PROVIDER (provider),
+                                             GTK_STYLE_PROVIDER_PRIORITY_USER);
 
   g_action_map_add_action_entries (G_ACTION_MAP (self), app_entries,
                                    G_N_ELEMENTS (app_entries), self);
 
-  gtk_style_context_add_provider_for_screen (gdk_screen_get_default(),
-                                             GTK_STYLE_PROVIDER (self->css_provider),
-                                             GTK_STYLE_PROVIDER_PRIORITY_USER);
   g_signal_connect_object (self->manager, "authorize-buddy",
                            G_CALLBACK (application_authorize_buddy_cb), self,
                            G_CONNECT_SWAPPED);
@@ -372,8 +397,10 @@ chatty_application_activate (GApplication *application)
 static void
 chatty_application_shutdown (GApplication *application)
 {
+  ChattyApplication *self = (ChattyApplication *)application;
+
   g_object_unref (chatty_settings_get_default ());
-  chatty_history_close ();
+  chatty_history_close (chatty_manager_get_history (self->manager));
   lfb_uninit ();
 
   G_APPLICATION_CLASS (chatty_application_parent_class)->shutdown (application);
@@ -437,9 +464,14 @@ chatty_application_get_main_window (ChattyApplication *self)
 ChattyChat *
 chatty_application_get_active_chat (ChattyApplication *self)
 {
+  GtkWidget *widget = NULL;
+
   g_return_val_if_fail (CHATTY_IS_APPLICATION (self), NULL);
 
   if (self->main_window)
+    widget = gtk_window_get_focus (GTK_WINDOW (self->main_window));
+
+  if (self->main_window && widget && gtk_widget_has_focus (widget))
     return chatty_window_get_active_chat (CHATTY_WINDOW (self->main_window));
 
   return NULL;

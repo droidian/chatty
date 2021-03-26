@@ -89,6 +89,23 @@ chatty_item_real_set_name (ChattyItem *self,
   /* Do Nothing */
 }
 
+static ChattyItemState
+chatty_item_real_get_state (ChattyItem *self)
+{
+  g_assert (CHATTY_IS_ITEM (self));
+
+  return CHATTY_ITEM_VISIBLE;
+}
+
+static void
+chatty_item_real_set_state (ChattyItem      *self,
+                            ChattyItemState  state)
+{
+  g_assert (CHATTY_IS_ITEM (self));
+
+  /* Do Nothing */
+}
+
 static GdkPixbuf *
 chatty_item_real_get_avatar (ChattyItem *self)
 {
@@ -214,6 +231,8 @@ chatty_item_class_init (ChattyItemClass *klass)
   klass->matches  = chatty_item_real_matches;
   klass->get_name = chatty_item_real_get_name;
   klass->set_name = chatty_item_real_set_name;
+  klass->get_state = chatty_item_real_get_state;
+  klass->set_state = chatty_item_real_set_state;
   klass->get_avatar = chatty_item_real_get_avatar;
   klass->get_avatar_async  = chatty_item_real_get_avatar_async;
   klass->get_avatar_finish = chatty_item_real_get_avatar_finish;
@@ -412,6 +431,38 @@ chatty_item_set_name (ChattyItem *self,
   g_return_if_fail (CHATTY_IS_ITEM (self));
 
   CHATTY_ITEM_GET_CLASS (self)->set_name (self, name);
+}
+
+/**
+ * chatty_item_get_state:
+ * @self: a #ChattyItem
+ *
+ * Get the visibility state of the item
+ *
+ * Returns: A #ChattyItemState
+ */
+ChattyItemState
+chatty_item_get_state (ChattyItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ITEM (self), CHATTY_ITEM_HIDDEN);
+
+  return CHATTY_ITEM_GET_CLASS (self)->get_state (self);
+}
+
+/**
+ * chatty_item_set_state:
+ * @self: a #ChattyItem
+ * @state: A #ChattyItemState
+ *
+ * Set the visibility state of the item
+ */
+void
+chatty_item_set_state (ChattyItem      *self,
+                       ChattyItemState  state)
+{
+  g_return_if_fail (CHATTY_IS_ITEM (self));
+
+  return CHATTY_ITEM_GET_CLASS (self)->set_state (self, state);
 }
 
 /**

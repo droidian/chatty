@@ -18,12 +18,15 @@
 #endif
 
 #include "contrib/gtk.h"
+#include "chatty-history.h"
 #include "chatty-settings.h"
 #include "chatty-icons.h"
 #include "chatty-utils.h"
 #include "users/chatty-pp-buddy.h"
 #include "users/chatty-pp-account.h"
+#include "chatty-manager.h"
 #include "chatty-pp-chat.h"
+#include "chatty-log.h"
 
 #define CHATTY_COLOR_BLUE "4A8FD9"
 
@@ -48,6 +51,9 @@ struct _ChattyPpChat
 {
   ChattyChat          parent_instance;
 
+  ChattyPpAccount    *pp_account;
+  ChattyHistory      *history;
+
   PurpleAccount      *account;
   PurpleBuddy        *buddy;
 
@@ -56,6 +62,7 @@ struct _ChattyPpChat
   GListStore         *chat_users;
   GtkSortListModel   *sorted_chat_users;
   GListStore         *message_store;
+  GListStore         *fp_list;
 
   char               *last_message;
   char               *chat_name;
@@ -63,6 +70,9 @@ struct _ChattyPpChat
   guint               last_msg_time;
   ChattyEncryption    encrypt;
   gboolean            buddy_typing;
+  gboolean            initial_history_loaded;
+  gboolean            history_is_loading;
+  gboolean            supports_encryption;
 };
 
 G_DEFINE_TYPE (ChattyPpChat, chatty_pp_chat, CHATTY_TYPE_CHAT)
@@ -85,6 +95,50 @@ emit_avatar_changed (ChattyPpChat *self)
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   g_signal_emit_by_name (self, "avatar-changed");
+}
+
+static void
+list_fingerprints_cb (int         error,
+                      GHashTable *fp_table,
+                      gpointer    user_data)
+{
+  g_autoptr(GTask)task = user_data;
+  g_autoptr(GList) key_list = NULL;
+  ChattyPpChat *self;
+
+  g_assert (G_IS_TASK (task));
+
+  self = g_task_get_source_object (task);
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  if (error || !fp_table) {
+    CHATTY_DEBUG_MSG ("No fingerprints. has error: %d", !!error);
+    g_task_return_boolean (task, FALSE);
+
+    return;
+  }
+
+  key_list = g_hash_table_get_keys (fp_table);
+
+  for (GList *item = key_list; item; item = item->next) {
+    g_autoptr(HdyValueObject) object = NULL;
+    const char *fp;
+    char *id;
+
+    fp = g_hash_table_lookup (fp_table, item->data);
+    g_debug ("DeviceId: %i fingerprint: %s", *((guint32 *) item->data),
+             fp ? fp : "(no session)");
+
+    if (!fp)
+      continue;
+
+    object = hdy_value_object_new_string (fp);
+    id = g_strdup_printf ("%u", *((guint32 *) item->data));
+    g_object_set_data_full (G_OBJECT (object), "device-id", id, g_free);
+    g_list_store_append (self->fp_list, object);
+  }
+
+  g_task_return_boolean (task, TRUE);
 }
 
 static void
@@ -135,9 +189,16 @@ chatty_pp_chat_set_purple_buddy (ChattyPpChat *self,
 static gboolean
 chatty_pp_chat_has_encryption_support (ChattyPpChat *self)
 {
+  ChattyProtocol protocol;
   PurpleConversationType type = PURPLE_CONV_TYPE_UNKNOWN;
 
   g_assert (CHATTY_IS_PP_CHAT (self));
+
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self));
+
+  if (protocol == CHATTY_PROTOCOL_XMPP &&
+      !self->supports_encryption)
+    return FALSE;
 
   if (self->conv)
     type = purple_conversation_get_type (self->conv);
@@ -145,7 +206,7 @@ chatty_pp_chat_has_encryption_support (ChattyPpChat *self)
   /* Currently we support only XMPP IM chats */
   if (self->conv &&
       type == PURPLE_CONV_TYPE_IM &&
-      chatty_item_get_protocols (CHATTY_ITEM (self)) == CHATTY_PROTOCOL_XMPP)
+      protocol == CHATTY_PROTOCOL_XMPP)
     return TRUE;
 
   return FALSE;
@@ -246,6 +307,50 @@ chat_find_user (ChattyPpChat *self,
   return NULL;
 }
 
+static void
+pp_chat_load_db_messages_cb (GObject      *object,
+                             GAsyncResult *result,
+                             gpointer      user_data)
+{
+  g_autoptr(ChattyPpChat) self = user_data;
+  g_autoptr(GPtrArray) messages = NULL;
+  g_autoptr(GError) error = NULL;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  messages = chatty_history_get_messages_finish (self->history, result, &error);
+  self->history_is_loading = FALSE;
+  g_object_notify (G_OBJECT (self), "loading-history");
+
+  if (!error && !messages && !self->initial_history_loaded)
+    chatty_pp_chat_set_show_notifications (self, TRUE);
+
+  self->initial_history_loaded = TRUE;
+
+  if (messages && messages->len &&
+      chatty_pp_chat_get_auto_join (self)) {
+    g_list_store_splice (self->message_store, 0, 0, messages->pdata, messages->len);
+    g_signal_emit_by_name (self, "changed", 0);
+  } else if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+   g_warning ("Error fetching messages: %s,", error->message);
+ }
+}
+
+static void
+chatty_pp_chat_set_data (ChattyChat *chat,
+                         gpointer    account,
+                         gpointer    history)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+  g_return_if_fail (!account || CHATTY_PP_ACCOUNT (account));
+  g_assert (CHATTY_IS_HISTORY (history));
+
+  g_set_object (&self->pp_account, account);
+  g_set_object (&self->history, history);
+}
+
 static gboolean
 chatty_pp_chat_is_im (ChattyChat *chat)
 {
@@ -329,6 +434,40 @@ chatty_pp_chat_get_account (ChattyChat *chat)
   return account->ui_data;
 }
 
+static void
+chatty_pp_chat_real_past_messages (ChattyChat *chat,
+                                   int         count)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+  GListModel *model;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+  g_assert (count > 0);
+
+  if (self->history_is_loading)
+    return;
+
+  self->history_is_loading = TRUE;
+  g_object_notify (G_OBJECT (self), "loading-history");
+
+  model = chatty_chat_get_messages (chat);
+
+  chatty_history_get_messages_async (self->history, chat,
+                                     g_list_model_get_item (model, 0),
+                                     count, pp_chat_load_db_messages_cb,
+                                     g_object_ref (self));
+}
+
+static gboolean
+chatty_pp_chat_is_loading_history (ChattyChat *chat)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  return self->history_is_loading;
+}
+
 static GListModel *
 chatty_pp_chat_get_messages (ChattyChat *chat)
 {
@@ -347,6 +486,44 @@ chatty_pp_chat_get_users (ChattyChat *chat)
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   return G_LIST_MODEL (self->sorted_chat_users);
+}
+
+static const char *
+chatty_pp_chat_get_topic (ChattyChat *chat)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  if (!self->conv)
+    return "";
+
+  return purple_conv_chat_get_topic (PURPLE_CONV_CHAT (self->conv));
+}
+
+static void
+chatty_pp_chat_set_topic (ChattyChat *chat,
+                          const char *topic)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+  PurplePluginProtocolInfo *prpl_info = NULL;
+  PurpleConnection *gc;
+  int chat_id;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  if (!self->conv)
+    return;
+
+  gc = purple_conversation_get_gc (self->conv);
+  prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (gc->prpl);
+
+  if (!gc || !prpl_info ||
+      !prpl_info->set_chat_topic)
+    return;
+
+  chat_id = purple_conv_chat_get_id (PURPLE_CONV_CHAT (self->conv));
+  prpl_info->set_chat_topic (gc, chat_id, topic);
 }
 
 static const char *
@@ -416,6 +593,37 @@ chatty_pp_chat_get_last_msg_time (ChattyChat *chat)
   return chatty_message_get_time (message);
 }
 
+static void
+chatty_pp_chat_send_message_async (ChattyChat          *chat,
+                                   ChattyMessage       *message,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             user_data)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+  g_autoptr(GTask) task = NULL;
+  const char *msg;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+  g_assert (CHATTY_IS_MESSAGE (message));
+
+  task = g_task_new (self, NULL, callback, user_data);
+
+  if (!self->conv) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_CONNECTED,
+                             "PurpleConversation not found");
+    return;
+  }
+
+  msg = chatty_message_get_text (message);
+
+  if (purple_conversation_get_type (self->conv) == PURPLE_CONV_TYPE_IM)
+    purple_conv_im_send (PURPLE_CONV_IM (self->conv), msg);
+  else if (purple_conversation_get_type (self->conv) == PURPLE_CONV_TYPE_CHAT)
+    purple_conv_chat_send (PURPLE_CONV_CHAT (self->conv), msg);
+
+  g_task_return_boolean (task, TRUE);
+}
+
 static ChattyEncryption
 chatty_pp_chat_get_encryption (ChattyChat *chat)
 {
@@ -463,6 +671,76 @@ chatty_pp_chat_get_buddy_typing (ChattyChat *chat)
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   return self->buddy_typing;
+}
+
+static void
+chatty_pp_chat_set_typing (ChattyChat *chat,
+                           gboolean    is_typing)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+  PurpleConvIm *im;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  if (!self->conv || !chatty_chat_is_im (chat))
+    return;
+
+  im = PURPLE_CONV_IM (self->conv);
+
+  if (is_typing) {
+    gboolean send = (purple_conv_im_get_send_typed_timeout (im) == 0);
+
+    purple_conv_im_stop_send_typed_timeout (im);
+    purple_conv_im_start_send_typed_timeout (im);
+
+    if (send || (purple_conv_im_get_type_again (im) != 0 &&
+                 time (NULL) > purple_conv_im_get_type_again (im))) {
+      unsigned int timeout;
+
+      timeout = serv_send_typing (purple_conversation_get_gc (self->conv),
+                                  purple_conversation_get_name (self->conv),
+                                  PURPLE_TYPING);
+
+      purple_conv_im_set_type_again (im, timeout);
+    }
+  } else {
+    purple_conv_im_stop_send_typed_timeout (im);
+
+    serv_send_typing (purple_conversation_get_gc (self->conv),
+                      purple_conversation_get_name (self->conv),
+                      PURPLE_NOT_TYPING);
+  }
+}
+
+static void
+chatty_pp_chat_invite_async (ChattyChat          *chat,
+                             const char          *username,
+                             const char          *invite_msg,
+                             GCancellable        *cancellable,
+                             GAsyncReadyCallback  callback,
+                             gpointer             user_data)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  task = g_task_new (self, cancellable, callback, user_data);
+  if (!self->conv ||
+      chatty_item_get_protocols (CHATTY_ITEM (self)) != CHATTY_PROTOCOL_XMPP ||
+      chatty_chat_is_im (chat)) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "Chat doesn't supports invite");
+    return;
+  }
+
+  CHATTY_DEBUG_MSG ("Inviting user %s, invite message: %s", username, invite_msg);
+
+  serv_chat_invite (purple_conversation_get_gc (self->conv),
+                    purple_conv_chat_get_id (PURPLE_CONV_CHAT (self->conv)),
+                    invite_msg, username);
+
+  g_task_return_boolean (task, TRUE);
 }
 
 static const char *
@@ -612,11 +890,14 @@ chatty_pp_chat_finalize (GObject *object)
     PurpleBlistNode *node;
 
     node = PURPLE_BLIST_NODE (self->buddy);
-    g_object_set_data (node->ui_data, "chat", NULL);
+    if (node->ui_data)
+      g_object_set_data (node->ui_data, "chat", NULL);
   }
 
   g_list_store_remove_all (self->chat_users);
   g_list_store_remove_all (self->message_store);
+  g_list_store_remove_all (self->fp_list);
+  g_object_unref (self->fp_list);
   g_object_unref (self->message_store);
   g_object_unref (self->chat_users);
   g_object_unref (self->sorted_chat_users);
@@ -640,19 +921,27 @@ chatty_pp_chat_class_init (ChattyPpChatClass *klass)
   item_class->get_avatar = chatty_pp_chat_get_avatar;
   item_class->set_avatar_async = chatty_pp_chat_set_avatar_async;
 
+  chat_class->set_data = chatty_pp_chat_set_data;
   chat_class->is_im = chatty_pp_chat_is_im;
   chat_class->get_chat_name = chatty_pp_chat_get_chat_name;
   chat_class->get_username = chatty_pp_chat_get_username;
   chat_class->get_account = chatty_pp_chat_get_account;
+  chat_class->load_past_messages = chatty_pp_chat_real_past_messages;
+  chat_class->is_loading_history = chatty_pp_chat_is_loading_history;
   chat_class->get_messages = chatty_pp_chat_get_messages;
   chat_class->get_users = chatty_pp_chat_get_users;
+  chat_class->get_topic = chatty_pp_chat_get_topic;
+  chat_class->set_topic = chatty_pp_chat_set_topic;
   chat_class->get_last_message = chatty_pp_chat_get_last_message;
   chat_class->get_unread_count = chatty_pp_chat_get_unread_count;
   chat_class->set_unread_count = chatty_pp_chat_set_unread_count;
   chat_class->get_last_msg_time = chatty_pp_chat_get_last_msg_time;
+  chat_class->send_message_async = chatty_pp_chat_send_message_async;
   chat_class->get_encryption = chatty_pp_chat_get_encryption;
   chat_class->set_encryption = chatty_pp_chat_set_encryption;
   chat_class->get_buddy_typing = chatty_pp_chat_get_buddy_typing;
+  chat_class->set_typing = chatty_pp_chat_set_typing;
+  chat_class->invite_async = chatty_pp_chat_invite_async;
 }
 
 static void
@@ -665,11 +954,14 @@ chatty_pp_chat_init (ChattyPpChat *self)
   self->sorted_chat_users = gtk_sort_list_model_new (G_LIST_MODEL (self->chat_users), sorter);
 
   self->message_store = g_list_store_new (CHATTY_TYPE_MESSAGE);
+  self->fp_list = g_list_store_new (HDY_TYPE_VALUE_OBJECT);
+  self->encrypt = CHATTY_ENCRYPTION_UNSUPPORTED;
 }
 
 ChattyPpChat *
 chatty_pp_chat_new_im_chat (PurpleAccount *account,
-                            PurpleBuddy   *buddy)
+                            PurpleBuddy   *buddy,
+                            gboolean       supports_encryption)
 {
   ChattyPpChat *self;
 
@@ -678,28 +970,33 @@ chatty_pp_chat_new_im_chat (PurpleAccount *account,
 
   self = g_object_new (CHATTY_TYPE_PP_CHAT, NULL);
   self->account = account;
+  self->supports_encryption = !!supports_encryption;
   chatty_pp_chat_set_purple_buddy (self, buddy);
 
   return self;
 }
 
 ChattyPpChat *
-chatty_pp_chat_new_purple_chat (PurpleChat *pp_chat)
+chatty_pp_chat_new_purple_chat (PurpleChat *pp_chat,
+                                gboolean    supports_encryption)
 {
   ChattyPpChat *self;
 
   self = g_object_new (CHATTY_TYPE_PP_CHAT, NULL);
+  self->supports_encryption = !!supports_encryption;
   chatty_pp_chat_set_purple_chat (self, pp_chat);
 
   return self;
 }
 
 ChattyPpChat *
-chatty_pp_chat_new_purple_conv (PurpleConversation *conv)
+chatty_pp_chat_new_purple_conv (PurpleConversation *conv,
+                                gboolean            supports_encryption)
 {
   ChattyPpChat *self;
 
   self = g_object_new (CHATTY_TYPE_PP_CHAT, NULL);
+  self->supports_encryption = !!supports_encryption;
   chatty_pp_chat_set_purple_conv (self, conv);
 
   return self;
@@ -1091,6 +1388,85 @@ chatty_pp_chat_load_encryption_status (ChattyPpChat *self)
 
 }
 
+GListModel *
+chatty_pp_chat_get_fp_list (ChattyPpChat *self)
+{
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), NULL);
+
+  return G_LIST_MODEL (self->fp_list);
+}
+
+void
+chatty_pp_chat_load_fp_list_async (ChattyPpChat        *self,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             user_data)
+{
+  g_autoptr(GTask) task = NULL;
+  g_autofree char *user_id = NULL;
+  const char *name;
+  void *handle;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+
+  task = g_task_new (self, NULL, callback, user_data);
+  name = chatty_chat_get_chat_name (CHATTY_CHAT (self));
+  user_id = chatty_utils_jabber_id_strip (name);
+  handle = purple_plugins_get_handle ();
+
+  if (!self->buddy || !self->supports_encryption) {
+    g_task_return_boolean (task, FALSE);
+    return;
+  }
+
+  g_list_store_remove_all (self->fp_list);
+  purple_signal_emit (handle, "lurch-fp-other", self->buddy->account,
+                      user_id, list_fingerprints_cb, g_steal_pointer (&task));
+}
+
+gboolean
+chatty_pp_chat_load_fp_list_finish (ChattyPpChat  *self,
+                                    GAsyncResult  *result,
+                                    GError       **error)
+{
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+gboolean
+chatty_pp_chat_get_show_notifications (ChattyPpChat *self)
+{
+  PurpleBlistNode *node;
+
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), FALSE);
+
+  if (!self->buddy && !self->pp_chat)
+    return FALSE;
+
+  node = PURPLE_BLIST_NODE (self->buddy);
+
+  if (!node)
+    node = PURPLE_BLIST_NODE (self->pp_chat);
+
+  return purple_blist_node_get_bool (node, "chatty-notifications");
+}
+
+gboolean
+chatty_pp_chat_get_show_status_msg (ChattyPpChat *self)
+{
+  PurpleBlistNode *node;
+
+  if (!self->buddy && !self->pp_chat)
+    return FALSE;
+
+  node = PURPLE_BLIST_NODE (self->buddy);
+
+  if (!node)
+    node = PURPLE_BLIST_NODE (self->pp_chat);
+
+  return purple_blist_node_get_bool (node, "chatty-status-msg");
+}
+
 void
 chatty_pp_chat_set_show_notifications (ChattyPpChat *self,
                                        gboolean      show)
@@ -1107,6 +1483,45 @@ chatty_pp_chat_set_show_notifications (ChattyPpChat *self,
     return;
 
   purple_blist_node_set_bool (node, "chatty-notifications", !!show);
+}
+
+void
+chatty_pp_chat_set_show_status_msg (ChattyPpChat *self,
+                                    gboolean      show)
+{
+  PurpleConversation *conv;
+  PurpleBlistNode *node;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+
+  if (!self->conv)
+    return;
+
+  conv = self->conv;
+  node = PURPLE_BLIST_NODE (purple_blist_find_chat (conv->account, conv->name));
+  purple_blist_node_set_bool (node, "chatty-status-msg", show);
+}
+
+const char *
+chatty_pp_chat_get_status (ChattyPpChat *self)
+{
+  PurplePresence *presence;
+  PurpleStatus *status = NULL;
+
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), "");
+
+  if (!self->buddy)
+    return "";
+
+  presence = purple_buddy_get_presence (self->buddy);
+
+  if (presence)
+    status = purple_presence_get_active_status (presence);
+
+  if (status)
+    return purple_status_get_name (status);
+
+  return "";
 }
 
 gboolean

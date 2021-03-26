@@ -14,6 +14,7 @@
 #include <glib-object.h>
 #include <purple.h>
 
+#include "chatty-account.h"
 #include "chatty-contact.h"
 #include "chatty-item.h"
 #include "chatty-enums.h"
@@ -25,8 +26,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyPpBuddy, chatty_pp_buddy, CHATTY, PP_BUDDY, ChattyItem)
 
 ChattyPpBuddy   *chatty_pp_buddy_get_object    (PurpleBuddy   *buddy);
-PurpleAccount   *chatty_pp_buddy_get_account   (ChattyPpBuddy *self);
-PurpleConversation *chatty_pp_buddy_get_chat   (ChattyPpBuddy *self);
+ChattyAccount   *chatty_pp_buddy_get_account   (ChattyPpBuddy *self);
 void             chatty_pp_buddy_set_chat      (ChattyPpBuddy      *self,
                                                 PurpleConversation *conv);
 PurpleBuddy     *chatty_pp_buddy_get_buddy      (ChattyPpBuddy *self);

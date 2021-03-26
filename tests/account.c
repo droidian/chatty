@@ -76,11 +76,11 @@ test_account_new_xmpp (void)
 {
   ChattyPpAccount *account;
 
-  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "test@example.com", NULL);
+  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "test@example.com", NULL, FALSE);
   test_account (CHATTY_ACCOUNT (account), "prpl-jabber", "test@example.com", FALSE);
   g_object_unref (account);
 
-  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "test@example.org", "not-used.com");
+  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "test@example.org", "not-used.com", FALSE);
   test_account (CHATTY_ACCOUNT (account), "prpl-jabber", "test@example.org", FALSE);
   g_object_unref (account);
 }
@@ -92,7 +92,7 @@ test_new_account (void)
   PurpleAccount *pp_account;
   const gchar *str;
 
-  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "xmpp@example.com", NULL);
+  account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "xmpp@example.com", NULL, FALSE);
   g_assert (CHATTY_IS_PP_ACCOUNT (account));
 
   str = chatty_pp_account_get_protocol_id (account);
@@ -108,7 +108,7 @@ test_new_account (void)
   purple_account_destroy (pp_account);
 
   pp_account = purple_account_new ("xmpp@example.com", "prpl-jabber");
-  account = chatty_pp_account_new_purple (pp_account);
+  account = chatty_pp_account_new_purple (pp_account, FALSE);
   g_assert (CHATTY_IS_PP_ACCOUNT (account));
 
   str = chatty_pp_account_get_protocol_id (account);

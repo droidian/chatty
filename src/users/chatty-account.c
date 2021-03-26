@@ -95,6 +95,23 @@ chatty_account_real_set_enabled (ChattyAccount *self,
   /* Do Nothing */
 }
 
+static void
+chatty_account_real_connect (ChattyAccount *self,
+                             gboolean       delay)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  /* Do Nothing */
+}
+
+static void
+chatty_account_real_disconnect (ChattyAccount *self)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  /* Do Nothing */
+}
+
 static const char *
 chatty_account_real_get_password (ChattyAccount *self)
 {
@@ -143,6 +160,43 @@ chatty_account_real_delete (ChattyAccount *self)
   g_assert (CHATTY_IS_ACCOUNT (self));
 
   /* Do Nothing */
+}
+
+static HdyValueObject *
+chatty_account_real_get_device_fp (ChattyAccount *self)
+{
+  return NULL;
+}
+
+static GListModel *
+chatty_account_real_get_fp_list (ChattyAccount *self)
+{
+  return NULL;
+}
+
+static void
+chatty_account_real_load_fp_async (ChattyAccount       *self,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             user_data)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+
+  g_task_report_new_error (self, callback, user_data,
+                           chatty_account_real_load_fp_async,
+                           G_IO_ERROR,
+                           G_IO_ERROR_NOT_SUPPORTED,
+                           "Loading finger print list not supported");
+}
+
+static gboolean
+chatty_account_real_load_fp_finish (ChattyAccount *self,
+                                    GAsyncResult  *result,
+                                    GError        **error)
+{
+  g_assert (CHATTY_IS_ACCOUNT (self));
+  g_assert (G_IS_TASK (result));
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 static void
@@ -202,12 +256,18 @@ chatty_account_class_init (ChattyAccountClass *klass)
   klass->get_buddies  = chatty_account_real_get_buddies;
   klass->get_enabled  = chatty_account_real_get_enabled;
   klass->set_enabled  = chatty_account_real_set_enabled;
+  klass->connect      = chatty_account_real_connect;
+  klass->disconnect   = chatty_account_real_disconnect;
   klass->get_password = chatty_account_real_get_password;
   klass->set_password = chatty_account_real_set_password;
   klass->get_remember_password = chatty_account_real_get_remember_password;
   klass->set_remember_password = chatty_account_real_set_remember_password;
   klass->save = chatty_account_real_save;
   klass->delete = chatty_account_real_delete;
+  klass->get_device_fp = chatty_account_real_get_device_fp;
+  klass->get_fp_list = chatty_account_real_get_fp_list;
+  klass->load_fp_async = chatty_account_real_load_fp_async;
+  klass->load_fp_finish = chatty_account_real_load_fp_finish;
 
   /**
    * ChattyAccount:enabled:
@@ -299,6 +359,36 @@ chatty_account_set_enabled (ChattyAccount *self,
   CHATTY_ACCOUNT_GET_CLASS (self)->set_enabled (self, !!enable);
 }
 
+/**
+ * chatty_account_connect:
+ * @self: A #ChattyAccount
+ * @delay: Whether to delay connection
+ *
+ * connection to @self.  If @delay is %TRUE, the connection
+ * is initiated after some delay, which can be useful when
+ * trying to connect after a connection failure.
+ *
+ * If the account is not enabled, or if account status is
+ * set to offline, or if already connected, the function
+ * simply returns.
+ */
+void
+chatty_account_connect (ChattyAccount *self,
+                        gboolean       delay)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->connect (self, delay);
+}
+
+void
+chatty_account_disconnect (ChattyAccount *self)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->disconnect (self);
+}
+
 const char *
 chatty_account_get_password (ChattyAccount *self)
 {
@@ -355,4 +445,40 @@ chatty_account_delete (ChattyAccount *self)
   g_return_if_fail (CHATTY_IS_ACCOUNT (self));
 
   CHATTY_ACCOUNT_GET_CLASS (self)->delete (self);
+}
+
+HdyValueObject *
+chatty_account_get_device_fp (ChattyAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), NULL);
+
+  return CHATTY_ACCOUNT_GET_CLASS (self)->get_device_fp (self);
+}
+
+GListModel *
+chatty_account_get_fp_list (ChattyAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), NULL);
+
+  return CHATTY_ACCOUNT_GET_CLASS (self)->get_fp_list (self);
+}
+
+void
+chatty_account_load_fp_async (ChattyAccount       *self,
+                              GAsyncReadyCallback  callback,
+                              gpointer             user_data)
+{
+  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
+
+  CHATTY_ACCOUNT_GET_CLASS (self)->load_fp_async (self, callback, user_data);
+}
+
+gboolean
+chatty_account_load_fp_finish (ChattyAccount  *self,
+                               GAsyncResult   *result,
+                               GError        **error)
+{
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), FALSE);
+
+  return CHATTY_ACCOUNT_GET_CLASS (self)->load_fp_finish (self, result, error);
 }

@@ -4,40 +4,22 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: purism-chatty\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-03-05 12:35+0100\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2020-02-02 09:06-0500\n"
+"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
+"POT-Creation-Date: 2021-01-03 15:25+0000\n"
+"PO-Revision-Date: 2020-08-07 14:19+0300\n"
 "Last-Translator: JR-Fi <juho@reivo.fi>\n"
 "Language-Team: Finnish\n"
 "Language: fi\n"
-"X-Generator: Zanata 4.6.2\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.6\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: data/sm.puri.Chatty.appdata.xml.in:6 data/sm.puri.Chatty.desktop.in:3
-#: src/chatty-window.c:483 src/ui/chatty-window.ui:210
+#: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
+#: src/chatty-application.c:308 src/ui/chatty-window.ui:221
 msgid "Chats"
 msgstr "Keskustelut"
-
-#: data/sm.puri.Chatty.appdata.xml.in:7
-msgid "A messaging application"
-msgstr "Viestitysohjelma"
-
-#: data/sm.puri.Chatty.appdata.xml.in:9
-msgid "Chats is a messaging application supporting XMPP and SMS."
-msgstr ""
-"Chats on viestitysohjelma, joka tukee XMPP ja SMS (tekstiviesti) protokollia."
-""
-
-#: data/sm.puri.Chatty.appdata.xml.in:16
-msgid "Chats message window"
-msgstr "Chats viesti-ikkuna"
-
-#: data/sm.puri.Chatty.appdata.xml.in:29
-msgid "Initial development release of chatty with support for xmpp and sms."
-msgstr "Ensimmäinen kehitysversio Chatty-ohjelmasta, XMPP- ja SMS-tuella."
 
 #: data/sm.puri.Chatty.desktop.in:5
 msgid "sm.puri.Chatty"
@@ -56,311 +38,395 @@ msgid "Whether the application is launching the first time"
 msgstr "Mikäli ohjelma käynnistyy ensimmäistä kertaa"
 
 #: data/sm.puri.Chatty.gschema.xml:13
+msgid "Country code in ISO 3166-1 alpha-2 format"
+msgstr "Maakoodi ISO 3166-1 alpha-2 formaatissa"
+
+#: data/sm.puri.Chatty.gschema.xml:14
+msgid "Two letter country code of the last available SIM/Network"
+msgstr "Kaksikirjaiminen maakoodi viimeksi saatavissa olevalle verkolle"
+
+#: data/sm.puri.Chatty.gschema.xml:19
 msgid "Send message read receipts"
 msgstr "Lähetä viestinluvusta kuittaus"
 
-#: data/sm.puri.Chatty.gschema.xml:14
+#: data/sm.puri.Chatty.gschema.xml:20
 msgid "Whether to send the status of the message if read"
 msgstr "Lähetetäänkö viestin tilatieto, mikäli se on luettu"
 
-#: data/sm.puri.Chatty.gschema.xml:19
+#: data/sm.puri.Chatty.gschema.xml:25
 msgid "Message carbon copies"
 msgstr "Viestien kopiot"
 
-#: data/sm.puri.Chatty.gschema.xml:20 src/ui/chatty-settings-dialog.ui:151
+#: data/sm.puri.Chatty.gschema.xml:26 src/ui/chatty-settings-dialog.ui:177
 msgid "Share chat history among devices"
 msgstr "Jaa keskusteluhistoria laitteiden välillä"
 
-#: data/sm.puri.Chatty.gschema.xml:25
+#: data/sm.puri.Chatty.gschema.xml:31
 msgid "Enable Message Archive Management"
 msgstr "Käytä viestien arkistoinnin hallintaa"
 
-#: data/sm.puri.Chatty.gschema.xml:26
+#: data/sm.puri.Chatty.gschema.xml:32
 msgid "Enable MAM archive synchronization from the server"
 msgstr "Käytä viestien arkiston synkronisointia palvelimelta"
 
-#: data/sm.puri.Chatty.gschema.xml:31
+#: data/sm.puri.Chatty.gschema.xml:37
 msgid "Send typing notifications"
 msgstr "Lähetä tieto kirjoittamisesta"
 
-#: data/sm.puri.Chatty.gschema.xml:32
+#: data/sm.puri.Chatty.gschema.xml:38
 msgid "Whether to Send typing notifications"
 msgstr "Lähetetäänkö tieto, mikäli olet kirjoittamassa viestiä"
 
-#: data/sm.puri.Chatty.gschema.xml:37 data/sm.puri.Chatty.gschema.xml:38
-msgid "Mark offline users differently"
-msgstr "Merkitse offline-käyttäjät toisella tavalla "
-
 #: data/sm.puri.Chatty.gschema.xml:43 data/sm.puri.Chatty.gschema.xml:44
+msgid "Mark offline users differently"
+msgstr "Merkitse offline-käyttäjät toisella tavalla"
+
+#: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
 msgid "Mark Idle users differently"
 msgstr "Merkitse passiiviset käyttäjät toisella tavalla"
 
-#: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
+#: data/sm.puri.Chatty.gschema.xml:55 data/sm.puri.Chatty.gschema.xml:56
 msgid "Indicate unknown contacts"
 msgstr "Merkitse  tuntemattomat kontaktit"
 
-#: data/sm.puri.Chatty.gschema.xml:55
+#: data/sm.puri.Chatty.gschema.xml:61
 msgid "Convert text to emoticons"
 msgstr "Muuta teksti hymiöiksi"
 
-#: data/sm.puri.Chatty.gschema.xml:56
+#: data/sm.puri.Chatty.gschema.xml:62
 msgid "Convert text matching emoticons as real emoticons"
 msgstr "Muuta teksti hymiöt vastaaviksi hymiöiköneiksi"
 
-#: data/sm.puri.Chatty.gschema.xml:61
+#: data/sm.puri.Chatty.gschema.xml:67
 msgid "Enter key sends the message"
 msgstr "Enter-näppäin lähettää viestin"
 
-#: data/sm.puri.Chatty.gschema.xml:62
+#: data/sm.puri.Chatty.gschema.xml:68
 msgid "Whether pressing Enter key sends the message"
 msgstr "Lähettääkö viesti, mikäli olet painanut enter-näppäintä (rivinvaihto)"
 
-#: src/chatty-application.c:61
+#: data/sm.puri.Chatty.gschema.xml:73
+msgid "Enable experimental features"
+msgstr ""
+
+#: data/sm.puri.Chatty.gschema.xml:74
+msgid "Whether to enable experimental features"
+msgstr ""
+
+#: data/sm.puri.Chatty.gschema.xml:79
+msgid "Window maximized"
+msgstr "Ikkuna suurena"
+
+#: data/sm.puri.Chatty.gschema.xml:80
+msgid "Window maximized state"
+msgstr "Ikkunan suuri tila"
+
+#: data/sm.puri.Chatty.gschema.xml:85
+msgid "Window size"
+msgstr "Ikkunan koko"
+
+#: data/sm.puri.Chatty.gschema.xml:86
+msgid "Window size (width, height)."
+msgstr "Ikkunan koko (leveys, korkeus)."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:7
+msgid "A messaging application"
+msgstr "Viestitysohjelma"
+
+#: data/sm.puri.Chatty.metainfo.xml.in:9
+msgid "Chats is a messaging application supporting XMPP and SMS."
+msgstr ""
+"Chats on viestitysohjelma, joka tukee XMPP ja SMS (tekstiviesti) protokollia."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:16
+msgid "Chats message window"
+msgstr "Chats viesti-ikkuna"
+
+#: src/chatty-application.c:69
 msgid "Show release version"
 msgstr "Näytä julkaisuversio"
 
-#: src/chatty-application.c:62
+#: src/chatty-application.c:70
 msgid "Start in daemon mode"
 msgstr "Käynnistä taustaprosessina"
 
-#: src/chatty-application.c:63
+#: src/chatty-application.c:71
 msgid "Disable all accounts"
 msgstr "Poista käytöstä kaikki tilit"
 
-#: src/chatty-application.c:64
+#: src/chatty-application.c:72
 msgid "Enable libpurple debug messages"
 msgstr "Mahdollista libpurple virheenetsinnän viestit"
 
-#: src/chatty-application.c:65
+#: src/chatty-application.c:73
 msgid "Enable verbose libpurple debug messages"
 msgstr "Mahdollista laajennetut libpurple virheenetsinnän viestit"
 
-#: src/chatty-buddy-list.c:804
-msgid "Disconnect group chat"
-msgstr "Katkaise ryhmä-keskustelu"
+#: src/chatty-application.c:109
+#, c-format
+msgid "Authorize %s?"
+msgstr "Salli %s?"
 
-#: src/chatty-buddy-list.c:805
-msgid "This removes chat from chats list"
-msgstr "Tämä poistaa keskustelun keskustelulistalta"
+#: src/chatty-application.c:113 src/matrix/matrix-utils.c:508
+msgid "Reject"
+msgstr "Hylkää"
 
-#: src/chatty-buddy-list.c:809
-msgid "Delete chat with"
-msgstr "Poista keskustelu jossa"
+#: src/chatty-application.c:115 src/matrix/matrix-utils.c:509
+msgid "Accept"
+msgstr "Hyväksy"
 
-#: src/chatty-buddy-list.c:810
-msgid "This deletes the conversation history"
-msgstr "Tämä poistaa keskusteluhistorian"
+#: src/chatty-application.c:120
+#, c-format
+msgid "Add %s to contact list"
+msgstr "Lisää %s yhteystietoihin"
 
-#: src/chatty-buddy-list.c:821 src/chatty-purple-request.c:190
-#: src/dialogs/chatty-settings-dialog.c:448
-#: src/dialogs/chatty-user-info-dialog.c:76 src/ui/chatty-dialog-join-muc.ui:16
-#: src/ui/chatty-dialog-muc-info.ui:56
-msgid "Cancel"
-msgstr "Peruuta"
+#: src/chatty-application.c:143
+msgid "Contact added"
+msgstr "Yhteystieto lisätty"
 
-#: src/chatty-buddy-list.c:823
-msgid "Delete"
-msgstr "Poista"
+#: src/chatty-application.c:146
+#, c-format
+msgid "User %s has added %s to the contacts"
+msgstr "Käyttäjä %s on lisännyt %sn yhteystietoihin"
 
-#: src/chatty-buddy-list.c:1102
-msgid "Me: "
-msgstr "Minä:"
-
-#: src/chatty-connection.c:76
+#: src/chatty-application.c:166
 msgid "Login failed"
 msgstr "Kirjautuminen epäonnistui"
 
-#: src/chatty-connection.c:82
+#: src/chatty-application.c:172
 msgid "Please check ID and password"
 msgstr "Tarkasta tunnus ja salasana"
 
-#: src/chatty-conversation.c:1458
+#: src/chatty-chat-view.c:71 src/chatty-chat-view.c:76
+msgid "This is an IM conversation."
+msgstr "Tämä on pikaviestikeskustelu (IM)."
+
+#: src/chatty-chat-view.c:72 src/chatty-chat-view.c:82
+msgid "Your messages are not encrypted,"
+msgstr "Viestisi eivät ole salattuja,"
+
+#: src/chatty-chat-view.c:73
+msgid "ask your counterpart to use E2EE."
+msgstr "pyydä vastapuoltasi käyttämään päästä-päähän salausta."
+
+#: src/chatty-chat-view.c:77
+msgid "Your messages are secured"
+msgstr "Viestinvälityksesi on suojattu"
+
+#: src/chatty-chat-view.c:78
+msgid "by end-to-end encryption."
+msgstr "päästä-päähän salauksella."
+
+#: src/chatty-chat-view.c:81
+msgid "This is an SMS conversation."
+msgstr "Tämä on tekstiviestikeskustelu."
+
+#: src/chatty-chat-view.c:83
+msgid "and carrier rates may apply."
+msgstr "ja lisäksi mahdolliset operaattorimaksut."
+
+#. Translators: Timestamp seconds suffix
+#: src/chatty-list-row.c:73
+#, fuzzy
+#| msgid "s"
+msgctxt "timestamp-suffix-seconds"
+msgid "s"
+msgstr "s"
+
+#. Translators: Timestamp minute suffix
+#: src/chatty-list-row.c:75
+#, fuzzy
+#| msgid "m"
+msgctxt "timestamp-suffix-minute"
+msgid "m"
+msgstr "min"
+
+#. Translators: Timestamp minutes suffix
+#: src/chatty-list-row.c:77
+#, fuzzy
+#| msgid "m"
+msgctxt "timestamp-suffix-minutes"
+msgid "m"
+msgstr "min"
+
+#. Translators: Timestamp hour suffix
+#: src/chatty-list-row.c:79
+#, fuzzy
+#| msgid "h"
+msgctxt "timestamp-suffix-hour"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp hours suffix
+#: src/chatty-list-row.c:81
+#, fuzzy
+#| msgid "h"
+msgctxt "timestamp-suffix-hours"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp day suffix
+#: src/chatty-list-row.c:83
+#, fuzzy
+#| msgid "d"
+msgctxt "timestamp-suffix-day"
+msgid "d"
+msgstr "pvä"
+
+#. Translators: Timestamp days suffix
+#: src/chatty-list-row.c:85
+#, fuzzy
+#| msgid "d"
+msgctxt "timestamp-suffix-days"
+msgid "d"
+msgstr "pvä"
+
+#. Translators: Timestamp month suffix
+#: src/chatty-list-row.c:87
+#, fuzzy
+#| msgid "mo"
+msgctxt "timestamp-suffix-month"
+msgid "mo"
+msgstr "kk"
+
+#. Translators: Timestamp months suffix
+#: src/chatty-list-row.c:89
+#, fuzzy
+#| msgid "mos"
+msgctxt "timestamp-suffix-months"
+msgid "mos"
+msgstr "kk"
+
+#. Translators: Timestamp year suffix
+#: src/chatty-list-row.c:91
+#, fuzzy
+#| msgid "y"
+msgctxt "timestamp-suffix-year"
+msgid "y"
+msgstr "v"
+
+#. Translators: Timestamp years suffix
+#: src/chatty-list-row.c:93
+#, fuzzy
+#| msgid "y"
+msgctxt "timestamp-suffix-years"
+msgid "y"
+msgstr "v"
+
+#. Translators: Timestamp prefix (e.g. Over 5h)
+#: src/chatty-list-row.c:195
+msgid "Over"
+msgstr "Yli"
+
+#. Translators: Timestamp prefix (e.g. Almost 5h)
+#: src/chatty-list-row.c:200
+msgid "Almost"
+msgstr "Melkein"
+
+#: src/chatty-list-row.c:217
 msgid "Owner"
 msgstr "Omistaja"
 
-#: src/chatty-conversation.c:1461
+#: src/chatty-list-row.c:220
 msgid "Moderator"
 msgstr "Moderaattori"
 
-#: src/chatty-conversation.c:1464
+#: src/chatty-list-row.c:223
 msgid "Member"
 msgstr "Osallistuja"
 
-#: src/chatty-conversation.c:2161
+#: src/chatty-manager.c:916
 #, c-format
 msgid "New message from %s"
 msgstr "Uusi viesti käyttäjältä %s"
 
-#: src/chatty-message-list.c:73 src/chatty-message-list.c:78
-msgid "This is a IM conversation."
-msgstr "Tämä on pikaviestikeskustelu (IM)."
+#: src/chatty-message-row.c:91
+msgid "Copy"
+msgstr "Kopioi"
 
-#: src/chatty-message-list.c:74 src/chatty-message-list.c:84
-msgid "Your messages are not encrypted,"
-msgstr "Viestisi eivät ole salattuja,"
-
-#: src/chatty-message-list.c:75
-msgid "ask your counterpart to use E2EE."
-msgstr "pyydä vastapuoltasi käyttämään päästä-päähän salausta."
-
-#: src/chatty-message-list.c:79
-msgid "Your messages are secured"
-msgstr "Viestinvälityksesi on suojattu"
-
-#: src/chatty-message-list.c:80
-msgid "by end-to-end encryption."
-msgstr "päästä-päähän salauksella."
-
-#: src/chatty-message-list.c:83
-msgid "This is a SMS conversation."
-msgstr "Tämä on tekstiviestikeskustelu "
-
-#: src/chatty-message-list.c:85
-msgid "and carrier rates may apply."
-msgstr ", joten huomioithan mahdolliset operaattorimaksut."
-
-#: src/chatty-notify.c:80
+#: src/chatty-notify.c:67
 msgid "Open Message"
 msgstr "Avaa viesti"
 
-#: src/chatty-notify.c:85
+#: src/chatty-notify.c:72
 msgid "Message Received"
 msgstr "Viesti vastaanotettu"
 
-#: src/chatty-notify.c:91
+#: src/chatty-notify.c:78
 msgid "Message Error"
 msgstr "Viesti virhe"
 
-#: src/chatty-notify.c:97
+#: src/chatty-notify.c:84
 msgid "Account Info"
 msgstr "Tilin tiedot"
 
-#: src/chatty-notify.c:103
+#: src/chatty-notify.c:90
 msgid "Account Connected"
 msgstr "Tili liitetty"
 
-#: src/chatty-notify.c:110
-msgid "Open Account Settings"
-msgstr "Avaa tilin asetukset"
-
-#: src/chatty-notify.c:113
-msgid "Account Disconnected"
-msgstr "Tilin yhteys katkaistu"
-
-#: src/chatty-purple-notify.c:41
+#: src/chatty-purple-notify.c:44 src/matrix/matrix-utils.c:504
 msgid "Close"
 msgstr "Sulje"
 
-#: src/chatty-purple-request.c:185
+#: src/chatty-purple-request.c:186
 msgid "Save File..."
 msgstr "Tallenna tiedosto..."
 
-#: src/chatty-purple-request.c:186
+#: src/chatty-purple-request.c:187
 msgid "Open File..."
 msgstr "Avaa tiedosto..."
 
-#: src/chatty-purple-request.c:192
+#: src/chatty-purple-request.c:191 src/chatty-window.c:580
+#: src/dialogs/chatty-settings-dialog.c:633
+#: src/dialogs/chatty-user-info-dialog.c:66 src/ui/chatty-dialog-join-muc.ui:16
+#: src/ui/chatty-dialog-muc-info.ui:56
+msgid "Cancel"
+msgstr "Peruuta"
+
+#: src/chatty-purple-request.c:193
 msgid "Save"
 msgstr "Tallenna"
 
-#: src/chatty-purple-request.c:192 src/dialogs/chatty-settings-dialog.c:447
-#: src/dialogs/chatty-user-info-dialog.c:75
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:632
+#: src/dialogs/chatty-user-info-dialog.c:65
 msgid "Open"
 msgstr "Avaa"
 
-#: src/chatty-utils.c:48
-msgid "About "
-msgstr "Tietoja "
+#: src/chatty-secret-store.c:81
+#, c-format
+msgid "Chatty password for \"%s\""
+msgstr ""
 
-#: src/chatty-utils.c:49
-msgid "Less than "
-msgstr "Alle "
+#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:468
+msgid "%A %H∶%M"
+msgstr ""
 
-#: src/chatty-utils.c:50
-msgid " seconds"
-msgstr " sekunttia"
+# Checked from app admin, 24h format ok.
+#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:473
+#, fuzzy
+#| msgid "%A %I:%M %p"
+msgid "%A %I∶%M %p"
+msgstr "%A %H:%M"
 
-#: src/chatty-utils.c:51
-msgid " minute"
-msgstr " minuutti"
+# Checked from app admin, local date format ok.
+#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:480
+msgid "%Y-%m-%d"
+msgstr "%d.%m.%Y"
 
-#: src/chatty-utils.c:52
-msgid " minutes"
-msgstr " minuuttia"
-
-#: src/chatty-utils.c:53
-msgid " hour"
-msgstr " tunti"
-
-#: src/chatty-utils.c:54
-msgid " hours"
-msgstr " tuntia"
-
-#: src/chatty-utils.c:55
-msgid " day"
-msgstr " päivä"
-
-#: src/chatty-utils.c:56
-msgid " days"
-msgstr " päivää"
-
-#: src/chatty-utils.c:57
-msgid " month"
-msgstr " kuukausi"
-
-#: src/chatty-utils.c:58
-msgid " months"
-msgstr " kuukautta"
-
-#: src/chatty-utils.c:59
-msgid " year"
-msgstr " vuosi"
-
-#: src/chatty-utils.c:60
-msgid " years"
-msgstr " vuotta"
-
-#: src/chatty-utils.c:64
-msgid "s"
-msgstr "s"
-
-#: src/chatty-utils.c:65 src/chatty-utils.c:66
-msgid "m"
-msgstr "m"
-
-#: src/chatty-utils.c:67 src/chatty-utils.c:68
-msgid "h"
-msgstr "h"
-
-#: src/chatty-utils.c:69 src/chatty-utils.c:70
-msgid "d"
-msgstr "pvä"
-
-#: src/chatty-utils.c:71
-msgid "mo"
-msgstr "kk"
-
-#: src/chatty-utils.c:72
-msgid "mos"
-msgstr "kk"
-
-#: src/chatty-utils.c:73 src/chatty-utils.c:74
-msgid "y"
-msgstr "v"
-
-#: src/chatty-utils.c:177
-msgid "Over"
-msgstr "Yli"
-
-#: src/chatty-utils.c:181
-msgid "Almost"
-msgstr "Melkein"
-
-#: src/chatty-window.c:102 src/chatty-window.c:107 src/chatty-window.c:112
+#: src/chatty-window.c:107 src/chatty-window.c:112 src/chatty-window.c:117
 msgid "Choose a contact"
 msgstr "Valitse yhteystieto"
 
-#: src/chatty-window.c:103
+#: src/chatty-window.c:108
 msgid ""
 "Select an <b>SMS</b> or <b>Instant Message</b> contact with the <b>\"+\"</b> "
 "button in the titlebar."
@@ -368,126 +434,186 @@ msgstr ""
 "Valitse <b>tekstiviestin</b> tai muun <b>pikaviestin</b> yhteyshenkilö "
 "otsikkorivin<b>\"+\"</b> -napilla."
 
-#: src/chatty-window.c:108
+#: src/chatty-window.c:113
 msgid ""
 "Select an <b>Instant Message</b> contact with the \"+\" button in the "
 "titlebar."
 msgstr "Valitse <b>pikaviestin</b> yhteyshenkilö otsikkorivin \"+\" -napilla."
 
-#: src/chatty-window.c:113
-msgid "Start a <b>SMS</b> chat with with the \"+\" button in the titlebar."
-msgstr "Aloita <b>tekstiviesti</b> keskustelu otsikkorivin \"+\" -napilla."
+#: src/chatty-window.c:118
+msgid "Start a <b>SMS</b> chat with the \"+\" button in the titlebar."
+msgstr "Aloita <b>tekstiviesti</b>keskustelu otsikkorivin \"+\" -napilla."
 
-#: src/chatty-window.c:114 src/chatty-window.c:118
+#: src/chatty-window.c:119 src/chatty-window.c:123
 msgid ""
-"For <b>Instant Messaging</b> add or activate an account in "
-"<i>\"preferences\"</i>."
+"For <b>Instant Messaging</b> add or activate an account in <i>\"preferences"
+"\"</i>."
 msgstr ""
 "Lähettääksesi <b>pikaviestejä</b> lisää tai aktivoi tili <i>\"Asetukset\"</"
 "i> -valikossa."
 
-#: src/chatty-window.c:117
+#: src/chatty-window.c:122
 msgid "Start chatting"
 msgstr "Aloita keskustelu"
 
-#: src/chatty-window.c:485
+#: src/chatty-window.c:565
+msgid "Delete chat with"
+msgstr "Poista keskustelu jossa"
+
+#: src/chatty-window.c:566
+msgid "This deletes the conversation history"
+msgstr "Tämä poistaa keskusteluhistorian"
+
+#: src/chatty-window.c:568
+msgid "Disconnect group chat"
+msgstr "Katkaise ryhmä-keskustelu"
+
+#: src/chatty-window.c:569
+msgid "This removes chat from chats list"
+msgstr "Tämä poistaa keskustelun keskustelulistalta"
+
+#: src/chatty-window.c:582
+msgid "Delete"
+msgstr "Poista"
+
+#: src/chatty-window.c:809
 msgid "An SMS and XMPP messaging client"
 msgstr ""
-"Tämä on ohjelma tekstiviesti (SMS) ja XMPP viestitysprotokollien "
-"käyttämiseen"
+"Tämä on ohjelma tekstiviesti (SMS) ja XMPP viestitysprotokollien käyttämiseen"
 
-#: src/chatty-window.c:492
+#: src/chatty-window.c:816
 msgid "translator-credits"
-msgstr "Kääntäjän tiedot"
+msgstr "JR-Fi <juho@reivo.fi>, 2020"
 
-#: src/chatty-window.c:627
+#: src/chatty-window.c:1115
 #, c-format
-msgid "Authorize %s?"
-msgstr "Salli %s?"
+msgid "“%s” is not a valid phone number"
+msgstr ""
 
-#: src/chatty-window.c:631
-msgid "Reject"
-msgstr "Hylkää"
+#: src/dialogs/chatty-muc-info-dialog.c:320
+msgid "members"
+msgstr "osallistujat"
 
-#: src/chatty-window.c:633
-msgid "Accept"
-msgstr "Hyväksy"
+#: src/dialogs/chatty-new-chat-dialog.c:152
+msgid "Send To"
+msgstr "Vastaanottaja"
 
-#: src/chatty-window.c:638
+#: src/dialogs/chatty-new-chat-dialog.c:196
 #, c-format
-msgid "Add %s to contact list"
-msgstr "Lisää %s yhteystietoihin"
+msgid "Error opening GNOME Contacts: %s"
+msgstr "Virhe avattaessa GNOME Contacts-yhteystietoja: %s"
 
-#: src/chatty-window.c:668
-msgid "Contact added"
-msgstr "Yhteystieto lisätty"
-
-#: src/chatty-window.c:671
-#, c-format
-msgid "User %s has added %s to the contacts"
-msgstr "Käyttäjä %s on lisännyt %sn yhteystietoihin"
-
-#: src/dialogs/chatty-settings-dialog.c:320
+#: src/dialogs/chatty-settings-dialog.c:500
 msgid "Select Protocol"
 msgstr "Valitse yhteysprotokolla"
 
-#: src/dialogs/chatty-settings-dialog.c:325
-msgid "Add XMPP account"
-msgstr "Lisää XMPP-tili"
-
-#: src/dialogs/chatty-settings-dialog.c:356
+#: src/dialogs/chatty-settings-dialog.c:530
 msgid "connected"
-msgstr "Yhteys muodostettu"
+msgstr "yhteys muodostettu"
 
-#: src/dialogs/chatty-settings-dialog.c:358
+#: src/dialogs/chatty-settings-dialog.c:532
 msgid "connecting…"
-msgstr "muodostaa yhteyttä..."
+msgstr "muodostaa yhteyttä…"
 
-#: src/dialogs/chatty-settings-dialog.c:360
+#: src/dialogs/chatty-settings-dialog.c:534
 msgid "disconnected"
-msgstr "Yhteys katkaistu"
+msgstr "yhteys katkaistu"
 
-#: src/dialogs/chatty-settings-dialog.c:444
-#: src/dialogs/chatty-user-info-dialog.c:72
+#: src/dialogs/chatty-settings-dialog.c:629
+#: src/dialogs/chatty-user-info-dialog.c:62
 msgid "Set Avatar"
 msgstr "Aseta profiilikuva"
 
-#: src/dialogs/chatty-settings-dialog.c:514
-#: src/ui/chatty-settings-dialog.ui:468
+#: src/dialogs/chatty-settings-dialog.c:710
+#: src/ui/chatty-settings-dialog.ui:483
 msgid "Delete Account"
 msgstr "Poista tili"
 
-#: src/dialogs/chatty-settings-dialog.c:517
+#: src/dialogs/chatty-settings-dialog.c:713
 #, c-format
 msgid "Delete account %s?"
 msgstr "Poista tili %s?"
 
-#: src/dialogs/chatty-user-info-dialog.c:206
+#: src/dialogs/chatty-user-info-dialog.c:136
 msgid "Encryption not available"
 msgstr "Salaus ei ole saatavilla"
 
-#: src/dialogs/chatty-user-info-dialog.c:250
-#: src/dialogs/chatty-user-info-dialog.c:256
-msgid "This chat is not encrypted"
-msgstr "Tämä keskustelu ei ole salattu"
-
-#: src/dialogs/chatty-user-info-dialog.c:253
+#: src/dialogs/chatty-user-info-dialog.c:174
 msgid "Encryption is not available"
 msgstr "Salausta ei ole saatavilla"
 
-#: src/dialogs/chatty-user-info-dialog.c:260
+#: src/dialogs/chatty-user-info-dialog.c:176
 msgid "This chat is encrypted"
 msgstr "Tämä keskustelu on salattu"
 
-#: src/dialogs/chatty-user-info-dialog.c:470
+#: src/dialogs/chatty-user-info-dialog.c:178
+msgid "This chat is not encrypted"
+msgstr "Tämä keskustelu ei ole salattu"
+
+#: src/dialogs/chatty-user-info-dialog.c:250
 msgid "Phone Number:"
 msgstr "Puhelinnumero:"
 
-#: src/dialogs/chatty-muc-info-dialog.c:335
-msgid "members"
-msgstr "Osallistujat"
+#: src/matrix/chatty-ma-account.c:224
+msgid "Incorrect password"
+msgstr ""
 
-#: src/ui/chatty-dialog-join-muc.ui:12 src/ui/chatty-window.ui:19
+#: src/matrix/chatty-ma-account.c:227
+msgid "_OK"
+msgstr "_OK"
+
+#: src/matrix/chatty-ma-account.c:228 src/ui/chatty-settings-dialog.ui:41
+#: src/ui/chatty-settings-dialog.ui:737
+msgid "_Cancel"
+msgstr "_Peru"
+
+#: src/matrix/chatty-ma-account.c:234
+#, c-format
+msgid "Please enter password for “%s”"
+msgstr "Syötä salasana kohteelle ”%s”"
+
+#: src/matrix/chatty-ma-chat.c:149
+msgid "Empty room"
+msgstr "Tyhjä huone"
+
+#: src/matrix/chatty-ma-chat.c:153
+#, c-format
+msgid "%s and %s"
+msgstr ""
+
+#: src/matrix/chatty-ma-chat.c:155
+#, c-format
+msgid "%s and %u other"
+msgid_plural "%s and %u others"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/matrix/matrix-utils.c:473
+#, c-format
+msgid "The certificate for ‘%s’ has unknown CA"
+msgstr ""
+
+#: src/matrix/matrix-utils.c:475
+#, c-format
+msgid "The certificate for ‘%s’ is self-signed"
+msgstr ""
+
+#: src/matrix/matrix-utils.c:479
+#, c-format
+msgid "The certificate for ‘%s’ has expired"
+msgstr ""
+
+#: src/matrix/matrix-utils.c:483
+#, c-format
+msgid "The certificate for ‘%s’ has been revoked"
+msgstr ""
+
+#: src/matrix/matrix-utils.c:492
+#, c-format
+msgid "Error validating certificate for ‘%s’"
+msgstr ""
+
+#: src/ui/chatty-dialog-join-muc.ui:12
 msgid "New Group Chat"
 msgstr "Uusi ryhmäkeskustelu"
 
@@ -495,11 +621,11 @@ msgstr "Uusi ryhmäkeskustelu"
 msgid "Join Chat"
 msgstr "Liity keskusteluun"
 
-#: src/ui/chatty-dialog-join-muc.ui:81 src/ui/chatty-dialog-new-chat.ui:236
+#: src/ui/chatty-dialog-join-muc.ui:80 src/ui/chatty-dialog-new-chat.ui:296
 msgid "Select chat account"
 msgstr "Valitse keskustelutili"
 
-#: src/ui/chatty-dialog-join-muc.ui:155
+#: src/ui/chatty-dialog-join-muc.ui:150
 msgid "Password (optional)"
 msgstr "Salasana (valinnainen)"
 
@@ -515,35 +641,35 @@ msgstr "Kutsu kontakti"
 msgid "Invite"
 msgstr "Kutsu"
 
-#: src/ui/chatty-dialog-muc-info.ui:166
+#: src/ui/chatty-dialog-muc-info.ui:165
 msgid "Room topic"
 msgstr "Keskusteluhuoneen aihe"
 
-#: src/ui/chatty-dialog-muc-info.ui:225
+#: src/ui/chatty-dialog-muc-info.ui:224
 msgid "Room settings"
 msgstr "Tämän keskustelun asetukset"
 
-#: src/ui/chatty-dialog-muc-info.ui:248 src/ui/chatty-dialog-user-info.ui:210
+#: src/ui/chatty-dialog-muc-info.ui:245 src/ui/chatty-dialog-user-info.ui:209
 msgid "Notifications"
 msgstr "Ilmoitukset"
 
-#: src/ui/chatty-dialog-muc-info.ui:249
+#: src/ui/chatty-dialog-muc-info.ui:246
 msgid "Show notification badge"
 msgstr "Näytä ilmoituskuvake"
 
-#: src/ui/chatty-dialog-muc-info.ui:265
+#: src/ui/chatty-dialog-muc-info.ui:262
 msgid "Status Messages"
 msgstr "Tilaviestit"
 
-#: src/ui/chatty-dialog-muc-info.ui:266
+#: src/ui/chatty-dialog-muc-info.ui:263
 msgid "Show status messages in chat"
 msgstr "Näytä tilaviestit keskustelussa"
 
-#: src/ui/chatty-dialog-muc-info.ui:289
+#: src/ui/chatty-dialog-muc-info.ui:284
 msgid "0 members"
-msgstr "0 osallistujaa"
+msgstr "0 jäsentä"
 
-#: src/ui/chatty-dialog-muc-info.ui:385
+#: src/ui/chatty-dialog-muc-info.ui:371
 msgid "Invite Message"
 msgstr "Kutsuviesti"
 
@@ -555,7 +681,7 @@ msgstr "Aloita keskustelu"
 msgid "New Contact"
 msgstr "Uusi yhteystieto"
 
-#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:112
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:125
 msgid "Add Contact"
 msgstr "Lisää yhteystieto"
 
@@ -563,51 +689,47 @@ msgstr "Lisää yhteystieto"
 msgid "Send To:"
 msgstr "Vastaanottaja:"
 
-#: src/ui/chatty-dialog-new-chat.ui:168
-msgid "Send to"
-msgstr "Lähetä"
+#: src/ui/chatty-dialog-new-chat.ui:224
+msgid "No Search Results"
+msgstr "Ei hakutuloksia"
 
-#: src/ui/chatty-dialog-new-chat.ui:287
+#: src/ui/chatty-dialog-new-chat.ui:237
+msgid "Try different search, or type a valid number to create new chat"
+msgstr ""
+
+#: src/ui/chatty-dialog-new-chat.ui:343
 msgid "Name (optional)"
 msgstr "Nimi (valinnainen)"
 
-#: src/ui/chatty-dialog-new-chat.ui:325 src/ui/chatty-window.ui:138
+#: src/ui/chatty-dialog-new-chat.ui:383 src/ui/chatty-window.ui:151
 msgid "Add to Contacts"
 msgstr "Lisää yhteystietoihin"
 
-#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:98
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:111
 msgid "Chat Details"
 msgstr "Keskustelun tiedot"
 
-#: src/ui/chatty-dialog-user-info.ui:97
+#: src/ui/chatty-dialog-user-info.ui:96
 msgid "XMPP ID"
 msgstr "XMPP tunnus"
 
-#: src/ui/chatty-dialog-user-info.ui:112 src/ui/chatty-dialog-user-info.ui:226
+#: src/ui/chatty-dialog-user-info.ui:111 src/ui/chatty-dialog-user-info.ui:225
 msgid "Encryption"
 msgstr "Salaus"
 
-#: src/ui/chatty-dialog-user-info.ui:127 src/ui/chatty-settings-dialog.ui:381
+#: src/ui/chatty-dialog-user-info.ui:126 src/ui/chatty-settings-dialog.ui:396
 msgid "Status"
 msgstr "Tila"
 
-#: src/ui/chatty-dialog-user-info.ui:227
+#: src/ui/chatty-dialog-user-info.ui:226
 msgid "Secure messaging using OMEMO"
 msgstr "Turvaa viestinvälitys OMEMO-protokollalla"
 
-#: src/ui/chatty-dialog-user-info.ui:249
+#: src/ui/chatty-dialog-user-info.ui:247
 msgid "Fingerprints"
 msgstr "Sormenjäljet"
 
-#: src/ui/chatty-message-list-popover.ui:18
-msgid "Copy"
-msgstr "Kopioi"
-
-#: src/ui/chatty-pane-msg-view.ui:14
-msgid "Unencrypted"
-msgstr "Salaamaton"
-
-#: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:57
+#: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:17
 msgid "Preferences"
 msgstr "Asetukset"
 
@@ -615,166 +737,253 @@ msgstr "Asetukset"
 msgid "Back"
 msgstr "Takaisin"
 
-#: src/ui/chatty-settings-dialog.ui:41
+#: src/ui/chatty-settings-dialog.ui:54
 msgid "_Add"
 msgstr "_Lisää"
 
-#: src/ui/chatty-settings-dialog.ui:57
+#: src/ui/chatty-settings-dialog.ui:80
 msgid "_Save"
 msgstr "_Tallenna"
 
-#: src/ui/chatty-settings-dialog.ui:91
+#: src/ui/chatty-settings-dialog.ui:114
 msgid "Accounts"
 msgstr "Tilit"
 
-#: src/ui/chatty-settings-dialog.ui:105
+#: src/ui/chatty-settings-dialog.ui:128
 msgid "Add new account…"
-msgstr "Lisää uusi tili..."
+msgstr "Lisää uusi tili…"
 
-#: src/ui/chatty-settings-dialog.ui:117
+#: src/ui/chatty-settings-dialog.ui:141
 msgid "Privacy"
 msgstr "Yksityisyys"
 
-#: src/ui/chatty-settings-dialog.ui:122
+#: src/ui/chatty-settings-dialog.ui:146
 msgid "Message Receipts"
 msgstr "Viestien kuittaus"
 
-#: src/ui/chatty-settings-dialog.ui:123
+#: src/ui/chatty-settings-dialog.ui:147
 msgid "Confirm received messages"
 msgstr "Kuittaa saadut viestit"
 
-#: src/ui/chatty-settings-dialog.ui:136
+#: src/ui/chatty-settings-dialog.ui:161
 msgid "Message Archive Management"
 msgstr "Viestien arkistoinnin hallinta"
 
-#: src/ui/chatty-settings-dialog.ui:137
+#: src/ui/chatty-settings-dialog.ui:162
 msgid "Sync conversations with chat server"
 msgstr "Synkronisoi keskustelut palvelimen kanssa"
 
-#: src/ui/chatty-settings-dialog.ui:150
+#: src/ui/chatty-settings-dialog.ui:176
 msgid "Message Carbon Copies"
 msgstr "Viestien kopiot"
 
-#: src/ui/chatty-settings-dialog.ui:164
+#: src/ui/chatty-settings-dialog.ui:191
 msgid "Typing Notification"
 msgstr "Kirjoitusilmoitukset"
 
-#: src/ui/chatty-settings-dialog.ui:165
+#: src/ui/chatty-settings-dialog.ui:192
 msgid "Send typing messages"
 msgstr "Lähetä tieto kirjoittamisesta"
 
-#: src/ui/chatty-settings-dialog.ui:181
+#: src/ui/chatty-settings-dialog.ui:209
 msgid "Chats List"
 msgstr "Keskusteluiden listaus"
 
-#: src/ui/chatty-settings-dialog.ui:186
+#: src/ui/chatty-settings-dialog.ui:214
 msgid "Indicate Offline Contacts"
 msgstr "Merkitse offline-kontaktit"
 
-#: src/ui/chatty-settings-dialog.ui:187
+#: src/ui/chatty-settings-dialog.ui:215
 msgid "Grey out avatars from offline contacts"
 msgstr "Häivytä offline-kontaktien kuvakkeet harmaiksi"
 
-#: src/ui/chatty-settings-dialog.ui:200
+#: src/ui/chatty-settings-dialog.ui:229
 msgid "Indicate Idle Contacts"
 msgstr "Merkitse passiiviset kontaktit"
 
-#: src/ui/chatty-settings-dialog.ui:201
-msgid "Blur avatars from offline contacts"
-msgstr "Sumenna offline-kontaktien kuvakkeet"
+#: src/ui/chatty-settings-dialog.ui:230
+msgid "Blur avatars from idle contacts"
+msgstr "Sumenna epä-aktiivisten kontaktien kuvakkeet"
 
-#: src/ui/chatty-settings-dialog.ui:214
+#: src/ui/chatty-settings-dialog.ui:244
 msgid "Indicate Unknown Contacts"
 msgstr "Merkitse tuntemattomat kontaktit"
 
-#: src/ui/chatty-settings-dialog.ui:215
+#: src/ui/chatty-settings-dialog.ui:245
 msgid "Color unknown contact ID red"
 msgstr "Värjää tuntemattoman kontaktin tunnus punaiseksi"
 
-#: src/ui/chatty-settings-dialog.ui:231
+#: src/ui/chatty-settings-dialog.ui:262
 msgid "Editor"
 msgstr "Editori"
 
-#: src/ui/chatty-settings-dialog.ui:236
+#: src/ui/chatty-settings-dialog.ui:267
 msgid "Graphical Emoticons"
 msgstr "Hymiökuvakkeet"
 
-#: src/ui/chatty-settings-dialog.ui:237
+#: src/ui/chatty-settings-dialog.ui:268
 msgid "Convert ASCII emoticons"
 msgstr "Muuta ASCII-tekstikuvakkeet"
 
-#: src/ui/chatty-settings-dialog.ui:250
+#: src/ui/chatty-settings-dialog.ui:282
 msgid "Return = Send Message"
 msgstr "Enter-nappi lähettää viestin"
 
-#: src/ui/chatty-settings-dialog.ui:251
+#: src/ui/chatty-settings-dialog.ui:283
 msgid "Send message with return key"
 msgstr "Lähetä viesti painamalla enter-nappia"
 
-#: src/ui/chatty-settings-dialog.ui:319
+#: src/ui/chatty-settings-dialog.ui:334
 msgid "Account ID"
 msgstr "Tilin tunnus"
 
-#: src/ui/chatty-settings-dialog.ui:352
+#: src/ui/chatty-settings-dialog.ui:367
 msgid "Protocol"
 msgstr "Yhteysprotokolla"
 
-#: src/ui/chatty-settings-dialog.ui:410 src/ui/chatty-settings-dialog.ui:707
+#: src/ui/chatty-settings-dialog.ui:425 src/ui/chatty-settings-dialog.ui:647
 msgid "Password"
 msgstr "Salasana"
 
-#: src/ui/chatty-settings-dialog.ui:485
+#: src/ui/chatty-settings-dialog.ui:501
 msgid "Own Fingerprint"
 msgstr "Oma sormenjälki"
 
-#: src/ui/chatty-settings-dialog.ui:511
-msgid "Other Devices"
-msgstr "Muut laitteet"
-
-#: src/ui/chatty-settings-dialog.ui:595
+#: src/ui/chatty-settings-dialog.ui:555
 msgid "XMPP"
 msgstr "XMPP"
 
-#: src/ui/chatty-settings-dialog.ui:609
+#: src/ui/chatty-settings-dialog.ui:569
 msgid "Matrix"
 msgstr "Matrix"
 
-#: src/ui/chatty-settings-dialog.ui:624
+#: src/ui/chatty-settings-dialog.ui:584
 msgid "Telegram"
 msgstr "Telegram"
 
-#: src/ui/chatty-settings-dialog.ui:682
-msgid "Provider"
-msgstr "Toimittaja"
+#: src/ui/chatty-settings-dialog.ui:693
+msgid "Matrix Home Server"
+msgstr ""
 
-#: src/ui/chatty-window.ui:32
-msgid "New Direct Chat"
-msgstr "Uusi suora keskustelu"
+#: src/ui/chatty-settings-dialog.ui:710
+msgid "Enter the matrix home server address."
+msgstr ""
 
-#: src/ui/chatty-window.ui:70
+#: src/ui/chatty-settings-dialog.ui:728
+msgid "_Accept"
+msgstr "_Hyväksy"
+
+#: src/ui/chatty-window.ui:30
 msgid "About Chats"
 msgstr "Tietoja Chats-ohjelmasta"
 
-#: src/ui/chatty-window.ui:163
+#: src/ui/chatty-window.ui:58
+msgid "New Message…"
+msgstr "Uusi viesti…"
+
+#: src/ui/chatty-window.ui:71
+msgid "New Group Message…"
+msgstr "Uusi ryhmäviesti…"
+
+#: src/ui/chatty-window.ui:84
+msgid "New Bulk SMS…"
+msgstr "Uusi joukkotekstiviesti…"
+
+#: src/ui/chatty-window.ui:176
 msgid "Leave Chat"
 msgstr "Poistu keskustelusta"
 
-#: src/ui/chatty-window.ui:176
+#: src/ui/chatty-window.ui:189
 msgid "Delete Chat"
 msgstr "Poista keskustelu"
 
-#: src/users/chatty-contact.c:405
-msgid "Mobile"
-msgstr "Kännykkä"
+#: src/users/chatty-contact.c:315
+msgid "Mobile: "
+msgstr "Matkapuhelin: "
 
-#: src/users/chatty-contact.c:407
-msgid "Work"
-msgstr "Työ"
+#: src/users/chatty-contact.c:317
+msgid "Work: "
+msgstr "Työ: "
 
-#: src/users/chatty-contact.c:409
-msgid "Home"
-msgstr "Koti"
+#: src/users/chatty-contact.c:319
+msgid "Other: "
+msgstr "Muu: "
 
-#: src/users/chatty-contact.c:411
-msgid "Other"
-msgstr "Muu"
+#~ msgid "Open Account Settings"
+#~ msgstr "Avaa tilin asetukset"
+
+#~ msgid "Account Disconnected"
+#~ msgstr "Tilin yhteys katkaistu"
+
+# Checked from app admin, 24h format ok.
+#~ msgid "%I:%M %p"
+#~ msgstr "%H:%M"
+
+#~ msgid "%A %R"
+#~ msgstr "%A %R"
+
+#~ msgid "Add XMPP account"
+#~ msgstr "Lisää XMPP-tili"
+
+#~ msgid "Other Devices"
+#~ msgstr "Muut laitteet"
+
+#~ msgid "Provider"
+#~ msgstr "Toimittaja"
+
+#~ msgid "Initial development release of chatty with support for xmpp and sms."
+#~ msgstr "Ensimmäinen kehitysversio Chatty-ohjelmasta, XMPP- ja SMS-tuella."
+
+#~ msgid "Me: "
+#~ msgstr "Minä:"
+
+#~ msgid "About "
+#~ msgstr "Tietoja "
+
+#~ msgid "Less than "
+#~ msgstr "Alle "
+
+#~ msgid " seconds"
+#~ msgstr " sekunttia"
+
+#~ msgid " minute"
+#~ msgstr " minuutti"
+
+#~ msgid " minutes"
+#~ msgstr " minuuttia"
+
+#~ msgid " hour"
+#~ msgstr " tunti"
+
+#~ msgid " hours"
+#~ msgstr " tuntia"
+
+#~ msgid " day"
+#~ msgstr " päivä"
+
+#~ msgid " days"
+#~ msgstr " päivää"
+
+#~ msgid " month"
+#~ msgstr " kuukausi"
+
+#~ msgid " months"
+#~ msgstr " kuukautta"
+
+#~ msgid " year"
+#~ msgstr " vuosi"
+
+#~ msgid " years"
+#~ msgstr " vuotta"
+
+#~ msgid "Send to"
+#~ msgstr "Lähetä"
+
+#~ msgid "Unencrypted"
+#~ msgstr "Salaamaton"
+
+#~ msgid "New Direct Chat"
+#~ msgstr "Uusi suora keskustelu"
+
+#~ msgid "Home"
+#~ msgstr "Koti"

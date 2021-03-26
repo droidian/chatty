@@ -15,6 +15,7 @@
 
 #include "users/chatty-pp-account.h"
 #include "chatty-contact-provider.h"
+#include "chatty-history.h"
 #include "chatty-chat.h"
 
 G_BEGIN_DECLS
@@ -56,13 +57,27 @@ void            chatty_manager_update_node            (ChattyManager   *self,
                                                        PurpleBlistNode *node);
 void            chatty_manager_delete_conversation    (ChattyManager      *self,
                                                        PurpleConversation *conv);
+void            chatty_manager_delete_account_async   (ChattyManager      *self,
+                                                       ChattyAccount      *account,
+                                                       GCancellable       *cancellable,
+                                                       GAsyncReadyCallback callback,
+                                                       gpointer            user_data);
+gboolean        chatty_manager_delete_account_finish  (ChattyManager      *self,
+                                                       GAsyncResult       *result,
+                                                       GError            **error);
+void            chatty_manager_save_account_async     (ChattyManager      *self,
+                                                       ChattyAccount      *account,
+                                                       GCancellable       *cancellable,
+                                                       GAsyncReadyCallback callback,
+                                                       gpointer            user_data);
+gboolean        chatty_manager_save_account_finish    (ChattyManager      *self,
+                                                       GAsyncResult       *result,
+                                                       GError            **error);
 ChattyChat     *chatty_manager_add_chat               (ChattyManager      *self,
                                                        ChattyChat         *chat);
-void            chatty_manager_load_more_chat         (ChattyManager      *self,
-                                                       ChattyChat         *chat,
-                                                       guint               limit);
 void            chatty_conv_im_with_buddy             (PurpleAccount      *account,
                                                        const char         *username);
 void            chatty_conv_join_chat                 (PurpleChat         *chat);
+ChattyHistory  *chatty_manager_get_history            (ChattyManager      *self);
 
 G_END_DECLS

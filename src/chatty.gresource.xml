@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/sm/puri/Chatty">
+    <file>ui/chatty-fp-row.ui</file>
     <file>ui/chatty-list-row.ui</file>
     <file>ui/chatty-chat-view.ui</file>
     <file>ui/chatty-contact-row.ui</file>
     <file>ui/chatty-message-row.ui</file>
+    <file>ui/chatty-info-dialog.ui</file>
     <file>ui/chatty-settings-dialog.ui</file>
     <file>ui/chatty-dialog-new-chat.ui</file>
     <file>ui/chatty-dialog-join-muc.ui</file>
-    <file>ui/chatty-dialog-muc-info.ui</file>
-    <file>ui/chatty-dialog-user-info.ui</file>
     <file>ui/chatty-window.ui</file>
     <file>icons/eye-not-looking-symbolic.svg</file>
     <file>icons/eye-open-negative-filled-symbolic.svg</file>

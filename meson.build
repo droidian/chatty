@@ -1,20 +1,32 @@
 project(
   'chatty', 'c', 'cpp',
-  version: '0.2.0',
+  version: '0.3.0.beta',
   meson_version: '>= 0.46.0',
 )
 
 i18n = import('i18n')
 gnome = import('gnome')
+cc = meson.get_compiler('c')
 
 top_inc = include_directories('.')
 src_inc = include_directories('src')
 
 config_h = configuration_data()
+config_h.set10('HAVE_EXPLICIT_BZERO', cc.has_function('explicit_bzero'))
 config_h.set_quoted('GETTEXT_PACKAGE', 'purism-chatty')
 config_h.set_quoted('LOCALEDIR', join_paths(get_option('prefix'), get_option('localedir')))
 config_h.set_quoted('PACKAGE_NAME', meson.project_name())
 config_h.set_quoted('PACKAGE_VERSION', meson.project_version())
+
+# TODO: Use has_headers: 'olm/olm.h' when we bump meson requirement
+libolm_dep = cc.find_library('olm', required: true)
+
+if (cc.has_function('olm_pk_key_from_private', dependencies: libolm_dep))
+  config_h.set('HAVE_OLM3', true)
+else
+  config_h.set('HAVE_OLM2', true)
+endif
+
 configure_file(
   output: 'chatty-config.h',
   configuration: config_h,
@@ -22,9 +34,8 @@ configure_file(
 add_project_arguments([
   '-I' + meson.build_root(),
   '-DGLIB_DISABLE_DEPRECATION_WARNINGS',
+  '-DG_LOG_USE_STRUCTURED',
 ], language: 'c')
-
-cc = meson.get_compiler('c')
 
 global_c_args = []
 test_c_args = [

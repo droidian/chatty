@@ -13,7 +13,6 @@
 #include <glib-object.h>
 #include "chatty-window.h"
 #include "users/chatty-pp-account.h"
-#include "chatty-dbus.h"
 #include "chatty-utils.h"
 #include "chatty-manager.h"
 #include "chatty-new-muc-dialog.h"
@@ -173,6 +172,7 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
   g_return_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self));
 
   row = HDY_ACTION_ROW (hdy_action_row_new ());
+  gtk_list_box_row_set_activatable (GTK_LIST_BOX_ROW (row), TRUE);
   g_object_set_data (G_OBJECT(row),
                      "row-account",
                      (gpointer) account);

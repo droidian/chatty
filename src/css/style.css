@@ -29,12 +29,6 @@
   border-color: @theme_selected_bg_color;
 }
 
-.entry_hide {
-  color: black;
-  border-style: hidden;
-  background: transparent;
-}
-
 .encrypt {
   color: @theme_selected_bg_color;
 }

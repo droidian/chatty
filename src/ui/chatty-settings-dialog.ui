@@ -33,6 +33,19 @@
           </packing>
         </child>
 
+        <!-- Cancel button -->
+        <child>
+          <object class="GtkButton" id="cancel_button">
+            <property name="visible">0</property>
+            <property name="use-underline">1</property>
+            <property name="label" translatable="yes">_Cancel</property>
+            <signal name="clicked" handler="chatty_settings_cancel_clicked_cb" swapped="yes" />
+          </object>
+          <packing>
+            <property name="pack-type">start</property>
+          </packing>
+        </child>
+
         <!-- Add button -->
         <child>
           <object class="GtkButton" id="add_button">
@@ -43,6 +56,16 @@
             <style>
               <class name="default" />
             </style>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkSpinner" id="matrix_spinner">
+            <property name="visible">1</property>
+            <property name="halign">start</property>
           </object>
           <packing>
             <property name="pack-type">end</property>
@@ -323,20 +346,13 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="account_id_entry">
-                            <property name="activates_default">True</property>
-                            <property name="hexpand">True</property>
+                          <object class="GtkLabel" id="account_id_label">
+                            <property name="halign">start</property>
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
-                            <style>
-                             <class name="entry_hide"/>
-                            </style>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
                             <property name="top_attach">0</property>
-                            <property name="width">2</property>
-                            <property name="height">1</property>
                           </packing>
                         </child>
                         <child>
@@ -474,19 +490,24 @@
 
                     <child>
                       <object class="HdyPreferencesGroup">
-                        <property name="visible" bind-source="fingerprint_list" bind-property="visible" bind-flags="sync-create"/>
+                        <property name="visible" bind-source="device_fp" bind-property="visible" bind-flags="sync-create"/>
                         <property name="title" translatable="yes">Own Fingerprint</property>
                         <child>
                           <object class="GtkListBox" id="fingerprint_list">
-                            <property name="visible">False</property>
+                            <property name="visible" bind-source="device_fp" bind-property="visible" bind-flags="sync-create"/>
                             <property name="can_focus">False</property>
                             <property name="expand">True</property>
                             <property name="selection-mode">none</property>
                             <style>
                               <class name="content"/>
                             </style>
+                            <child>
+                              <object class="ChattyFpRow" id="device_fp">
+                                <property name="visible">1</property>
+                              </object>
+                            </child>
                           </object>
-                        </child>
+                        </child> <!-- ./GtkListBox -->
                       </object>
                     </child>
                     <child>
@@ -608,32 +629,7 @@
                                 <property name="visible">True</property>
                                 <property name="halign">end</property>
                                 <property name="valign">center</property>
-                                <signal name="changed" handler="settings_account_id_changed_cb" swapped="yes"/>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="HdyActionRow">
-                            <property name="selectable">False</property>
-                            <property name="activatable">False</property>
-                            <property name="visible" bind-source="server_url_entry" bind-property="visible" bind-flags="sync-create"/>
-                            <property name="can_focus">False</property>
-                            <child type="prefix">
-                              <object class="GtkLabel">
-                                <property name="label" translatable="yes">Provider</property>
-                                <property name="xalign">1</property>
-                                <property name="visible">True</property>
-                                <property name="halign">start</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="server_url_entry">
-                                <property name="activates_default">True</property>
-                                <property name="hexpand">False</property>
-                                <property name="visible">False</property>
-                                <property name="halign">end</property>
-                                <property name="valign">center</property>
+                                <signal name="changed" handler="settings_new_detail_changed_cb" swapped="yes"/>
                               </object>
                             </child>
                           </object>
@@ -666,6 +662,7 @@
                                 <property name="secondary_icon_name">eye-not-looking-symbolic</property>
                                 <property name="secondary_icon_sensitive">True</property>
                                 <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
+                                <signal name="changed" handler="settings_new_detail_changed_cb" swapped="yes"/>
                               </object>
                             </child>
                           </object>
@@ -686,4 +683,63 @@
     </child>    <!-- ./internal-child -->
 
   </template>
+  <object class="GtkDialog" id="matrix_homeserver_dialog">
+    <property name="visible">False</property>
+    <property name="modal">True</property>
+    <property name="use-header-bar">1</property>
+    <property name="default-height">24</property>
+    <property name="title" translatable="yes">Matrix Home Server</property>
+    <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
+
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="border-width">0</property>
+        <property name="margin-top">18</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <property name="margin-bottom">18</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="margin-bottom">18</property>
+            <property name="wrap">True</property>
+            <property name="max-width-chars">35</property>
+            <property name="xalign">0.0</property>
+            <property name="label" translatable="yes">Enter the matrix home server address.</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="matrix_homeserver_entry">
+            <property name="visible">True</property>
+            <signal name="changed" handler="settings_homeserver_entry_changed" swapped="yes"/>
+          </object>
+        </child>
+      </object>
+    </child>
+
+    <!-- Accept button -->
+    <child type="action">
+      <object class="GtkButton" id="matrix_accept_button">
+        <property name="visible">True</property>
+        <property name="can-default">True</property>
+        <property name="use-underline">True</property>
+        <property name="label" translatable="yes">_Accept</property>
+      </object>
+    </child>
+
+    <!-- Cancel button -->
+    <child type="action">
+      <object class="GtkButton" id="matrix_cancel_button">
+        <property name="visible">True</property>
+        <property name="use-underline">True</property>
+        <property name="label" translatable="yes">_Cancel</property>
+      </object>
+    </child>
+
+    <action-widgets>
+      <action-widget response="accept" default="true">matrix_accept_button</action-widget>
+      <action-widget response="cancel">matrix_cancel_button</action-widget>
+    </action-widgets>
+  </object>
+
 </interface>

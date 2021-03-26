@@ -6,45 +6,89 @@
     <property name="orientation">vertical</property>
 
     <child>
-      <object class="GtkScrolledWindow" id="scroll">
+      <object class="GtkOverlay">
         <property name="visible">True</property>
-        <property name="hscrollbar-policy">never</property>
-        <property name="vadjustment">vadjustment</property>
-        <signal name="edge-overshot" handler="chat_view_edge_overshot_cb" swapped="yes"/>
-        <style>
-         <class name="view"/>
-        </style>
-        <child>
-          <object class="HdyClamp">
+        <child type="overlay">
+          <object class="GtkRevealer">
             <property name="visible">True</property>
-            <property name="margin-start">12</property>
-            <property name="margin-end">12</property>
+            <property name="reveal-child">True</property>
+            <property name="halign">end</property>
+            <property name="valign">end</property>
             <child>
-              <object class="GtkBox" id="property">
-                <property name="visible">True</property>
-                <property name="orientation">vertical</property>
-
-                <!-- Chat message list -->
+              <object class="GtkButton" id="scroll_down_button">
+                <property name="visible">False</property>
+                <property name="margin-bottom">18</property>
+                <property name="margin-end">18</property>
+                <signal name="clicked" handler="chat_view_scroll_down_clicked_cb" swapped="yes"/>
+                <style>
+                  <class name="osd"/>
+                  <class name="circular"/>
+                  <class name="suggested-action"/>
+                </style>
                 <child>
-                  <object class="GtkListBox" id="message_list">
+                  <object class="GtkImage">
                     <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="vexpand">True</property>
-                    <property name="valign">end</property>
-                    <property name="selection-mode">none</property>
+                    <property name="icon-name">go-bottom-symbolic</property>
+                    <property name="width-request">32</property>
+                    <property name="height-request">32</property>
                   </object>
                 </child>
+              </object>
+            </child>
+          </object>
+        </child>
 
-                <!-- Typing indicator -->
+        <child>
+          <object class="GtkScrolledWindow" id="scroll">
+            <property name="visible">True</property>
+            <property name="hscrollbar-policy">never</property>
+            <property name="vadjustment">vadjustment</property>
+            <signal name="edge-overshot" handler="chat_view_edge_overshot_cb" swapped="yes"/>
+            <style>
+              <class name="view"/>
+            </style>
+            <child>
+              <object class="HdyClamp">
+                <property name="visible">True</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
                 <child>
-                  <object class="GtkRevealer" id="typing_revealer">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
+                    <property name="orientation">vertical</property>
+
+                    <!-- Loading spinner -->
                     <child>
-                      <object class="GtkDrawingArea" id="typing_indicator">
+                      <object class="GtkSpinner" id="loading_spinner">
                         <property name="visible">True</property>
-                        <property name="width-request">60</property>
-                        <property name="height-request">40</property>
-                        <signal name="draw" handler="chat_view_typing_indicator_draw_cb" swapped="yes"/>
+                        <property name="margin-top">6</property>
+                        <property name="margin-bottom">6</property>
+                      </object>
+                    </child>
+
+                    <!-- Chat message list -->
+                    <child>
+                      <object class="GtkListBox" id="message_list">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="vexpand">True</property>
+                        <property name="valign">end</property>
+                        <property name="selection-mode">none</property>
+                      </object>
+                    </child>
+
+                    <!-- Typing indicator -->
+                    <child>
+                      <object class="GtkRevealer" id="typing_revealer">
+                        <property name="visible">True</property>
+                        <child>
+                          <object class="GtkDrawingArea" id="typing_indicator">
+                            <property name="visible">True</property>
+                            <property name="width-request">60</property>
+                            <property name="height-request">40</property>
+                            <signal name="draw" handler="chat_view_typing_indicator_draw_cb" swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>
@@ -175,6 +219,7 @@
 
   <object class="GtkAdjustment" id="vadjustment">
     <signal name="notify::page-size" handler="list_page_size_changed_cb" swapped="yes"/>
+    <signal name="value-changed" handler="chat_view_adjustment_value_changed_cb" swapped="yes"/>
   </object>
 
   <!-- Disclaimer label -->

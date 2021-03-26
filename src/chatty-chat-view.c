@@ -19,6 +19,7 @@
 #include "chatty-manager.h"
 #include "chatty-utils.h"
 #include "chatty-window.h"
+#include "matrix/chatty-ma-chat.h"
 #include "users/chatty-contact.h"
 #include "users/chatty-pp-buddy.h"
 #include "chatty-message-row.h"
@@ -29,6 +30,7 @@ struct _ChattyChatView
   GtkBox      parent_instance;
 
   GtkWidget  *message_list;
+  GtkWidget  *loading_spinner;
   GtkWidget  *typing_revealer;
   GtkWidget  *typing_indicator;
   GtkWidget  *chatty_message_list;
@@ -42,6 +44,7 @@ struct _ChattyChatView
   GtkWidget  *empty_label0;
   GtkWidget  *empty_label1;
   GtkWidget  *empty_label2;
+  GtkWidget  *scroll_down_button;
   GtkTextBuffer *message_input_buffer;
   GtkAdjustment *vadjustment;
 
@@ -59,8 +62,6 @@ static GHashTable *ht_sms_id = NULL;
 #define INDICATOR_HEIGHT  40
 #define INDICATOR_MARGIN   2
 #define MSG_BUBBLE_MAX_RATIO .3
-
-#define LAZY_LOAD_INITIAL_MSGS_LIMIT 20
 
 G_DEFINE_TYPE (ChattyChatView, chatty_chat_view, GTK_TYPE_BOX)
 
@@ -281,6 +282,17 @@ chatty_chat_view_update (ChattyChatView *self)
       chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_XMPP)
     chat_view_setup_file_upload (self);
 
+  if (CHATTY_IS_MA_CHAT (self->chat)) {
+    gtk_widget_show (self->send_file_button);
+    gtk_widget_hide (self->empty_label0);
+    gtk_widget_hide (self->empty_label1);
+    gtk_widget_hide (self->empty_label2);
+  } else {
+    gtk_widget_show (self->empty_label0);
+    gtk_widget_show (self->empty_label1);
+    gtk_widget_show (self->empty_label2);
+  }
+
   if (self->message_type == CHATTY_MSG_TYPE_IM)
     index = 0;
   else if (self->message_type == CHATTY_MSG_TYPE_SMS)
@@ -304,49 +316,26 @@ chatty_chat_view_update (ChattyChatView *self)
 static void
 chatty_update_typing_status (ChattyChatView *self)
 {
-  PurpleConversation     *conv;
-  PurpleConvIm           *im;
   GtkTextIter             start, end;
   g_autofree char         *text = NULL;
   gboolean                empty;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  conv = self->conv;
-
-  if (!chatty_chat_is_im (self->chat))
-    return;
-
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
   text = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
   empty = !text || !*text || *text == '/';
+  chatty_chat_set_typing (self->chat, !empty);
+}
 
-  im = PURPLE_CONV_IM (conv);
+static void
+chat_view_scroll_down_clicked_cb (ChattyChatView *self)
+{
+  g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  if (!empty) {
-    gboolean send = (purple_conv_im_get_send_typed_timeout (im) == 0);
-
-    purple_conv_im_stop_send_typed_timeout (im);
-    purple_conv_im_start_send_typed_timeout (im);
-
-    if (send || (purple_conv_im_get_type_again (im) != 0 &&
-                 time (NULL) > purple_conv_im_get_type_again (im))) {
-      unsigned int timeout;
-
-      timeout = serv_send_typing (purple_conversation_get_gc (conv),
-                                  purple_conversation_get_name (conv),
-                                  PURPLE_TYPING);
-
-      purple_conv_im_set_type_again (im, timeout);
-    }
-  } else {
-    purple_conv_im_stop_send_typed_timeout (im);
-
-    serv_send_typing (purple_conversation_get_gc (conv),
-                      purple_conversation_get_name (conv),
-                      PURPLE_NOT_TYPING);
-  }
+  gtk_adjustment_set_value (self->vadjustment,
+                            gtk_adjustment_get_upper (self->vadjustment));
 }
 
 static void
@@ -356,7 +345,7 @@ chat_view_edge_overshot_cb (ChattyChatView  *self,
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
   if (pos == GTK_POS_TOP)
-    chatty_manager_load_more_chat (chatty_manager_get_default (), self->chat, LAZY_LOAD_INITIAL_MSGS_LIMIT);
+    chatty_chat_load_past_messages (self->chat, -1);
 }
 
 
@@ -498,7 +487,7 @@ static gboolean
 chatty_conv_check_for_command (ChattyChatView *self)
 {
   PurpleConversation *conv;
-  gchar              *cmd;
+  g_autofree char *cmd = NULL;
   gboolean            retval = FALSE;
   GtkTextIter         start, end;
   PurpleMessageFlags  flags = 0;
@@ -511,8 +500,9 @@ chatty_conv_check_for_command (ChattyChatView *self)
   cmd = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
   if (cmd && *cmd == '/') {
+    g_autofree char *error = NULL;
     PurpleCmdStatus status;
-    gchar *error, *cmdline;
+    char *cmdline;
 
     cmdline = cmd + strlen ("/");
 
@@ -522,8 +512,6 @@ chatty_conv_check_for_command (ChattyChatView *self)
                                  "Nothing happens",
                                  flags,
                                  time(NULL));
-
-      g_free (cmd);
       return TRUE;
     }
 
@@ -584,7 +572,6 @@ chatty_conv_check_for_command (ChattyChatView *self)
                                  error ? error : "The command failed.",
                                  flags,
                                  time(NULL));
-      g_free(error);
       retval = TRUE;
       break;
     case PURPLE_CMD_STATUS_WRONG_TYPE:
@@ -615,7 +602,6 @@ chatty_conv_check_for_command (ChattyChatView *self)
     }
   }
 
-  g_free (cmd);
   return retval;
 }
 
@@ -632,6 +618,12 @@ chat_view_send_file_button_clicked_cb (ChattyChatView *self,
   g_assert (CHATTY_IS_CHAT_VIEW (self));
   g_assert (GTK_IS_BUTTON (button));
 
+  if (CHATTY_IS_MA_CHAT (self->chat)) {
+    /* TODO */
+
+    return;
+  }
+
   callback = g_object_get_data (G_OBJECT (button), "callback");
   data = g_object_get_data (G_OBJECT (button), "callback-data");
   node = chatty_utils_get_conv_blist_node (self->conv);
@@ -645,8 +637,9 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 {
   PurpleConversation  *conv;
   ChattyAccount *account;
+  g_autoptr(ChattyMessage) msg = NULL;
+  g_autofree char *message = NULL;
   GtkTextIter    start, end;
-  gchar         *message = NULL;
   gchar         *sms_id_str;
   guint          sms_id;
 
@@ -656,7 +649,7 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
 
-  if (chatty_conv_check_for_command (self)) {
+  if (conv && chatty_conv_check_for_command (self)) {
     gtk_widget_hide (self->send_message_button);
     gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
 
@@ -681,7 +674,7 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
     protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
 
     /* provide a msg-id to the sms-plugin for send-receipts */
-    if (chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS) {
+    if (conv && chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS) {
       sms_id = g_random_int ();
 
       sms_id_str = g_strdup_printf ("%i", sms_id);
@@ -703,18 +696,16 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
         protocol == CHATTY_PROTOCOL_TELEGRAM)
       escaped = purple_markup_escape_text (message, -1);
 
-    if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM) {
-      purple_conv_im_send (PURPLE_CONV_IM(conv), escaped ? escaped : message);
-    } else if (conv && purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_CHAT) {
-      purple_conv_chat_send (PURPLE_CONV_CHAT (conv), escaped ? escaped : message);
-    }
+    msg = chatty_message_new (NULL, NULL, escaped ? escaped : message,
+                              NULL, time (NULL),
+                              escaped ? CHATTY_MESSAGE_HTML_ESCAPED : CHATTY_MESSAGE_TEXT,
+                              CHATTY_DIRECTION_OUT, 0);
+    chatty_chat_send_message_async (self->chat, msg, NULL, NULL);
 
     gtk_widget_hide (self->send_message_button);
   }
 
   gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
-
-  g_free (message);
 }
 
 static gboolean
@@ -755,6 +746,7 @@ chat_view_message_input_changed_cb (ChattyChatView *self)
     chatty_check_for_emoticon (self);
 }
 
+static void chat_view_adjustment_value_changed_cb (ChattyChatView *self);
 static void
 list_page_size_changed_cb (ChattyChatView *self)
 {
@@ -774,6 +766,20 @@ list_page_size_changed_cb (ChattyChatView *self)
     gtk_adjustment_set_value (self->vadjustment, upper);
 
   self->first_scroll_to_bottom = TRUE;
+  chat_view_adjustment_value_changed_cb (self);
+}
+
+static void
+chat_view_adjustment_value_changed_cb (ChattyChatView *self)
+{
+  gdouble value, upper, page_size;
+
+  upper = gtk_adjustment_get_upper (self->vadjustment);
+  value = gtk_adjustment_get_value (self->vadjustment);
+  page_size = gtk_adjustment_get_page_size (self->vadjustment);
+
+  gtk_widget_set_visible (self->scroll_down_button,
+                          (upper - value) > page_size + 1.0);
 }
 
 static void
@@ -804,6 +810,8 @@ chat_view_adjustment_changed_cb (GtkAdjustment  *adjustment,
     gtk_widget_set_visible (vscroll, FALSE);
     gtk_widget_show (self->encrypt_icon);
   }
+
+  chat_view_adjustment_value_changed_cb (self);
 }
 
 static void
@@ -893,7 +901,9 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
                                                "/sm/puri/Chatty/"
                                                "ui/chatty-chat-view.ui");
 
+  gtk_widget_class_bind_template_child (widget_class, ChattyChatView, scroll_down_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, message_list);
+  gtk_widget_class_bind_template_child (widget_class, ChattyChatView, loading_spinner);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, typing_revealer);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, typing_indicator);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, input_frame);
@@ -909,6 +919,7 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, message_input_buffer);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, vadjustment);
 
+  gtk_widget_class_bind_template_callback (widget_class, chat_view_scroll_down_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chat_view_edge_overshot_cb);
   gtk_widget_class_bind_template_callback (widget_class, chat_view_typing_indicator_draw_cb);
   gtk_widget_class_bind_template_callback (widget_class, chat_view_input_focus_in_cb);
@@ -918,6 +929,7 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, chat_view_input_key_pressed_cb);
   gtk_widget_class_bind_template_callback (widget_class, chat_view_message_input_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, list_page_size_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, chat_view_adjustment_value_changed_cb);
 }
 
 static void
@@ -992,10 +1004,17 @@ chatty_chat_view_set_chat (ChattyChatView *self,
                            G_CALLBACK (chat_buddy_typing_changed_cb),
                            self,
                            G_CONNECT_SWAPPED);
+  g_object_bind_property (self->chat, "loading-history",
+                          self->loading_spinner, "active",
+                          G_BINDING_SYNC_CREATE);
+  g_object_bind_property (self->chat, "loading-history",
+                          self->loading_spinner, "visible",
+                          G_BINDING_SYNC_CREATE);
 
   chat_encrypt_changed_cb (self);
   chat_buddy_typing_changed_cb (self);
   chatty_chat_view_update (self);
+  chat_view_adjustment_value_changed_cb (self);
 }
 
 ChattyChat *

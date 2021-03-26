@@ -127,7 +127,6 @@ static GdkPixbuf *
 chatty_contact_get_avatar (ChattyItem *item)
 {
   ChattyContact *self = (ChattyContact *)item;
-  g_autoptr(GError) error = NULL;
   EContactPhoto *photo;
 
   g_assert (CHATTY_IS_CONTACT (self));
@@ -162,6 +161,8 @@ chatty_contact_get_avatar (ChattyItem *item)
       self->avatar = chatty_icon_pixbuf_from_data (data, len);
   }
 
+  e_contact_photo_free (photo);
+
   return self->avatar;
 }
 
@@ -188,6 +189,7 @@ chatty_contact_dispose (GObject *object)
 {
   ChattyContact *self = (ChattyContact *)object;
 
+  g_clear_object (&self->e_contact);
   g_clear_object (&self->avatar);
   g_clear_pointer (&self->attribute, e_vcard_attribute_free);
   g_clear_pointer (&self->name, g_free);

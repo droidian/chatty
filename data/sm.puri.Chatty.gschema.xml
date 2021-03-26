@@ -68,6 +68,12 @@
       <description>Whether pressing Enter key sends the message</description>
     </key>
 
+    <key name="experimental-features" type="b">
+      <default>false</default>
+      <summary>Enable experimental features</summary>
+      <description>Whether to enable experimental features</description>
+    </key>
+
     <key name="window-maximized" type="b">
       <default>false</default>
       <summary>Window maximized</summary>

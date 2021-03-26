@@ -33,8 +33,10 @@ G_DECLARE_FINAL_TYPE (ChattyPpAccount, chatty_pp_account, CHATTY, PP_ACCOUNT, Ch
 ChattyPpAccount *chatty_pp_account_get_object         (PurpleAccount   *account);
 ChattyPpAccount *chatty_pp_account_new                (ChattyProtocol   protocol,
                                                        const char      *username,
-                                                       const char      *server_url);
-ChattyPpAccount *chatty_pp_account_new_purple         (PurpleAccount   *account);
+                                                       const char      *server_url,
+                                                       gboolean         has_encryption);
+ChattyPpAccount *chatty_pp_account_new_purple         (PurpleAccount   *account,
+                                                       gboolean         has_encryption);
 ChattyPpBuddy   *chatty_pp_account_add_buddy          (ChattyPpAccount *self,
                                                        const char      *username,
                                                        const char      *name);
@@ -46,11 +48,6 @@ PurpleAccount   *chatty_pp_account_get_account        (ChattyPpAccount *self);
 PurpleStatus    *chatty_pp_account_get_active_status  (ChattyPpAccount *self);
 
 const char      *chatty_pp_account_get_protocol_id    (ChattyPpAccount *self);
-
-void             chatty_pp_account_connect              (ChattyPpAccount *self,
-                                                         gboolean          delay);
-void             chatty_pp_account_disconnect           (ChattyPpAccount *self);
-
 void             chatty_pp_account_set_features         (ChattyPpAccount *self,
                                                          ChattyPpAccountFeatures features);
 void             chatty_pp_account_update_features      (ChattyPpAccount *self,

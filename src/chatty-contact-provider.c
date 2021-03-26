@@ -198,6 +198,7 @@ chatty_eds_load_contact (ChattyEds     *self,
     g_warn_if_reached ();
   }
 
+  /* Only container should be freed, attribute is freed in ChattyContact */
   attributes = e_contact_get_attributes (contact, field_id);
 
   for (GSList *l = (GSList *)attributes; l != NULL; l = l->next) {
@@ -364,6 +365,7 @@ chatty_eds_client_connected_cb (GObject      *object,
     {
       if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
         g_warning ("Error: %s", error->message);
+      g_clear_object (&client);
 
       return;
     }
@@ -378,6 +380,7 @@ chatty_eds_client_connected_cb (GObject      *object,
                           NULL,
                           chatty_eds_get_view_cb,
                           g_object_ref (self));
+  g_clear_object (&client);
 }
 
 
@@ -495,6 +498,10 @@ chatty_eds_finalize (GObject *object)
 
   g_cancellable_cancel (self->cancellable);
   g_clear_object (&self->cancellable);
+  g_clear_object (&self->eds_view_list);
+  g_clear_object (&self->contacts_list);
+  if (self->contacts_array)
+    g_ptr_array_free (self->contacts_array, TRUE);
 
   G_OBJECT_CLASS (chatty_eds_parent_class)->finalize (object);
 }
@@ -672,3 +679,142 @@ chatty_eds_open_contacts_app_finish (ChattyEds    *self,
 
   return g_task_propagate_boolean (G_TASK (result), error);
 }
+
+static void
+chatty_save_contact_cb (GObject      *object,
+                        GAsyncResult *result,
+                        gpointer      user_data)
+{
+  GDBusConnection *connection = (GDBusConnection *)object;
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(GVariant) variant = NULL;
+  GError *error = NULL;
+
+  g_assert (G_IS_DBUS_CONNECTION (connection));
+  g_assert (G_IS_TASK (task));
+
+  variant = g_dbus_connection_call_finish (connection, result, &error);
+
+  if (error) {
+    g_dbus_error_strip_remote_error (error);
+    g_warning ("Error saving to contacts: %s", error->message);
+    g_task_return_error (task, error);
+  } else {
+    g_task_return_boolean (task, TRUE);
+  }
+}
+
+static void
+chatty_check_save_contact_cb (GObject      *object,
+                              GAsyncResult *result,
+                              gpointer      user_data)
+{
+  GDBusConnection *connection = (GDBusConnection *)object;
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(GVariant) variant = NULL;
+  GError *error = NULL;
+
+  g_assert (G_IS_DBUS_CONNECTION (connection));
+  g_assert (G_IS_TASK (task));
+
+  variant = g_dbus_connection_call_finish (connection, result, &error);
+
+  if (error) {
+    g_dbus_error_strip_remote_error (error);
+    g_warning ("Error saving to contacts: %s", error->message);
+    g_task_return_error (task, error);
+  } else {
+    GCancellable *cancellable;
+    GVariantBuilder options;
+    GVariant *contact;
+
+    cancellable = g_task_get_cancellable (task);
+    contact = g_task_get_task_data (task);
+    g_assert (contact);
+
+    g_variant_builder_init (&options, G_VARIANT_TYPE ("av"));
+    g_variant_builder_add (&options, "v", contact);
+
+    g_dbus_connection_call (connection,
+                            "org.gnome.Contacts",
+                            "/org/gnome/Contacts",
+                            "org.gtk.Actions",
+                            "Activate",
+                            g_variant_new ("(sava{sv})",
+                                           "new-contact-data", &options, NULL),
+                            NULL,
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1,
+                            cancellable,
+                            chatty_save_contact_cb,
+                            g_steal_pointer (&task));
+  }
+}
+
+static void
+eds_write_contact_bus_got (GObject      *object,
+                           GAsyncResult *result,
+                           gpointer      user_data)
+{
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(GDBusConnection) connection = NULL;
+  GCancellable *cancellable;
+  GError *error = NULL;
+
+  g_assert (G_IS_TASK (task));
+
+  connection  = g_bus_get_finish (result, &error);
+  cancellable = g_task_get_cancellable (task);
+
+  /* XXX: A direct call to 'new-contact-data' action doesn't seem to fail
+     if the action is missing, So let's manually check if it exists */
+  if (error) {
+    g_warning ("Error getting dbus: %s", error->message);
+    g_task_return_error (task, error);
+  } else {
+    g_dbus_connection_call (connection,
+                            "org.gnome.Contacts",
+                            "/org/gnome/Contacts",
+                            "org.gtk.Actions",
+                            "Describe",
+                            g_variant_new ("(s)", "new-contact-data"),
+                            NULL,
+                            G_DBUS_CALL_FLAGS_NONE,
+                            -1,
+                            cancellable,
+                            chatty_check_save_contact_cb,
+                            g_steal_pointer (&task));
+  }
+}
+
+void
+chatty_eds_write_contact_async (const char          *name,
+                                const char          *phone_number,
+                                GAsyncReadyCallback  callback,
+                                gpointer             user_data)
+{
+  g_autoptr(GTask) task = NULL;
+  GVariant *contact;
+
+  g_return_if_fail (name);
+  g_return_if_fail (phone_number);
+
+  contact =  g_variant_new_parsed ("[('full-name', %s), ('phone-numbers', %s)]",
+                                   name, phone_number);
+
+  task = g_task_new (NULL, NULL, callback, user_data);
+  g_task_set_task_data (task, contact, NULL);
+
+  g_bus_get (G_BUS_TYPE_SESSION,
+             NULL,
+             eds_write_contact_bus_got,
+             g_steal_pointer (&task));
+}
+
+gboolean
+chatty_eds_write_contact_finish (GAsyncResult  *result,
+                                 GError       **error)
+{
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+

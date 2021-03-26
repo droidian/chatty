@@ -27,9 +27,12 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyPpChat, chatty_pp_chat, CHATTY, PP_CHAT, ChattyChat)
 
 ChattyPpChat       *chatty_pp_chat_new_im_chat            (PurpleAccount      *account,
-                                                           PurpleBuddy        *buddy);
-ChattyPpChat       *chatty_pp_chat_new_purple_chat        (PurpleChat         *pp_chat);
-ChattyPpChat       *chatty_pp_chat_new_purple_conv        (PurpleConversation *conv);
+                                                           PurpleBuddy        *buddy,
+                                                           gboolean            supports_encryption);
+ChattyPpChat       *chatty_pp_chat_new_purple_chat        (PurpleChat         *pp_chat,
+                                                           gboolean            supports_encryption);
+ChattyPpChat       *chatty_pp_chat_new_purple_conv        (PurpleConversation *conv,
+                                                           gboolean            supports_encryption);
 void                chatty_pp_chat_set_purple_conv        (ChattyPpChat       *self,
                                                            PurpleConversation *conv);
 ChattyProtocol      chatty_pp_chat_get_protocol           (ChattyPpChat       *self);
@@ -59,8 +62,20 @@ char               *chatty_pp_chat_get_buddy_name         (ChattyPpChat       *c
 void                chatty_pp_chat_emit_user_changed      (ChattyPpChat       *self,
                                                            const char         *user);
 void                chatty_pp_chat_load_encryption_status (ChattyPpChat       *self);
+GListModel         *chatty_pp_chat_get_fp_list            (ChattyPpChat       *self);
+void                chatty_pp_chat_load_fp_list_async     (ChattyPpChat       *self,
+                                                           GAsyncReadyCallback callback,
+                                                           gpointer            user_data);
+gboolean            chatty_pp_chat_load_fp_list_finish    (ChattyPpChat       *self,
+                                                           GAsyncResult       *result,
+                                                           GError            **error);
+gboolean            chatty_pp_chat_get_show_notifications (ChattyPpChat       *self);
+gboolean            chatty_pp_chat_get_show_status_msg    (ChattyPpChat       *self);
 void                chatty_pp_chat_set_show_notifications (ChattyPpChat       *self,
                                                            gboolean            show);
+void                chatty_pp_chat_set_show_status_msg    (ChattyPpChat       *self,
+                                                           gboolean            show);
+const char         *chatty_pp_chat_get_status             (ChattyPpChat       *self);
 gboolean            chatty_pp_chat_get_auto_join          (ChattyPpChat       *self);
 void                chatty_pp_chat_set_buddy_typing       (ChattyPpChat       *self,
                                                            gboolean            is_typing);
