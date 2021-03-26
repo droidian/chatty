@@ -1,7 +1,6 @@
 chatty (0.3.0~beta-1) experimental; urgency=medium
 
   * d/control: Update dependencies for latest version
-  * d/control: Update dependencies for latest version
   * d/rules: Use xvfb-run for the test suite
   * Upload to experimental
 
