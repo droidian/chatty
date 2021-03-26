@@ -3,28 +3,15 @@
     "runtime": "org.gnome.Platform",
     "runtime-version": "master",
     "sdk": "org.gnome.Sdk",
-    "sdk-extensions": [
-        "org.freedesktop.Sdk.Extension.openjdk11"
-    ],
     "command": "chatty",
     "finish-args": [
         "--share=network",
         "--share=ipc",
-        "--socket=x11",
+        "--socket=fallback-x11",
         "--socket=wayland",
-        "--filesystem=xdg-run/dconf",
-        "--filesystem=~/.config/dconf:ro",
-        "--talk-name=ca.desrt.dconf",
-        "--env=DCONF_USER_CONFIG_DIR=.config/dconf",
-        "--env=PATH=/app/jre/bin:/usr/bin"
+        "--talk-name=org.sigxcpu.Feedback"
     ],
-    "build-options": {
-        "cflags": "-O2 -g",
-        "cxxflags": "-O2 -g",
-        "env": {
-            "V": "1"
-        }
-    },
+    "cleanup-commands": [ "rm -rf /app/lib/debug/ /app/include/boost" ],
     "cleanup": [
         "/include",
         "/lib/pkgconfig",
@@ -33,6 +20,8 @@
         "/share/gtk-doc",
         "/share/man",
         "/share/pkgconfig",
+        "/share/aclocal",
+        "/share/vala",
         "*.la",
         "*.a"
     ],
@@ -73,43 +62,24 @@
             ]
         },
         {
-            "name": "libhandy",
-            "buildsystem": "meson",
-            "builddir": true,
-            "config-opts": [
-                "-Dglade_catalog=disabled"
-            ],
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://source.puri.sm/Librem5/libhandy.git"
-                }
-            ]
-        },
-        {
-            "name": "openjdk",
-            "buildsystem": "simple",
-            "build-commands": [
-                "/usr/lib/sdk/openjdk11/install.sh"
-            ]
-        },
-        {
             "name": "libical",
             "cleanup": [
                 "/lib/cmake"
             ],
             "buildsystem": "cmake-ninja",
             "config-opts": [
-                "-DCMAKE_INSTALL_LIBDIR:PATH=/app/lib",
-                "-DBUILD_SHARED_LIBS=On",
-                "-DICAL_BUILD_DOCS=False",
-                "-DWITH_CXX_BINDINGS=False"
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_INSTALL_LIBDIR=lib",
+                "-DBUILD_SHARED_LIBS:BOOL=ON",
+                "-DICAL_GLIB=true",
+                "-DGOBJECT_INTROSPECTION=true",
+                "-DICAL_GLIB_VAPI=true",
+                "-DICAL_BUILD_DOCS=false"
             ],
             "sources": [
                 {
-                    "type": "archive",
-                    "url": "https://github.com/libical/libical/releases/download/v3.0.5/libical-3.0.5.tar.gz",
-                    "sha256": "7ad550c8c49c9b9983658e3ab3e68b1eee2439ec17b169a6b1e6ecb5274e78e6"
+                    "type": "git",
+                    "url": "https://github.com/libical/libical.git"
                 }
             ]
         },
@@ -167,42 +137,48 @@
             "sources": [
                 {
                     "type": "archive",
-                    "url": "https://github.com/google/libphonenumber/archive/v8.10.16.tar.gz",
-                    "sha256": "0cd9baf788dc7a7cca94ecbd43d0a562c4acf21f234d66d756574be89edf14c5"
+                    "url": "https://github.com/google/libphonenumber/archive/v8.10.22.tar.gz",
+                    "sha256": "1d43a94502c875cb44f9bd464c5898bca6db9a54e18288892921e985268a3fb4"
                 },
                 {
                     "type": "shell",
                     "commands": [
                         "sed -i -e 's/\${\${NAME}_BIN}-NOTFOUND/\${NAME}_BIN-NOTFOUND/' cpp/CMakeLists.txt"
                     ]
+                },
+                {
+                    "type" : "patch",
+                    "path" : "0001-Remove-java-dep-and-fix-build-issue.patch"
                 }
             ],
-            "subdir": "cpp",
-            "build-options": {
-                "append-path": "/app/jre/bin"
-            }
+            "subdir": "cpp"
         },
         {
             "name": "evolution-data-server",
             "cleanup": [
-                "/share/GConf"
+                "/share/GConf",
+                "/lib/cmake",
+                "/lib/evolution-data-server/*-backends",
+                "/libexec",
+                "/share/dbus-1/services"
             ],
             "buildsystem": "cmake-ninja",
             "config-opts": [
-                "-DENABLE_PHONENUMBER=ON",
-                "-DENABLE_DOT_LOCKING=OFF",
-                "-DENABLE_FILE_LOCKING=fcntl",
-                "-DENABLE_GOA=OFF",
                 "-DENABLE_GTK=ON",
+                "-DENABLE_GOA=OFF",
+                "-DENABLE_UOA=OFF",
+                "-DENABLE_GOOGLE_AUTH=OFF",
                 "-DENABLE_GOOGLE=OFF",
-                "-DENABLE_VALA_BINDINGS=OFF",
+                "-DENABLE_WITH_PHONENUMBER=ON",
+                "-DENABLE_VALA_BINDINGS=ON",
                 "-DENABLE_WEATHER=OFF",
                 "-DWITH_OPENLDAP=OFF",
                 "-DWITH_LIBDB=OFF",
-                "-DENABLE_INTROSPECTION=OFF",
+                "-DENABLE_INTROSPECTION=ON",
                 "-DENABLE_INSTALLED_TESTS=OFF",
                 "-DENABLE_GTK_DOC=OFF",
-                "-DENABLE_EXAMPLES=OFF"
+                "-DENABLE_EXAMPLES=OFF",
+                "-DENABLE_CANBERRA=OFF"
             ],
             "sources": [
                 {
@@ -212,11 +188,32 @@
             ]
         },
         {
-            "name": "purism-chatty",
+            "name": "libfeedback",
             "buildsystem": "meson",
             "config-opts": [
-                "--libdir=lib"
+                "-Dtests=false",
+                "-Ddaemon=false"
             ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://source.puri.sm/Librem5/feedbackd.git"
+                }
+            ]
+        },
+        {
+          "name": "olm",
+          "buildsystem": "cmake-ninja",
+          "sources": [
+            {
+              "type": "git",
+              "url": "https://gitlab.matrix.org/matrix-org/olm.git"
+            }
+          ]
+        },
+        {
+            "name": "purism-chatty",
+            "buildsystem": "meson",
             "builddir": true,
             "sources": [
                 {

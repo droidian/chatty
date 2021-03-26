@@ -1,0 +1,873 @@
+# Chatty Creole Haitian translation
+# Copyright (C) 2021 Purism
+# This file is distributed under the same license as the Chatty package. 
+# Pierre Michel Augustin <augustinpierremichel@hotmail.com>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
+"POT-Creation-Date: 2021-02-07 15:25+0000\n"
+"PO-Revision-Date: 2021-02-21 17:17-0500\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 2.0.6\n"
+"Last-Translator: \n"
+"Language: ht_HT\n"
+
+#: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
+#: src/chatty-application.c:327 src/ui/chatty-window.ui:221
+msgid "Chats"
+msgstr "Chat"
+
+#: data/sm.puri.Chatty.desktop.in:5
+msgid "sm.puri.Chatty"
+msgstr "sm.puri.Chatty"
+
+#: data/sm.puri.Chatty.desktop.in:6
+msgid "SMS and XMPP chat application"
+msgstr "SMS ak XMPP aplikasyon chat"
+
+#: data/sm.puri.Chatty.desktop.in:7
+msgid "XMPP;SMS;chat;jabber;messaging;modem"
+msgstr "XMPP; SMS; chat; jabber; mesaj; modèm"
+
+#: data/sm.puri.Chatty.gschema.xml:7 data/sm.puri.Chatty.gschema.xml:8
+msgid "Whether the application is launching the first time"
+msgstr "Si ou vle aplikasyon an lanse premye fwa"
+
+#: data/sm.puri.Chatty.gschema.xml:13
+msgid "Country code in ISO 3166-1 alpha-2 format"
+msgstr "Kòd peyi nan fòma ISO 3166-1 alfa-2"
+
+#: data/sm.puri.Chatty.gschema.xml:14
+msgid "Two letter country code of the last available SIM/Network"
+msgstr "De lèt nan kòd peyi dènye SIM ki disponib  lan / Rezo a"
+
+#: data/sm.puri.Chatty.gschema.xml:19
+msgid "Send message read receipts"
+msgstr "Voye mesaj pou konnen lè mesaj la li"
+
+#: data/sm.puri.Chatty.gschema.xml:20
+msgid "Whether to send the status of the message if read"
+msgstr "Si ou vle resevwa mesaj ki di lè mesaj la li"
+
+#: data/sm.puri.Chatty.gschema.xml:25
+msgid "Message carbon copies"
+msgstr "Kopi mesaj kabòn yo"
+
+#: data/sm.puri.Chatty.gschema.xml:26 src/ui/chatty-settings-dialog.ui:177
+msgid "Share chat history among devices"
+msgstr "Pataje dewoulman chat ant plizyè  aparèy"
+
+#: data/sm.puri.Chatty.gschema.xml:31
+msgid "Enable Message Archive Management"
+msgstr "Aktive Jesyon Achiv Mesaj"
+
+#: data/sm.puri.Chatty.gschema.xml:32
+msgid "Enable MAM archive synchronization from the server"
+msgstr "Aktive MAM achiv senkronizasyon soti nan sèvè a"
+
+#: data/sm.puri.Chatty.gschema.xml:37
+msgid "Send typing notifications"
+msgstr "Voye notifikasyon tape"
+
+#: data/sm.puri.Chatty.gschema.xml:38
+msgid "Whether to Send typing notifications"
+msgstr "Si ou vle voye notifikasyon tape"
+
+#: data/sm.puri.Chatty.gschema.xml:43 data/sm.puri.Chatty.gschema.xml:44
+msgid "Mark offline users differently"
+msgstr "Make itilizatè ki pa anliy yo nan fason diferan"
+
+#: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
+msgid "Mark Idle users differently"
+msgstr "Make itilizatè san fè anyen konsa yon fason diferan"
+
+#: data/sm.puri.Chatty.gschema.xml:55 data/sm.puri.Chatty.gschema.xml:56
+msgid "Indicate unknown contacts"
+msgstr "Endike kontak enkoni yo"
+
+#: data/sm.puri.Chatty.gschema.xml:61
+msgid "Convert text to emoticons"
+msgstr "Konvèti tèks an emotikòn"
+
+#: data/sm.puri.Chatty.gschema.xml:62
+msgid "Convert text matching emoticons as real emoticons"
+msgstr "Konvèti tèks ki mache ak emotikòn tankou emotikòn reyèl"
+
+#: data/sm.puri.Chatty.gschema.xml:67
+msgid "Enter key sends the message"
+msgstr "Peze bouton antre pou voye mesaj la"
+
+#: data/sm.puri.Chatty.gschema.xml:68
+msgid "Whether pressing Enter key sends the message"
+msgstr "Si ou vle peze bouton antre pou oye mesaj la"
+
+#: data/sm.puri.Chatty.gschema.xml:73
+msgid "Enable experimental features"
+msgstr "Aktive karakteristik eksperimantal"
+
+#: data/sm.puri.Chatty.gschema.xml:74
+msgid "Whether to enable experimental features"
+msgstr "Si ou vle aktive karakteristik eksperimantal yo"
+
+#: data/sm.puri.Chatty.gschema.xml:79
+msgid "Window maximized"
+msgstr "Gran fenèt"
+
+#: data/sm.puri.Chatty.gschema.xml:80
+msgid "Window maximized state"
+msgstr "Eta gran fenèt la"
+
+#: data/sm.puri.Chatty.gschema.xml:85
+msgid "Window size"
+msgstr "Gwosè fenèt la"
+
+#: data/sm.puri.Chatty.gschema.xml:86
+msgid "Window size (width, height)."
+msgstr "Gwosè fenèt (lajè, wotè)."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:7
+msgid "A messaging application"
+msgstr "Yon aplikasyon mesaj"
+
+#: data/sm.puri.Chatty.metainfo.xml.in:9
+msgid "Chats is a messaging application supporting XMPP and SMS."
+msgstr "Chat se yon aplikasyon mesaj ki sipòte XMPP ak SMS."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:16
+msgid "Chats message window"
+msgstr "Fenèt mesaj chat yo"
+
+#: src/chatty-application.c:74
+msgid "Show release version"
+msgstr "Montre vèsyon ki pare"
+
+#: src/chatty-application.c:75
+msgid "Start in daemon mode"
+msgstr "Kòmanse nan mòd sèvis"
+
+#: src/chatty-application.c:76
+msgid "Disable all accounts"
+msgstr "Dezaktive tout kont yo"
+
+#: src/chatty-application.c:77
+msgid "Enable libpurple debug messages"
+msgstr "Aktive korije mesaj libpurple"
+
+#: src/chatty-application.c:79
+msgid "Enable verbose libpurple debug messages"
+msgstr "Aktive korije mesaj libpurple detaye"
+
+#: src/chatty-application.c:129
+#, c-format
+msgid "Authorize %s?"
+msgstr "Otorize %s?"
+
+#: src/chatty-application.c:133 src/matrix/matrix-utils.c:508
+msgid "Reject"
+msgstr "Rejte"
+
+#: src/chatty-application.c:135 src/matrix/matrix-utils.c:509
+msgid "Accept"
+msgstr "Aksepte"
+
+#: src/chatty-application.c:140
+#, c-format
+msgid "Add %s to contact list"
+msgstr "Ajoute %s nan lis kontak"
+
+#: src/chatty-application.c:163
+msgid "Contact added"
+msgstr "Kontak la ajoute "
+
+#: src/chatty-application.c:166
+#, c-format
+msgid "User %s has added %s to the contacts"
+msgstr "Itilizatè %s te ajoute %s nan kontak yo"
+
+#: src/chatty-application.c:186
+msgid "Login failed"
+msgstr "Koneksyon an echwe"
+
+#: src/chatty-application.c:192
+msgid "Please check ID and password"
+msgstr "Tanpri verifye ID ak mo de pas ou"
+
+#: src/chatty-chat-view.c:70 src/chatty-chat-view.c:75
+msgid "This is an IM conversation."
+msgstr "Sa a se yon konvèsasyon IM."
+
+#: src/chatty-chat-view.c:71 src/chatty-chat-view.c:81
+msgid "Your messages are not encrypted,"
+msgstr "Mesaj ou yo pa sekirize"
+
+#: src/chatty-chat-view.c:72
+msgid "ask your counterpart to use E2EE."
+msgstr "mande lòt moun pou itilize E2EE. "
+
+#: src/chatty-chat-view.c:76
+msgid "Your messages are secured"
+msgstr "Mesaj ou yo garanti"
+
+#: src/chatty-chat-view.c:77
+msgid "by end-to-end encryption."
+msgstr "pa youn an youn sekirize."
+
+#: src/chatty-chat-view.c:80
+msgid "This is an SMS conversation."
+msgstr "Sa a se yon konvèsasyon pa SMS."
+
+#: src/chatty-chat-view.c:82
+msgid "and carrier rates may apply."
+msgstr "ak pousantaj konpayi asirans yo ka aplike."
+
+#. Translators: Timestamp seconds suffix
+#: src/chatty-list-row.c:73
+msgctxt "timestamp-suffix-seconds"
+msgid "s"
+msgstr "s"
+
+#. Translators: Timestamp minute suffix
+#: src/chatty-list-row.c:75
+msgctxt "timestamp-suffix-minute"
+msgid "m"
+msgstr "m"
+
+#. Translators: Timestamp minutes suffix
+#: src/chatty-list-row.c:77
+msgctxt "timestamp-suffix-minutes"
+msgid "m"
+msgstr "m"
+
+#. Translators: Timestamp hour suffix
+#: src/chatty-list-row.c:79
+msgctxt "timestamp-suffix-hour"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp hours suffix
+#: src/chatty-list-row.c:81
+msgctxt "timestamp-suffix-hours"
+msgid "h"
+msgstr "h"
+
+#. Translators: Timestamp day suffix
+#: src/chatty-list-row.c:83
+msgctxt "timestamp-suffix-day"
+msgid "d"
+msgstr "d"
+
+#. Translators: Timestamp days suffix
+#: src/chatty-list-row.c:85
+msgctxt "timestamp-suffix-days"
+msgid "d"
+msgstr "d"
+
+#. Translators: Timestamp month suffix
+#: src/chatty-list-row.c:87
+msgctxt "timestamp-suffix-month"
+msgid "mo"
+msgstr "m"
+
+#. Translators: Timestamp months suffix
+#: src/chatty-list-row.c:89
+msgctxt "timestamp-suffix-months"
+msgid "mos"
+msgstr "mos"
+
+#. Translators: Timestamp year suffix
+#: src/chatty-list-row.c:91
+msgctxt "timestamp-suffix-year"
+msgid "y"
+msgstr "y"
+
+#. Translators: Timestamp years suffix
+#: src/chatty-list-row.c:93
+msgctxt "timestamp-suffix-years"
+msgid "y"
+msgstr "y"
+
+#. Translators: Timestamp prefix (e.g. Over 5h)
+#: src/chatty-list-row.c:195
+msgid "Over"
+msgstr "Sou"
+
+#. Translators: Timestamp prefix (e.g. Almost 5h)
+#: src/chatty-list-row.c:200
+msgid "Almost"
+msgstr "Prèske"
+
+#: src/chatty-list-row.c:217
+msgid "Owner"
+msgstr "Pwopriyetè"
+
+#: src/chatty-list-row.c:220
+msgid "Moderator"
+msgstr "Moderatè"
+
+#: src/chatty-list-row.c:223
+msgid "Member"
+msgstr "Manb"
+
+#: src/chatty-message-row.c:91
+msgid "Copy"
+msgstr "Kopi"
+
+#: src/chatty-notification.c:166
+msgid "Open Message"
+msgstr "Ouvri mesaj"
+
+#: src/chatty-notification.c:201
+#, c-format
+msgid "New message from %s"
+msgstr "Nouvo mesaj ki soti nan %s"
+
+#: src/chatty-notification.c:203
+msgid "Message Received"
+msgstr "Resevwa Mesaj"
+
+#: src/chatty-purple-notify.c:44 src/matrix/matrix-utils.c:504
+msgid "Close"
+msgstr "Fèmen"
+
+#: src/chatty-purple-request.c:186
+msgid "Save File..."
+msgstr "Anrejistre dokiman..."
+
+#: src/chatty-purple-request.c:187
+msgid "Open File..."
+msgstr "Ouvri dokiman..."
+
+#: src/chatty-purple-request.c:191 src/chatty-window.c:582
+#: src/dialogs/chatty-settings-dialog.c:633
+#: src/dialogs/chatty-user-info-dialog.c:66 src/ui/chatty-dialog-join-muc.ui:16
+#: src/ui/chatty-dialog-muc-info.ui:56
+msgid "Cancel"
+msgstr "Anile"
+
+#: src/chatty-purple-request.c:193
+msgid "Save"
+msgstr "Anrejistre"
+
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:632
+#: src/dialogs/chatty-user-info-dialog.c:65
+msgid "Open"
+msgstr "Ouvri"
+
+#: src/chatty-secret-store.c:80
+#, c-format
+msgid "Chatty password for \"%s\""
+msgstr "Mo de pas chat pou \"%s\""
+
+#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:468
+msgid "%A %H∶%M"
+msgstr "%A %H∶%M"
+
+#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:473
+msgid "%A %I∶%M %p"
+msgstr "%A %I∶%M %p"
+
+#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:480
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
+#: src/chatty-window.c:106 src/chatty-window.c:111 src/chatty-window.c:116
+msgid "Choose a contact"
+msgstr "Chwazi yon kontak"
+
+#: src/chatty-window.c:107
+msgid ""
+"Select an <b>SMS</b> or <b>Instant Message</b> contact with the <b>\"+\"</b> "
+"button in the titlebar."
+msgstr ""
+"Chwazi yon <b>SMS</b> oswa<b>Mesaj konye a</b> kontak avèk <b>\"+\"</b> "
+"bouton ki nan  ba tit la. "
+
+#: src/chatty-window.c:112
+msgid ""
+"Select an <b>Instant Message</b> contact with the \"+\" button in the "
+"titlebar."
+msgstr "Chwazi yon <b>Mesaj konye a</b> kontak ak \"+\" buton nan ba  tit la. "
+
+#: src/chatty-window.c:117
+msgid "Start a <b>SMS</b> chat with the \"+\" button in the titlebar."
+msgstr "Kòmanse yon <b>SMS</b> chat ak bouton \"+\" nan ba tit la. "
+
+#: src/chatty-window.c:118 src/chatty-window.c:122
+msgid ""
+"For <b>Instant Messaging</b> add or activate an account in <i>\"preferences"
+"\"</i>."
+msgstr ""
+"Pou <b>Mesaj konye a</b> ajoute oswa aktive yon kont nan <i>\"preferans\"</"
+"i>. "
+
+#: src/chatty-window.c:121
+msgid "Start chatting"
+msgstr "Kòmanse chat"
+
+#: src/chatty-window.c:567
+msgid "Delete chat with"
+msgstr "Efase chat ak"
+
+#: src/chatty-window.c:568
+msgid "This deletes the conversation history"
+msgstr "Sa a efase istwa konvèsasyon an"
+
+#: src/chatty-window.c:570
+msgid "Disconnect group chat"
+msgstr "Dekonekte chat gwoup la"
+
+#: src/chatty-window.c:571
+msgid "This removes chat from chats list"
+msgstr "Sa a retire chat nan lis chat"
+
+#: src/chatty-window.c:584
+msgid "Delete"
+msgstr "Efase"
+
+#: src/chatty-window.c:815
+msgid "An SMS and XMPP messaging client"
+msgstr "Yon mesaj kliyan SMS ak XMPP"
+
+#: src/chatty-window.c:822
+msgid "translator-credits"
+msgstr "Pierre Michel Augustin <augustinpierremichel@hotmail.com>, 2021"
+
+#: src/chatty-window.c:1121
+#, c-format
+msgid "“%s” is not a valid phone number"
+msgstr "\"%s\" nimewo telefòn sa pa bon"
+
+#: src/dialogs/chatty-muc-info-dialog.c:320
+msgid "members"
+msgstr "manb yo"
+
+#: src/dialogs/chatty-new-chat-dialog.c:152
+msgid "Send To"
+msgstr "Voye bay"
+
+#: src/dialogs/chatty-new-chat-dialog.c:196
+#, c-format
+msgid "Error opening GNOME Contacts: %s"
+msgstr "Erè nan ouvri Kontak GNOME yo: %s"
+
+#: src/dialogs/chatty-settings-dialog.c:500
+msgid "Select Protocol"
+msgstr "Chwazi Pwotokòl"
+
+#: src/dialogs/chatty-settings-dialog.c:530
+msgid "connected"
+msgstr "Te konekte"
+
+#: src/dialogs/chatty-settings-dialog.c:532
+msgid "connecting…"
+msgstr "Ap konekte…"
+
+#: src/dialogs/chatty-settings-dialog.c:534
+msgid "disconnected"
+msgstr "Te dekonekte"
+
+#: src/dialogs/chatty-settings-dialog.c:629
+#: src/dialogs/chatty-user-info-dialog.c:62
+msgid "Set Avatar"
+msgstr "Mete Avatar"
+
+#: src/dialogs/chatty-settings-dialog.c:710
+#: src/ui/chatty-settings-dialog.ui:483
+msgid "Delete Account"
+msgstr "Efase Kont"
+
+#: src/dialogs/chatty-settings-dialog.c:713
+#, c-format
+msgid "Delete account %s?"
+msgstr "Efase kont %s?"
+
+#: src/dialogs/chatty-user-info-dialog.c:136
+msgid "Encryption not available"
+msgstr "Sekirite pa disponib"
+
+#: src/dialogs/chatty-user-info-dialog.c:174
+msgid "Encryption is not available"
+msgstr "Sekirite  pa disponib"
+
+#: src/dialogs/chatty-user-info-dialog.c:176
+msgid "This chat is encrypted"
+msgstr "Chat sa a sekirize"
+
+#: src/dialogs/chatty-user-info-dialog.c:178
+msgid "This chat is not encrypted"
+msgstr "Chat sa a pa sekirize"
+
+#: src/dialogs/chatty-user-info-dialog.c:250
+msgid "Phone Number:"
+msgstr "Nimewo telefòn:"
+
+#: src/matrix/chatty-ma-account.c:245
+msgid "Incorrect password"
+msgstr "mo de pas la pa bon"
+
+#: src/matrix/chatty-ma-account.c:248
+msgid "_OK"
+msgstr "_OK"
+
+#: src/matrix/chatty-ma-account.c:249 src/ui/chatty-settings-dialog.ui:41
+#: src/ui/chatty-settings-dialog.ui:737
+msgid "_Cancel"
+msgstr "_Anile"
+
+#: src/matrix/chatty-ma-account.c:255
+#, c-format
+msgid "Please enter password for “%s”"
+msgstr "Souple antre mo de pas pou \"%s\""
+
+#: src/matrix/chatty-ma-chat.c:159
+msgid "Empty room"
+msgstr "Chanm vid"
+
+#: src/matrix/chatty-ma-chat.c:163
+#, c-format
+msgid "%s and %s"
+msgstr "%s ak %s"
+
+#: src/matrix/chatty-ma-chat.c:165
+#, c-format
+msgid "%s and %u other"
+msgid_plural "%s and %u others"
+msgstr[0] "%s ak %u yon lòt"
+msgstr[1] "%s ak %u lòt moun yo"
+
+#: src/matrix/matrix-utils.c:473
+#, c-format
+msgid "The certificate for ‘%s’ has unknown CA"
+msgstr "Sètifika a pou '%s' gen CA enkoni"
+
+#: src/matrix/matrix-utils.c:475
+#, c-format
+msgid "The certificate for ‘%s’ is self-signed"
+msgstr "Sètifika a pou '%s' gen siyati otomatik"
+
+#: src/matrix/matrix-utils.c:479
+#, c-format
+msgid "The certificate for ‘%s’ has expired"
+msgstr "Sètifika a pou '%s' ekspire"
+
+#: src/matrix/matrix-utils.c:483
+#, c-format
+msgid "The certificate for ‘%s’ has been revoked"
+msgstr "Sètifika a pou '%s' te anile"
+
+#: src/matrix/matrix-utils.c:492
+#, c-format
+msgid "Error validating certificate for ‘%s’"
+msgstr "Erè pou valide sètifika pou '%s'"
+
+#: src/ui/chatty-dialog-join-muc.ui:12
+msgid "New Group Chat"
+msgstr "Nouvo Gwoup Chat"
+
+#: src/ui/chatty-dialog-join-muc.ui:28
+msgid "Join Chat"
+msgstr "Antre nan Chat"
+
+#: src/ui/chatty-dialog-join-muc.ui:80 src/ui/chatty-dialog-new-chat.ui:296
+msgid "Select chat account"
+msgstr "Chwazi kont chat"
+
+#: src/ui/chatty-dialog-join-muc.ui:150
+msgid "Password (optional)"
+msgstr "Mo de pas (si ou vle)"
+
+#: src/ui/chatty-dialog-muc-info.ui:26
+msgid "Group Details"
+msgstr "Detay Gwoup"
+
+#: src/ui/chatty-dialog-muc-info.ui:52
+msgid "Invite Contact"
+msgstr "Envite Kontak"
+
+#: src/ui/chatty-dialog-muc-info.ui:69
+msgid "Invite"
+msgstr "Envite"
+
+#: src/ui/chatty-dialog-muc-info.ui:165
+msgid "Room topic"
+msgstr "Sijè konferans"
+
+#: src/ui/chatty-dialog-muc-info.ui:224
+msgid "Room settings"
+msgstr "Paramèt chanm"
+
+#: src/ui/chatty-dialog-muc-info.ui:245 src/ui/chatty-dialog-user-info.ui:209
+msgid "Notifications"
+msgstr "Notifikasyon"
+
+#: src/ui/chatty-dialog-muc-info.ui:246
+msgid "Show notification badge"
+msgstr "Montre badj notifikasyon"
+
+#: src/ui/chatty-dialog-muc-info.ui:262
+msgid "Status Messages"
+msgstr "Estati Mesaj yo"
+
+#: src/ui/chatty-dialog-muc-info.ui:263
+msgid "Show status messages in chat"
+msgstr "Montre estati  mesaj nan chat"
+
+#: src/ui/chatty-dialog-muc-info.ui:284
+msgid "0 members"
+msgstr "0 manb"
+
+#: src/ui/chatty-dialog-muc-info.ui:371
+msgid "Invite Message"
+msgstr "Envite Mesaj"
+
+#: src/ui/chatty-dialog-new-chat.ui:26
+msgid "Start Chat"
+msgstr "Kòmanse Chat"
+
+#: src/ui/chatty-dialog-new-chat.ui:55
+msgid "New Contact"
+msgstr "Nouvo Kontak"
+
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:125
+msgid "Add Contact"
+msgstr "Ajoute Kontak"
+
+#: src/ui/chatty-dialog-new-chat.ui:148
+msgid "Send To:"
+msgstr "Voye bay:"
+
+#: src/ui/chatty-dialog-new-chat.ui:224
+msgid "No Search Results"
+msgstr "Pa gen rezilta rechèch yo"
+
+#: src/ui/chatty-dialog-new-chat.ui:237
+msgid "Try different search, or type a valid number to create new chat"
+msgstr ""
+"Eseye rechèch diferan, oswa tape yon nimewo ki bon pou kreye nouvo chat"
+
+#: src/ui/chatty-dialog-new-chat.ui:343
+msgid "Name (optional)"
+msgstr "Non (si ou vle)"
+
+#: src/ui/chatty-dialog-new-chat.ui:383 src/ui/chatty-window.ui:151
+msgid "Add to Contacts"
+msgstr "Ajoute nan Kontak yo"
+
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:111
+msgid "Chat Details"
+msgstr "Detay Chat yo"
+
+#: src/ui/chatty-dialog-user-info.ui:96
+msgid "XMPP ID"
+msgstr "ID XMPP"
+
+#: src/ui/chatty-dialog-user-info.ui:111 src/ui/chatty-dialog-user-info.ui:225
+msgid "Encryption"
+msgstr "Sekirite"
+
+#: src/ui/chatty-dialog-user-info.ui:126 src/ui/chatty-settings-dialog.ui:396
+msgid "Status"
+msgstr "Estati"
+
+#: src/ui/chatty-dialog-user-info.ui:226
+msgid "Secure messaging using OMEMO"
+msgstr "Mesaj sekirize k ap sèvi avèk OMEMO "
+
+#: src/ui/chatty-dialog-user-info.ui:247
+msgid "Fingerprints"
+msgstr "Anprent"
+
+#: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:17
+msgid "Preferences"
+msgstr "Preferans"
+
+#: src/ui/chatty-settings-dialog.ui:21
+msgid "Back"
+msgstr "Retounen"
+
+#: src/ui/chatty-settings-dialog.ui:54
+msgid "_Add"
+msgstr "_Ajoute"
+
+#: src/ui/chatty-settings-dialog.ui:80
+msgid "_Save"
+msgstr "_Anrejistre"
+
+#: src/ui/chatty-settings-dialog.ui:114
+msgid "Accounts"
+msgstr "Kont yo"
+
+#: src/ui/chatty-settings-dialog.ui:128
+msgid "Add new account…"
+msgstr "Ajoute nouvo kont…"
+
+#: src/ui/chatty-settings-dialog.ui:141
+msgid "Privacy"
+msgstr "Vi prive"
+
+#: src/ui/chatty-settings-dialog.ui:146
+msgid "Message Receipts"
+msgstr "Resi mesaj"
+
+#: src/ui/chatty-settings-dialog.ui:147
+msgid "Confirm received messages"
+msgstr "Konfime lè yo resevwa mesaj yo"
+
+#: src/ui/chatty-settings-dialog.ui:161
+msgid "Message Archive Management"
+msgstr "Jesyon Achiv Mesaj"
+
+#: src/ui/chatty-settings-dialog.ui:162
+msgid "Sync conversations with chat server"
+msgstr "Senkwonize konvèsasyon ak sèvè chat"
+
+#: src/ui/chatty-settings-dialog.ui:176
+msgid "Message Carbon Copies"
+msgstr "Mesaj Kopi Kabòn"
+
+#: src/ui/chatty-settings-dialog.ui:191
+msgid "Typing Notification"
+msgstr "Ap tape Notifikasyon"
+
+#: src/ui/chatty-settings-dialog.ui:192
+msgid "Send typing messages"
+msgstr "Voye mesaj tape"
+
+#: src/ui/chatty-settings-dialog.ui:209
+msgid "Chats List"
+msgstr "Lis Chat"
+
+#: src/ui/chatty-settings-dialog.ui:214
+msgid "Indicate Offline Contacts"
+msgstr "Endike Kontak ki pa an liy yo"
+
+#: src/ui/chatty-settings-dialog.ui:215
+msgid "Grey out avatars from offline contacts"
+msgstr "Make avatar ki soti nan kontak ki pa anliy yo"
+
+#: src/ui/chatty-settings-dialog.ui:229
+msgid "Indicate Idle Contacts"
+msgstr "Endike Kontak Idle yo"
+
+#: src/ui/chatty-settings-dialog.ui:230
+msgid "Blur avatars from idle contacts"
+msgstr "Fè avatar ki soti nan kontak Idle yo flou"
+
+#: src/ui/chatty-settings-dialog.ui:244
+msgid "Indicate Unknown Contacts"
+msgstr "Endike Kontak Enkoni yo"
+
+#: src/ui/chatty-settings-dialog.ui:245
+msgid "Color unknown contact ID red"
+msgstr "Mete koulè wouj pou kontak ki gen ID enkoni"
+
+#: src/ui/chatty-settings-dialog.ui:262
+msgid "Editor"
+msgstr "Editè"
+
+#: src/ui/chatty-settings-dialog.ui:267
+msgid "Graphical Emoticons"
+msgstr "Emotikòn grafik"
+
+#: src/ui/chatty-settings-dialog.ui:268
+msgid "Convert ASCII emoticons"
+msgstr "Konvèti emotikòn ASCII"
+
+#: src/ui/chatty-settings-dialog.ui:282
+msgid "Return = Send Message"
+msgstr "Retounen = Voye mesaj"
+
+#: src/ui/chatty-settings-dialog.ui:283
+msgid "Send message with return key"
+msgstr "Voye mesaj ak bouton retou"
+
+#: src/ui/chatty-settings-dialog.ui:334
+msgid "Account ID"
+msgstr "Kont ID"
+
+#: src/ui/chatty-settings-dialog.ui:367
+msgid "Protocol"
+msgstr "Pwotokòl"
+
+#: src/ui/chatty-settings-dialog.ui:425 src/ui/chatty-settings-dialog.ui:647
+msgid "Password"
+msgstr "Mo de pas"
+
+#: src/ui/chatty-settings-dialog.ui:501
+msgid "Own Fingerprint"
+msgstr "Anprent pèsonèl"
+
+#: src/ui/chatty-settings-dialog.ui:555
+msgid "XMPP"
+msgstr "XMPP"
+
+#: src/ui/chatty-settings-dialog.ui:569
+msgid "Matrix"
+msgstr "Matrix"
+
+#: src/ui/chatty-settings-dialog.ui:584
+msgid "Telegram"
+msgstr "Telegram"
+
+#: src/ui/chatty-settings-dialog.ui:693
+msgid "Matrix Home Server"
+msgstr "Matrix Home Server"
+
+#: src/ui/chatty-settings-dialog.ui:710
+msgid "Enter the matrix home server address."
+msgstr "Antre adrès Matrix Home Server."
+
+#: src/ui/chatty-settings-dialog.ui:728
+msgid "_Accept"
+msgstr "_Aksepte"
+
+#: src/ui/chatty-window.ui:30
+msgid "About Chats"
+msgstr "Konsènan Chat yo"
+
+#: src/ui/chatty-window.ui:58
+msgid "New Message…"
+msgstr "Nouvo mesaj…"
+
+#: src/ui/chatty-window.ui:71
+msgid "New Group Message…"
+msgstr "Nouvo Mesaj Gwoup…"
+
+#: src/ui/chatty-window.ui:84
+msgid "New Bulk SMS…"
+msgstr "Nouvo mesaj esansyèl…"
+
+#: src/ui/chatty-window.ui:176
+msgid "Leave Chat"
+msgstr "Kite Chat"
+
+#: src/ui/chatty-window.ui:189
+msgid "Delete Chat"
+msgstr "Efase Chat"
+
+#: src/users/chatty-contact.c:318
+msgid "Mobile: "
+msgstr "Mobil: "
+
+#: src/users/chatty-contact.c:320
+msgid "Work: "
+msgstr "Travay: "
+
+#: src/users/chatty-contact.c:322
+msgid "Other: "
+msgstr "Lòt: "

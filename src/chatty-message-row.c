@@ -46,17 +46,14 @@ static gchar *
 chatty_msg_list_escape_message (ChattyMessageRow *self,
                                 const char       *message)
 {
-  g_autofree char *nl_2_br;
-  g_autofree char *striped;
-  g_autofree char *escaped;
-  g_autofree char *linkified;
+  g_autofree char *nl_2_br = NULL;
+  g_autofree char *striped = NULL;
+  g_autofree char *escaped = NULL;
+  g_autofree char *linkified = NULL;
   char *result;
 
   nl_2_br = purple_strdup_withhtml (message);
-  if (self->protocol == CHATTY_PROTOCOL_SMS)
-    striped = g_strdup (message);
-  else
-    striped = purple_markup_strip_html (nl_2_br);
+  striped = purple_markup_strip_html (nl_2_br);
   escaped = purple_markup_escape_text (striped, -1);
   linkified = purple_markup_linkify (escaped);
   // convert all tags to lowercase for GtkLabel markup parser
@@ -113,12 +110,48 @@ message_row_hold_cb (ChattyMessageRow *self)
 }
 
 static void
+message_row_update_quotes (ChattyMessageRow *self)
+{
+  const char *text, *end;
+  char *quote;
+
+  text = gtk_label_get_text (GTK_LABEL (self->message_label));
+  end = text;
+
+  if (!text || !*text)
+    return;
+
+  do {
+    quote = strchr (end, '>');
+
+    if (quote &&
+        (quote == text ||
+         *(quote - 1) == '\n')) {
+      PangoAttrList *list;
+      PangoAttribute *attribute;
+
+      list = gtk_label_get_attributes (GTK_LABEL (self->message_label));
+      end = strchr (quote, '\n');
+
+      if (!end)
+        end = quote + strlen (quote);
+
+      attribute = pango_attr_foreground_new (30000, 30000, 30000);
+      attribute->start_index = quote - text;
+      attribute->end_index = end - text + 1;
+      pango_attr_list_insert (list, attribute);
+    }
+  } while (quote && *quote);
+}
+
+static void
 message_row_update_message (ChattyMessageRow *self)
 {
   g_autofree char *message = NULL;
   g_autofree char *footer = NULL;
   const char *status_str = "";
   ChattyMsgStatus status;
+  ChattyMsgType type;
 
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
   g_assert (self->message);
@@ -132,7 +165,7 @@ message_row_update_message (ChattyMessageRow *self)
   else if (status == CHATTY_STATUS_DELIVERED)
     status_str = "<span color='#6cba3d'> ✓</span>";
 
-  if (self->is_im) {
+  if (self->is_im && self->protocol != CHATTY_PROTOCOL_MATRIX) {
     g_autofree char *time_str = NULL;
     time_t time_stamp;
 
@@ -156,10 +189,41 @@ message_row_update_message (ChattyMessageRow *self)
                             NULL);
   }
 
-  message = chatty_msg_list_escape_message (self, chatty_message_get_text (self->message));
+  type = chatty_message_get_msg_type (self->message);
+
+  if (type == CHATTY_MESSAGE_IMAGE ||
+      type == CHATTY_MESSAGE_VIDEO ||
+      type == CHATTY_MESSAGE_AUDIO ||
+      type == CHATTY_MESSAGE_FILE) {
+    ChattyFileInfo *file;
+    const char *name = NULL;
+    GList *files = NULL;
+
+    files = chatty_message_get_files (self->message);
+    file = g_list_nth_data (files, 0);
+    if (file)
+      name = file->file_name ? file->file_name : chatty_message_get_text (self->message);
+    if (file && file->url) {
+      if (file->status == CHATTY_FILE_DOWNLOADED) {
+        const char *end = strrchr (file->url, '/');
+        if (end)
+          message = g_strconcat ("<a href='file://", g_get_user_cache_dir (), "/",
+                                 "chatty", "/", "files", end, "'>", name, "</a>", NULL);
+      }
+
+      if (!message)
+        message = g_strconcat ("<a href='", file->url, "'>", name, "</a>", NULL);
+    } else
+      message = g_strdup (name);
+  } else {
+    message = chatty_msg_list_escape_message (self, chatty_message_get_text (self->message));
+  }
+
   gtk_label_set_markup (GTK_LABEL (self->message_label), message);
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
+
+  message_row_update_quotes (self);
 }
 
 static gboolean
@@ -206,7 +270,13 @@ chatty_message_row_class_init (ChattyMessageRowClass *klass)
 static void
 chatty_message_row_init (ChattyMessageRow *self)
 {
+  PangoAttrList *list;
+
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  list = pango_attr_list_new ();
+  gtk_label_set_attributes (GTK_LABEL (self->message_label), list);
+  pango_attr_list_unref (list);
 
   self->multipress_gesture = gtk_gesture_multi_press_new (self->message_event_box);
   gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (self->multipress_gesture), GDK_BUTTON_SECONDARY);
@@ -260,7 +330,7 @@ chatty_message_row_new (ChattyMessage  *message,
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
   }
 
-  if (is_im || direction == CHATTY_DIRECTION_SYSTEM ||
+  if ((is_im && protocol != CHATTY_PROTOCOL_MATRIX) || direction == CHATTY_DIRECTION_SYSTEM ||
       direction == CHATTY_DIRECTION_OUT)
     gtk_widget_hide (self->avatar_image);
   else

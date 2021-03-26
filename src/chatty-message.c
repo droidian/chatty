@@ -35,9 +35,20 @@ struct _ChattyMessage
   char            *message;
   char            *uid;
   char            *id;
+
+  ChattyFileInfo  *file;
+  ChattyFileInfo  *preview;
+  GList           *files;
+
+  ChattyMsgType    type;
   ChattyMsgStatus  status;
   ChattyMsgDirection direction;
   time_t           time;
+
+  gboolean encrypted;
+  /* Set if files are created with file path string */
+  gboolean         files_are_path;
+  guint            sms_id;
 };
 
 G_DEFINE_TYPE (ChattyMessage, chatty_message, G_TYPE_OBJECT)
@@ -60,6 +71,9 @@ chatty_message_finalize (GObject *object)
   g_free (self->user_alias);
   g_free (self->user_name);
   g_free (self->id);
+
+  if (self->files)
+    g_list_free_full (self->files, (GDestroyNotify)chatty_file_info_free);
 
   G_OBJECT_CLASS (chatty_message_parent_class)->finalize (object);
 }
@@ -98,6 +112,7 @@ chatty_message_new (ChattyItem         *user,
                     const char         *message,
                     const char         *uid,
                     time_t              timestamp,
+                    ChattyMsgType       type,
                     ChattyMsgDirection  direction,
                     ChattyMsgStatus     status)
 {
@@ -114,8 +129,124 @@ chatty_message_new (ChattyItem         *user,
   self->status = status;
   self->direction = direction;
   self->time = timestamp;
+  self->type = type;
 
   return self;
+}
+
+gboolean
+chatty_message_get_encrypted (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), FALSE);
+
+  return self->encrypted;
+}
+
+void
+chatty_message_set_encrypted (ChattyMessage *self,
+                              gboolean       is_encrypted)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+
+  self->encrypted = !!is_encrypted;
+}
+
+ChattyFileInfo *
+chatty_message_get_file (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
+
+  return self->file;
+}
+
+void
+chatty_message_set_file (ChattyMessage  *self,
+                         ChattyFileInfo *file)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (!self->file);
+
+  self->file = file;
+}
+
+/**
+ * chatty_message_set_files:
+ * @self: A #ChattyMessage
+ *
+ * Get List of files
+ *
+ * Returns: (transfer none) (nullable): Get the list
+ * of files or %NULL if no file is set.
+ */
+GList *
+chatty_message_get_files (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
+
+  return self->files;
+}
+
+/**
+ * chatty_message_set_files:
+ * @self: A #ChattyMessage
+ * @files: (transfer full): A #GList of #ChattyFileInfo
+ */
+void
+chatty_message_set_files (ChattyMessage *self,
+                          GList         *files)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (!self->files);
+
+  self->files = files;
+}
+
+/**
+ * chatty_message_add_file_from_path:
+ * @self: A #ChattyMessage
+ * @files: A local file path
+ *
+ * Append a file to message using the file’s absolute
+ * path. @file_path should point to an existing file.
+ * Multiple files can be added.
+ *
+ * This API can’t be mixed with chatty_message_set_files().
+ * You can only use either of them.
+ */
+void
+chatty_message_add_file_from_path (ChattyMessage *self,
+                                   const char    *file_path)
+{
+  ChattyFileInfo *file;
+
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (file_path && *file_path);
+  g_return_if_fail (!self->files || self->files_are_path);
+  g_return_if_fail (g_file_test (file_path, G_FILE_TEST_EXISTS));
+
+  self->files_are_path = TRUE;
+  file = g_new0 (ChattyFileInfo, 1);
+  file->path = g_strdup (file_path);
+
+  self->files = g_list_append (self->files, file);
+}
+
+ChattyFileInfo *
+chatty_message_get_preview (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
+
+  return self->preview;
+}
+
+void
+chatty_message_set_preview (ChattyMessage  *self,
+                            ChattyFileInfo *preview)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (!self->preview);
+
+  self->preview = preview;
 }
 
 const char *
@@ -124,6 +255,16 @@ chatty_message_get_uid (ChattyMessage *self)
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
 
   return self->uid;
+}
+
+void
+chatty_message_set_uid (ChattyMessage *self,
+                        const char    *uid)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (!self->uid);
+
+  self->uid = g_strdup (uid);
 }
 
 const char *
@@ -144,6 +285,24 @@ chatty_message_set_id (ChattyMessage *self,
   self->id = g_strdup (id);
 }
 
+guint
+chatty_message_get_sms_id (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), 0);
+
+  return self->sms_id;
+}
+
+void
+chatty_message_set_sms_id (ChattyMessage *self,
+                           guint          id)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+
+  if (id)
+    self->sms_id = id;
+}
+
 const char *
 chatty_message_get_text (ChattyMessage *self)
 {
@@ -155,6 +314,16 @@ chatty_message_get_text (ChattyMessage *self)
   return self->message;
 }
 
+void
+chatty_message_set_user (ChattyMessage *self,
+                         ChattyItem    *sender)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (!sender || CHATTY_IS_ITEM (sender));
+  g_return_if_fail (!self->user);
+
+  g_set_object (&self->user, sender);
+}
 
 ChattyItem *
 chatty_message_get_user (ChattyMessage *self)
@@ -196,9 +365,20 @@ chatty_message_set_user_name (ChattyMessage *self,
 const char *
 chatty_message_get_user_alias (ChattyMessage *self)
 {
+  const char *name = NULL;
+
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
 
-  return self->user_alias;
+  if (self->user_alias)
+    return self->user_alias;
+
+  if (self->user)
+    name = chatty_item_get_name (self->user);
+
+  if (name && *name)
+    return name;
+
+  return NULL;
 }
 
 time_t
@@ -231,10 +411,31 @@ chatty_message_set_status (ChattyMessage   *self,
   g_signal_emit (self, signals[UPDATED], 0);
 }
 
+ChattyMsgType
+chatty_message_get_msg_type (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), CHATTY_MESSAGE_UNKNOWN);
+
+  return self->type;
+}
+
 ChattyMsgDirection
 chatty_message_get_msg_direction (ChattyMessage *self)
 {
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), CHATTY_DIRECTION_UNKNOWN);
 
   return self->direction;
+}
+
+void
+chatty_file_info_free (ChattyFileInfo *file_info)
+{
+  if (!file_info)
+    return;
+
+  g_free (file_info->file_name);
+  g_free (file_info->url);
+  g_free (file_info->path);
+  g_free (file_info->mime_type);
+  g_free (file_info);
 }

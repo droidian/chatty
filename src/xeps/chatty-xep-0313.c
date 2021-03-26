@@ -477,9 +477,11 @@ cb_chatty_mam_bare_info(PurpleConnection *pc,
     mamq->js = js;
     mamq->id = g_strdup(qid);
     if(g_strcmp0(bare, purple_account_get_username(pa))) {
+      ChattyManager *manager = chatty_manager_get_default ();
       time_t ts;
 
-      ts = chatty_history_get_last_message_time (purple_account_get_username(pa), bare);
+      ts = chatty_history_get_last_message_time (chatty_manager_get_history (manager),
+                                                 purple_account_get_username(pa), bare);
       // For MUC we're getting all messages so last history ts is ok
       if(ts>0)
         dt = g_date_time_new_from_unix_utc(ts);
@@ -662,6 +664,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
   user = purple_account_get_username (pa);
 
   if(node_result != NULL || node_sid != NULL) {
+    ChattyManager *manager = chatty_manager_get_default ();
     int dts;
     const char *msg_type;
     if(node_result != NULL) {
@@ -707,10 +710,13 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     }
     // check history and drop the dup
     msg_type = xmlnode_get_attrib(message, "type");
+
     if(from && msg_type && g_strcmp0(msg_type, "groupchat") == 0) {
-      dts = chatty_history_get_chat_timestamp (stanza_id, from);
+      dts = chatty_history_get_chat_timestamp (chatty_manager_get_history (manager),
+                                               stanza_id, from);
     } else {
-      dts = chatty_history_get_im_timestamp (stanza_id, user);
+      dts = chatty_history_get_im_timestamp (chatty_manager_get_history (manager),
+                                             stanza_id, user);
     }
     if(dts < INT_MAX) {
       g_debug ("Message id %s for acc %s is already stored on %d", stanza_id, user, dts);
@@ -741,7 +747,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
       if(node_oid) {
         const char *uuid = xmlnode_get_attrib (node_oid, "id");
         if(uuid) {
-          dts = chatty_history_get_im_timestamp (uuid, user);
+          dts = chatty_history_get_im_timestamp (chatty_manager_get_history (manager), uuid, user);
           if(dts < INT_MAX) {
             g_debug ("Message id %s for acc %s is already stored on %d", uuid, user, dts);
             return TRUE; // note - true means stop processing
@@ -770,6 +776,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     mamc->cur_msg->p.when = purple_str_to_time (stamp, TRUE, NULL, NULL, NULL);
   jabber_message_parse (js, message);
   if(stanza_id != NULL || mamc->cur_msg->p.what != NULL) {
+    ChattyManager *manager = chatty_manager_get_default ();
     PurpleConvMessage *pcm = &(mamc->cur_msg->p);
     PurpleConversation *conv = mamc->cur_msg->conv;
     g_autoptr(ChattyMessage) chat_message = NULL;
@@ -793,11 +800,19 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     if (!stanza_id)
       stanza_id = g_uuid_string_random ();
 
-    chat_message = chatty_message_new (NULL, NULL, pcm->what, stanza_id, pcm->when,
+    chat_message = chatty_message_new (NULL, NULL, pcm->what, stanza_id,
+                                       pcm->when, CHATTY_MESSAGE_HTML_ESCAPED,
                                        chatty_utils_direction_from_flag (pcm->flags), 0);
     if (chat_message && pcm->who && !(flags & PURPLE_MESSAGE_SEND))
       chatty_message_set_user_name (chat_message, who ? who : pcm->who);
-    chatty_history_add_message (conv->ui_data, chat_message);
+
+    if (conv)
+      chatty_history_add_message (chatty_manager_get_history (manager),
+                                  conv->ui_data, chat_message);
+    else
+      g_warning ("NULL conversation for : who: %s, message: %s",
+                  who ? who: pcm->who, pcm->what);
+
   }
   // Update last timestamp for account's archive
   if(mamq != NULL && mamq->to == NULL)

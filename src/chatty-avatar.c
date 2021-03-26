@@ -20,6 +20,8 @@
 #include "chatty-settings.h"
 #include "chatty-chat.h"
 #include "chatty-pp-chat.h"
+#include "matrix/chatty-ma-buddy.h"
+#include "matrix/chatty-ma-chat.h"
 #include "chatty-avatar.h"
 
 /**
@@ -239,6 +241,9 @@ chatty_avatar_draw (GtkWidget *widget,
 
   if (avatar)
     chatty_avatar_draw_pixbuf (cr, avatar, size);
+  else if (name && *name == '@' &&
+           (CHATTY_IS_MA_BUDDY (self->item) || CHATTY_IS_MA_CHAT (self->item)))
+    chatty_avatar_draw_label (self, cr, name + 1);
   else if (name && *name)
     chatty_avatar_draw_label (self, cr, name);
 

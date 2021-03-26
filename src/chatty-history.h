@@ -22,7 +22,7 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (ChattyHistory, chatty_history, CHATTY, HISTORY, GObject)
 
-ChattyHistory *chatty_history_get_default         (void);
+ChattyHistory *chatty_history_new                 (void);
 void           chatty_history_open_async          (ChattyHistory        *self,
                                                    char                 *dir,
                                                    const char           *file_name,
@@ -55,6 +55,15 @@ void           chatty_history_add_message_async   (ChattyHistory        *self,
 gboolean       chatty_history_add_message_finish  (ChattyHistory        *self,
                                                    GAsyncResult         *result,
                                                    GError              **error);
+void           chatty_history_get_chats_async     (ChattyHistory       *self,
+                                                   ChattyAccount       *account,
+                                                   GAsyncReadyCallback  callback,
+                                                   gpointer             user_data);
+GPtrArray     *chatty_history_get_chats_finish    (ChattyHistory        *self,
+                                                   GAsyncResult         *result,
+                                                   GError              **error);
+gboolean       chatty_history_update_chat         (ChattyHistory        *self,
+                                                   ChattyChat           *chat);
 void           chatty_history_delete_chat_async   (ChattyHistory        *self,
                                                    ChattyChat           *chat,
                                                    GAsyncReadyCallback   callback,
@@ -64,21 +73,29 @@ gboolean       chatty_history_delete_chat_finish  (ChattyHistory        *self,
                                                    GError              **error);
 
 /* old APIs */
-void           chatty_history_open                (const char            *dir,
+void           chatty_history_open                (ChattyHistory         *self,
+                                                   const char            *dir,
                                                    const char            *file_name);
-void           chatty_history_close               (void);
-int            chatty_history_get_chat_timestamp  (const char            *uuid,
+void           chatty_history_close               (ChattyHistory         *self);
+int            chatty_history_get_chat_timestamp  (ChattyHistory         *self,
+                                                   const char            *uuid,
                                                    const char            *room);
-int            chatty_history_get_im_timestamp    (const char            *uuid,
+int            chatty_history_get_im_timestamp    (ChattyHistory         *self,
+                                                   const char            *uuid,
                                                    const char            *account);
-int            chatty_history_get_last_message_time (const char            *account,
+int            chatty_history_get_last_message_time (ChattyHistory         *self,
+                                                     const char            *account,
                                                      const char            *room);
-void           chatty_history_delete_chat         (ChattyChat            *chat);
-gboolean       chatty_history_im_exists           (const char            *account,
+void           chatty_history_delete_chat         (ChattyHistory         *self,
+                                                   ChattyChat            *chat);
+gboolean       chatty_history_im_exists           (ChattyHistory         *self,
+                                                   const char            *account,
                                                    const char            *who);
-gboolean       chatty_history_chat_exists         (const char            *account,
+gboolean       chatty_history_chat_exists         (ChattyHistory         *self,
+                                                   const char            *account,
                                                    const char            *room);
-gboolean       chatty_history_add_message         (ChattyChat            *chat,
+gboolean       chatty_history_add_message         (ChattyHistory         *self,
+                                                   ChattyChat            *chat,
                                                    ChattyMessage         *message);
 
 G_END_DECLS

@@ -29,7 +29,6 @@ gboolean chatty_utils_get_item_position (GListModel *list,
                                          guint      *position);
 gboolean chatty_utils_remove_list_item  (GListStore *store,
                                          gpointer    item);
-GtkWidget* chatty_utils_create_fingerprint_row (const char *fp, guint id);
 char       *chatty_utils_get_human_time (time_t unix_time);
 PurpleBlistNode *chatty_utils_get_conv_blist_node (PurpleConversation *conv);
 ChattyMsgDirection   chatty_utils_direction_from_flag   (PurpleMessageFlags flag);

@@ -4,3 +4,7 @@ src/contrib/gtkflattenlistmodel.c
 src/contrib/gtkslicelistmodel.c
 src/contrib/gtksorter.c
 src/contrib/gtksortlistmodel.c
+src/matrix/matrix-db.c
+src/matrix/matrix-db.h
+src/matrix/matrix-api.c
+src/matrix/matrix-api.h

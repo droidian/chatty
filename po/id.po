@@ -1,0 +1,810 @@
+# Indonesian translation for chatty.
+# Copyright (C) 2020 chatty's COPYRIGHT HOLDER
+# This file is distributed under the same license as the chatty package.
+# Andika Triwidada <atriwidada@gnome.org>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: chatty master\n"
+"Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
+"POT-Creation-Date: 2020-12-12 03:25+0000\n"
+"PO-Revision-Date: 2020-12-12 15:23+0700\n"
+"Language-Team: Indonesian <gnome-l10n-id@googlegroups.com>\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Last-Translator: Andika Triwidada <andika@gmail.com>\n"
+"X-Generator: Poedit 2.4.2\n"
+"Plural-Forms: nplurals=2; plural= n!=1;\n"
+
+#: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
+#: src/chatty-application.c:307 src/ui/chatty-window.ui:221
+msgid "Chats"
+msgstr "Obrolan"
+
+#: data/sm.puri.Chatty.desktop.in:5
+msgid "sm.puri.Chatty"
+msgstr "sm.puri.Chatty"
+
+#: data/sm.puri.Chatty.desktop.in:6
+msgid "SMS and XMPP chat application"
+msgstr "Aplikasi obrolan SMS dan XMPP"
+
+#: data/sm.puri.Chatty.desktop.in:7
+msgid "XMPP;SMS;chat;jabber;messaging;modem"
+msgstr "XMPP;SMS;obrolan;jabber;pesan;modem"
+
+#: data/sm.puri.Chatty.gschema.xml:7 data/sm.puri.Chatty.gschema.xml:8
+msgid "Whether the application is launching the first time"
+msgstr "Apakah aplikasi diluncurkan pertama kali"
+
+#: data/sm.puri.Chatty.gschema.xml:13
+msgid "Country code in ISO 3166-1 alpha-2 format"
+msgstr "Kode negara dalam format ISO 3166-1 alpha-2"
+
+#: data/sm.puri.Chatty.gschema.xml:14
+msgid "Two letter country code of the last available SIM/Network"
+msgstr "Kode negara dua huruf dari SIM/Jaringan terakhir yang tersedia"
+
+#: data/sm.puri.Chatty.gschema.xml:19
+msgid "Send message read receipts"
+msgstr "Kirim tanda terima baca pesan"
+
+#: data/sm.puri.Chatty.gschema.xml:20
+msgid "Whether to send the status of the message if read"
+msgstr "Apakah akan mengirim status pesan jika dibaca"
+
+#: data/sm.puri.Chatty.gschema.xml:25
+msgid "Message carbon copies"
+msgstr "Salinan karbon pesan"
+
+#: data/sm.puri.Chatty.gschema.xml:26 src/ui/chatty-settings-dialog.ui:154
+msgid "Share chat history among devices"
+msgstr "Berbagi riwayat obrolan di antara perangkat"
+
+#: data/sm.puri.Chatty.gschema.xml:31
+msgid "Enable Message Archive Management"
+msgstr "Fungsikan Manajemen Arsip Pesan"
+
+#: data/sm.puri.Chatty.gschema.xml:32
+msgid "Enable MAM archive synchronization from the server"
+msgstr "Aktifkan sinkronisasi arsip MAM dari server"
+
+#: data/sm.puri.Chatty.gschema.xml:37
+msgid "Send typing notifications"
+msgstr "Mengirim pemberitahuan pengetikan"
+
+#: data/sm.puri.Chatty.gschema.xml:38
+msgid "Whether to Send typing notifications"
+msgstr "Apakah Mengirim pemberitahuan pengetikan"
+
+#: data/sm.puri.Chatty.gschema.xml:43 data/sm.puri.Chatty.gschema.xml:44
+msgid "Mark offline users differently"
+msgstr "Menandai pengguna luring secara berbeda"
+
+#: data/sm.puri.Chatty.gschema.xml:49 data/sm.puri.Chatty.gschema.xml:50
+msgid "Mark Idle users differently"
+msgstr "Menandai pengguna Menganggur secara berbeda"
+
+#: data/sm.puri.Chatty.gschema.xml:55 data/sm.puri.Chatty.gschema.xml:56
+msgid "Indicate unknown contacts"
+msgstr "Menunjukkan kontak yang tidak diketahui"
+
+#: data/sm.puri.Chatty.gschema.xml:61
+msgid "Convert text to emoticons"
+msgstr "Mengonversi teks menjadi emotikon"
+
+#: data/sm.puri.Chatty.gschema.xml:62
+msgid "Convert text matching emoticons as real emoticons"
+msgstr "Mengonversi teks yang cocok dengan emotikon sebagai emotikon nyata"
+
+#: data/sm.puri.Chatty.gschema.xml:67
+msgid "Enter key sends the message"
+msgstr "Tombol Enter mengirim pesan"
+
+#: data/sm.puri.Chatty.gschema.xml:68
+msgid "Whether pressing Enter key sends the message"
+msgstr "Apakah menekan tombol Enter akan mengirim pesan"
+
+#: data/sm.puri.Chatty.gschema.xml:73
+msgid "Window maximized"
+msgstr "Jendela termaksimalkan"
+
+#: data/sm.puri.Chatty.gschema.xml:74
+msgid "Window maximized state"
+msgstr "Keadaan jendela termaksimalkan"
+
+#: data/sm.puri.Chatty.gschema.xml:79
+msgid "Window size"
+msgstr "Ukuran jendela"
+
+#: data/sm.puri.Chatty.gschema.xml:80
+msgid "Window size (width, height)."
+msgstr "Ukuran jendela (lebar, tinggi)."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:7
+msgid "A messaging application"
+msgstr "Aplikasi perpesanan"
+
+#: data/sm.puri.Chatty.metainfo.xml.in:9
+msgid "Chats is a messaging application supporting XMPP and SMS."
+msgstr "Obrolan adalah aplikasi perpesanan yang mendukung XMPP dan SMS."
+
+#: data/sm.puri.Chatty.metainfo.xml.in:16
+msgid "Chats message window"
+msgstr "Jendela pesan obrolan"
+
+#: src/chatty-application.c:69
+msgid "Show release version"
+msgstr "Tampilkan versi rilis"
+
+#: src/chatty-application.c:70
+msgid "Start in daemon mode"
+msgstr "Mulai dalam mode daemon"
+
+#: src/chatty-application.c:71
+msgid "Disable all accounts"
+msgstr "Nonaktifkan semua akun"
+
+#: src/chatty-application.c:72
+msgid "Enable libpurple debug messages"
+msgstr "Aktifkan pesan debug libpurple"
+
+#: src/chatty-application.c:73
+msgid "Enable verbose libpurple debug messages"
+msgstr "Aktifkan pesan debug verbose libpurple"
+
+#: src/chatty-application.c:109
+#, c-format
+msgid "Authorize %s?"
+msgstr "Otorisasikan %s?"
+
+#: src/chatty-application.c:113
+msgid "Reject"
+msgstr "Tolak"
+
+#: src/chatty-application.c:115
+msgid "Accept"
+msgstr "Terima"
+
+#: src/chatty-application.c:120
+#, c-format
+msgid "Add %s to contact list"
+msgstr "Menambahkan %s ke daftar kontak"
+
+#: src/chatty-application.c:143
+msgid "Contact added"
+msgstr "Kontak ditambahkan"
+
+#: src/chatty-application.c:146
+#, c-format
+msgid "User %s has added %s to the contacts"
+msgstr "Pengguna %s telah menambahkan %s ke kontak"
+
+#: src/chatty-application.c:166
+msgid "Login failed"
+msgstr "Gagal log masuk"
+
+#: src/chatty-application.c:172
+msgid "Please check ID and password"
+msgstr "Silakan periksa ID dan kata sandi"
+
+#: src/chatty-chat-view.c:70 src/chatty-chat-view.c:75
+msgid "This is an IM conversation."
+msgstr "Ini adalah percakapan IM."
+
+#: src/chatty-chat-view.c:71 src/chatty-chat-view.c:81
+msgid "Your messages are not encrypted,"
+msgstr "Pesan Anda tidak dienkripsi,"
+
+#: src/chatty-chat-view.c:72
+msgid "ask your counterpart to use E2EE."
+msgstr "meminta rekan Anda untuk menggunakan E2EE."
+
+#: src/chatty-chat-view.c:76
+msgid "Your messages are secured"
+msgstr "Pesan Anda aman"
+
+#: src/chatty-chat-view.c:77
+msgid "by end-to-end encryption."
+msgstr "dengan enkripsi menyeluruh."
+
+#: src/chatty-chat-view.c:80
+msgid "This is an SMS conversation."
+msgstr "Ini adalah percakapan SMS."
+
+#: src/chatty-chat-view.c:82
+msgid "and carrier rates may apply."
+msgstr "dan tarif operator mungkin berlaku."
+
+#. Translators: Timestamp seconds suffix
+#: src/chatty-list-row.c:73
+msgctxt "timestamp-suffix-seconds"
+msgid "s"
+msgstr "d"
+
+#. Translators: Timestamp minute suffix
+#: src/chatty-list-row.c:75
+msgctxt "timestamp-suffix-minute"
+msgid "m"
+msgstr "m"
+
+#. Translators: Timestamp minutes suffix
+#: src/chatty-list-row.c:77
+msgctxt "timestamp-suffix-minutes"
+msgid "m"
+msgstr "m"
+
+#. Translators: Timestamp hour suffix
+#: src/chatty-list-row.c:79
+msgctxt "timestamp-suffix-hour"
+msgid "h"
+msgstr "j"
+
+#. Translators: Timestamp hours suffix
+#: src/chatty-list-row.c:81
+msgctxt "timestamp-suffix-hours"
+msgid "h"
+msgstr "j"
+
+#. Translators: Timestamp day suffix
+#: src/chatty-list-row.c:83
+msgctxt "timestamp-suffix-day"
+msgid "d"
+msgstr "h"
+
+#. Translators: Timestamp days suffix
+#: src/chatty-list-row.c:85
+msgctxt "timestamp-suffix-days"
+msgid "d"
+msgstr "h"
+
+#. Translators: Timestamp month suffix
+#: src/chatty-list-row.c:87
+msgctxt "timestamp-suffix-month"
+msgid "mo"
+msgstr "bln"
+
+#. Translators: Timestamp months suffix
+#: src/chatty-list-row.c:89
+msgctxt "timestamp-suffix-months"
+msgid "mos"
+msgstr "bln"
+
+#. Translators: Timestamp year suffix
+#: src/chatty-list-row.c:91
+msgctxt "timestamp-suffix-year"
+msgid "y"
+msgstr "t"
+
+#. Translators: Timestamp years suffix
+#: src/chatty-list-row.c:93
+msgctxt "timestamp-suffix-years"
+msgid "y"
+msgstr "t"
+
+#. Translators: Timestamp prefix (e.g. Over 5h)
+#: src/chatty-list-row.c:195
+msgid "Over"
+msgstr "Lewat"
+
+#. Translators: Timestamp prefix (e.g. Almost 5h)
+#: src/chatty-list-row.c:200
+msgid "Almost"
+msgstr "Hampir"
+
+#: src/chatty-list-row.c:217
+msgid "Owner"
+msgstr "Pemilik"
+
+#: src/chatty-list-row.c:220
+msgid "Moderator"
+msgstr "Moderator"
+
+#: src/chatty-list-row.c:223
+msgid "Member"
+msgstr "Anggota"
+
+#: src/chatty-manager.c:905
+#, c-format
+msgid "New message from %s"
+msgstr "Pesan baru dari %s"
+
+#: src/chatty-message-row.c:94
+msgid "Copy"
+msgstr "Salin"
+
+#: src/chatty-notify.c:67
+msgid "Open Message"
+msgstr "Buka Pesan"
+
+#: src/chatty-notify.c:72
+msgid "Message Received"
+msgstr "Pesan Diterima"
+
+#: src/chatty-notify.c:78
+msgid "Message Error"
+msgstr "Galat Pesan"
+
+#: src/chatty-notify.c:84
+msgid "Account Info"
+msgstr "Info Akun"
+
+#: src/chatty-notify.c:90
+msgid "Account Connected"
+msgstr "Akun Tersambung"
+
+#: src/chatty-purple-notify.c:44
+msgid "Close"
+msgstr "Tutup"
+
+#: src/chatty-purple-request.c:186
+msgid "Save File..."
+msgstr "Simpan Berkas..."
+
+#: src/chatty-purple-request.c:187
+msgid "Open File..."
+msgstr "Buka Berkas..."
+
+#: src/chatty-purple-request.c:191 src/chatty-window.c:570
+#: src/dialogs/chatty-settings-dialog.c:450
+#: src/dialogs/chatty-user-info-dialog.c:66 src/ui/chatty-dialog-join-muc.ui:16
+#: src/ui/chatty-dialog-muc-info.ui:56
+msgid "Cancel"
+msgstr "Batal"
+
+#: src/chatty-purple-request.c:193
+msgid "Save"
+msgstr "Simpan"
+
+#: src/chatty-purple-request.c:193 src/dialogs/chatty-settings-dialog.c:449
+#: src/dialogs/chatty-user-info-dialog.c:65
+msgid "Open"
+msgstr "Buka"
+
+#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:468
+msgid "%A %H∶%M"
+msgstr "%A %H:%M"
+
+#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:473
+msgid "%A %I∶%M %p"
+msgstr "%A %I∶%M %p"
+
+#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/chatty-utils.c:480
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
+#: src/chatty-window.c:103 src/chatty-window.c:108 src/chatty-window.c:113
+msgid "Choose a contact"
+msgstr "Memilih kontak"
+
+#: src/chatty-window.c:104
+msgid ""
+"Select an <b>SMS</b> or <b>Instant Message</b> contact with the <b>\"+\"</b> "
+"button in the titlebar."
+msgstr ""
+"Pilih kontak <b>SMS</b> atau <b>Pesan Instan</b> dengan tombol <b>\"+\"</b> "
+"di bilah judul."
+
+#: src/chatty-window.c:109
+msgid ""
+"Select an <b>Instant Message</b> contact with the \"+\" button in the "
+"titlebar."
+msgstr "Pilih kontak <b>Pesan Instan</b> dengan tombol \"+\" di bilah judul."
+
+#: src/chatty-window.c:114
+msgid "Start a <b>SMS</b> chat with the \"+\" button in the titlebar."
+msgstr "Memulai obrolan <b>SMS</b> dengan tombol \"+\" di bilah judul."
+
+#: src/chatty-window.c:115 src/chatty-window.c:119
+msgid ""
+"For <b>Instant Messaging</b> add or activate an account in <i>\"preferences"
+"\"</i>."
+msgstr ""
+"Untuk <b>Pesan Instan</b> tambahkan atau aktifkan akun di <i>\"preferensi\"</"
+"i>."
+
+#: src/chatty-window.c:118
+msgid "Start chatting"
+msgstr "Mulai mengobrol"
+
+#: src/chatty-window.c:555
+msgid "Delete chat with"
+msgstr "Hapus obrolan dengan"
+
+#: src/chatty-window.c:556
+msgid "This deletes the conversation history"
+msgstr "Ini menghapus riwayat percakapan"
+
+#: src/chatty-window.c:558
+msgid "Disconnect group chat"
+msgstr "Putuskan sambungan obrolan grup"
+
+#: src/chatty-window.c:559
+msgid "This removes chat from chats list"
+msgstr "Ini menghapus obrolan dari daftar obrolan"
+
+#: src/chatty-window.c:572
+msgid "Delete"
+msgstr "Hapus"
+
+#: src/chatty-window.c:785
+msgid "An SMS and XMPP messaging client"
+msgstr "Klien pesan SMS dan XMPP"
+
+#: src/chatty-window.c:792
+msgid "translator-credits"
+msgstr "Andika Triwidada <andika@gmail.com>, 2020"
+
+#: src/chatty-window.c:1089
+#, c-format
+msgid "“%s” is not a valid phone number"
+msgstr "\"%s\" bukan nomor telepon yang valid"
+
+#: src/dialogs/chatty-muc-info-dialog.c:320
+msgid "members"
+msgstr "anggota"
+
+#: src/dialogs/chatty-new-chat-dialog.c:152
+msgid "Send To"
+msgstr "Kirim ke"
+
+#: src/dialogs/chatty-new-chat-dialog.c:196
+#, c-format
+msgid "Error opening GNOME Contacts: %s"
+msgstr "Galat saat membuka Kontak GNOME: %s"
+
+#: src/dialogs/chatty-settings-dialog.c:325
+msgid "Select Protocol"
+msgstr "Pilih Protokol"
+
+#: src/dialogs/chatty-settings-dialog.c:331
+msgid "Add XMPP account"
+msgstr "Tambahkan akun XMPP"
+
+#: src/dialogs/chatty-settings-dialog.c:362
+msgid "connected"
+msgstr "terhubung"
+
+#: src/dialogs/chatty-settings-dialog.c:364
+msgid "connecting…"
+msgstr "menyambung…"
+
+#: src/dialogs/chatty-settings-dialog.c:366
+msgid "disconnected"
+msgstr "terputus"
+
+#: src/dialogs/chatty-settings-dialog.c:446
+#: src/dialogs/chatty-user-info-dialog.c:62
+msgid "Set Avatar"
+msgstr "Atur Avatar"
+
+#: src/dialogs/chatty-settings-dialog.c:522
+#: src/ui/chatty-settings-dialog.ui:460
+msgid "Delete Account"
+msgstr "Hapus Akun"
+
+#: src/dialogs/chatty-settings-dialog.c:525
+#, c-format
+msgid "Delete account %s?"
+msgstr "Menghapus akun %s?"
+
+#: src/dialogs/chatty-user-info-dialog.c:136
+msgid "Encryption not available"
+msgstr "Enkripsi tidak tersedia"
+
+#: src/dialogs/chatty-user-info-dialog.c:174
+msgid "Encryption is not available"
+msgstr "Enkripsi tidak tersedia"
+
+#: src/dialogs/chatty-user-info-dialog.c:176
+msgid "This chat is encrypted"
+msgstr "Obrolan ini dienkripsi"
+
+#: src/dialogs/chatty-user-info-dialog.c:178
+msgid "This chat is not encrypted"
+msgstr "Obrolan ini tidak dienkripsi"
+
+#: src/dialogs/chatty-user-info-dialog.c:246
+msgid "Phone Number:"
+msgstr "Nomor Telepon:"
+
+#: src/ui/chatty-dialog-join-muc.ui:12
+msgid "New Group Chat"
+msgstr "Obrolan Grup Baru"
+
+#: src/ui/chatty-dialog-join-muc.ui:28
+msgid "Join Chat"
+msgstr "Bergabung Ke Obrolan"
+
+#: src/ui/chatty-dialog-join-muc.ui:80 src/ui/chatty-dialog-new-chat.ui:296
+msgid "Select chat account"
+msgstr "Pilih akun obrolan"
+
+#: src/ui/chatty-dialog-join-muc.ui:150
+msgid "Password (optional)"
+msgstr "Kata sandi (opsional)"
+
+#: src/ui/chatty-dialog-muc-info.ui:26
+msgid "Group Details"
+msgstr "Detail Grup"
+
+#: src/ui/chatty-dialog-muc-info.ui:52
+msgid "Invite Contact"
+msgstr "Undang Kontak"
+
+#: src/ui/chatty-dialog-muc-info.ui:69
+msgid "Invite"
+msgstr "Undang"
+
+#: src/ui/chatty-dialog-muc-info.ui:165
+msgid "Room topic"
+msgstr "Topik kamar"
+
+#: src/ui/chatty-dialog-muc-info.ui:224
+msgid "Room settings"
+msgstr "Pengaturan kamar"
+
+#: src/ui/chatty-dialog-muc-info.ui:245 src/ui/chatty-dialog-user-info.ui:209
+msgid "Notifications"
+msgstr "Notifikasi"
+
+#: src/ui/chatty-dialog-muc-info.ui:246
+msgid "Show notification badge"
+msgstr "Tampilkan lencana pemberitahuan"
+
+#: src/ui/chatty-dialog-muc-info.ui:262
+msgid "Status Messages"
+msgstr "Pesan Status"
+
+#: src/ui/chatty-dialog-muc-info.ui:263
+msgid "Show status messages in chat"
+msgstr "Tampilkan pesan status dalam obrolan"
+
+#: src/ui/chatty-dialog-muc-info.ui:284
+msgid "0 members"
+msgstr "0 anggota"
+
+#: src/ui/chatty-dialog-muc-info.ui:371
+msgid "Invite Message"
+msgstr "Pesan Undangan"
+
+#: src/ui/chatty-dialog-new-chat.ui:26
+msgid "Start Chat"
+msgstr "Mulai Obrolan"
+
+#: src/ui/chatty-dialog-new-chat.ui:55
+msgid "New Contact"
+msgstr "Kontak Baru"
+
+#: src/ui/chatty-dialog-new-chat.ui:83 src/ui/chatty-window.ui:125
+msgid "Add Contact"
+msgstr "Tambah Kontak"
+
+#: src/ui/chatty-dialog-new-chat.ui:148
+msgid "Send To:"
+msgstr "Kirim Ke:"
+
+#: src/ui/chatty-dialog-new-chat.ui:224
+msgid "No Search Results"
+msgstr "Pencarian Tak Ada Hasil"
+
+#: src/ui/chatty-dialog-new-chat.ui:237
+msgid "Try different search, or type a valid number to create new chat"
+msgstr ""
+"Coba pencarian yang berbeda, atau ketik nomor yang valid untuk membuat "
+"obrolan baru"
+
+#: src/ui/chatty-dialog-new-chat.ui:343
+msgid "Name (optional)"
+msgstr "Nama (opsional)"
+
+#: src/ui/chatty-dialog-new-chat.ui:383 src/ui/chatty-window.ui:151
+msgid "Add to Contacts"
+msgstr "Tambahkan ke Kontak"
+
+#: src/ui/chatty-dialog-user-info.ui:12 src/ui/chatty-window.ui:111
+msgid "Chat Details"
+msgstr "Detail Obrolan"
+
+#: src/ui/chatty-dialog-user-info.ui:96
+msgid "XMPP ID"
+msgstr "ID XMPP"
+
+#: src/ui/chatty-dialog-user-info.ui:111 src/ui/chatty-dialog-user-info.ui:225
+msgid "Encryption"
+msgstr "Enkripsi"
+
+#: src/ui/chatty-dialog-user-info.ui:126 src/ui/chatty-settings-dialog.ui:373
+msgid "Status"
+msgstr "Status"
+
+#: src/ui/chatty-dialog-user-info.ui:226
+msgid "Secure messaging using OMEMO"
+msgstr "Pesan aman menggunakan OMEMO"
+
+#: src/ui/chatty-dialog-user-info.ui:247
+msgid "Fingerprints"
+msgstr "Sidik jari"
+
+#: src/ui/chatty-settings-dialog.ui:12 src/ui/chatty-window.ui:17
+msgid "Preferences"
+msgstr "Preferensi"
+
+#: src/ui/chatty-settings-dialog.ui:21
+msgid "Back"
+msgstr "Mundur"
+
+#: src/ui/chatty-settings-dialog.ui:41
+msgid "_Add"
+msgstr "T_ambah"
+
+#: src/ui/chatty-settings-dialog.ui:57
+msgid "_Save"
+msgstr "_Simpan"
+
+#: src/ui/chatty-settings-dialog.ui:91
+msgid "Accounts"
+msgstr "Akun"
+
+#: src/ui/chatty-settings-dialog.ui:105
+msgid "Add new account…"
+msgstr "Tambah akun baru…"
+
+#: src/ui/chatty-settings-dialog.ui:118
+msgid "Privacy"
+msgstr "Privasi"
+
+#: src/ui/chatty-settings-dialog.ui:123
+msgid "Message Receipts"
+msgstr "Pesan Penerimaan"
+
+#: src/ui/chatty-settings-dialog.ui:124
+msgid "Confirm received messages"
+msgstr "Mengonfirmasi pesan yang diterima"
+
+#: src/ui/chatty-settings-dialog.ui:138
+msgid "Message Archive Management"
+msgstr "Manajemen Arsip Pesan"
+
+#: src/ui/chatty-settings-dialog.ui:139
+msgid "Sync conversations with chat server"
+msgstr "Menyinkronkan percakapan dengan server obrolan"
+
+#: src/ui/chatty-settings-dialog.ui:153
+msgid "Message Carbon Copies"
+msgstr "Salinan Karbon Pesan"
+
+#: src/ui/chatty-settings-dialog.ui:168
+msgid "Typing Notification"
+msgstr "Pemberitahuan Pengetikan"
+
+#: src/ui/chatty-settings-dialog.ui:169
+msgid "Send typing messages"
+msgstr "Mengirim pesan pengetikan"
+
+#: src/ui/chatty-settings-dialog.ui:186
+msgid "Chats List"
+msgstr "Daftar Obrolan"
+
+#: src/ui/chatty-settings-dialog.ui:191
+msgid "Indicate Offline Contacts"
+msgstr "Tunjukkan Kontak Luring"
+
+#: src/ui/chatty-settings-dialog.ui:192
+msgid "Grey out avatars from offline contacts"
+msgstr "Jadikan abu-abu avatar dari kontak luring"
+
+#: src/ui/chatty-settings-dialog.ui:206
+msgid "Indicate Idle Contacts"
+msgstr "Indikasikan Kontak Menganggur"
+
+#: src/ui/chatty-settings-dialog.ui:207
+msgid "Blur avatars from idle contacts"
+msgstr "Mengaburkan avatar dari kontak menganggur"
+
+#: src/ui/chatty-settings-dialog.ui:221
+msgid "Indicate Unknown Contacts"
+msgstr "Indikasikan Kontak Tidak Diketahui"
+
+#: src/ui/chatty-settings-dialog.ui:222
+msgid "Color unknown contact ID red"
+msgstr "Warnai merah ID kontak yang tak dikenal"
+
+#: src/ui/chatty-settings-dialog.ui:239
+msgid "Editor"
+msgstr "Penyunting"
+
+#: src/ui/chatty-settings-dialog.ui:244
+msgid "Graphical Emoticons"
+msgstr "Emotikon Grafis"
+
+#: src/ui/chatty-settings-dialog.ui:245
+msgid "Convert ASCII emoticons"
+msgstr "Ubah emotikon ASCII"
+
+#: src/ui/chatty-settings-dialog.ui:259
+msgid "Return = Send Message"
+msgstr "Return = Kirim Pesan"
+
+#: src/ui/chatty-settings-dialog.ui:260
+msgid "Send message with return key"
+msgstr "Kirim pesan dengan tombol return"
+
+#: src/ui/chatty-settings-dialog.ui:311
+msgid "Account ID"
+msgstr "ID Akun"
+
+#: src/ui/chatty-settings-dialog.ui:344
+msgid "Protocol"
+msgstr "Protokol"
+
+#: src/ui/chatty-settings-dialog.ui:402 src/ui/chatty-settings-dialog.ui:649
+msgid "Password"
+msgstr "Kata Sandi"
+
+#: src/ui/chatty-settings-dialog.ui:478
+msgid "Own Fingerprint"
+msgstr "Sidik Jari Sendiri"
+
+#: src/ui/chatty-settings-dialog.ui:532
+msgid "XMPP"
+msgstr "XMPP"
+
+#: src/ui/chatty-settings-dialog.ui:546
+msgid "Matrix"
+msgstr "Matrix"
+
+#: src/ui/chatty-settings-dialog.ui:561
+msgid "Telegram"
+msgstr "Telegram"
+
+#: src/ui/chatty-settings-dialog.ui:624
+msgid "Provider"
+msgstr "Penyedia"
+
+#: src/ui/chatty-window.ui:30
+msgid "About Chats"
+msgstr "Tentang Obrolan"
+
+#: src/ui/chatty-window.ui:58
+msgid "New Message…"
+msgstr "Pesan Baru…"
+
+#: src/ui/chatty-window.ui:71
+msgid "New Group Message…"
+msgstr "Pesan Grup Baru…"
+
+#: src/ui/chatty-window.ui:84
+msgid "New Bulk SMS…"
+msgstr "SMS Massal Baru…"
+
+#: src/ui/chatty-window.ui:176
+msgid "Leave Chat"
+msgstr "Keluar dari Obrolan"
+
+#: src/ui/chatty-window.ui:189
+msgid "Delete Chat"
+msgstr "Hapus Obrolan"
+
+#: src/users/chatty-contact.c:315
+msgid "Mobile: "
+msgstr "Seluler: "
+
+#: src/users/chatty-contact.c:317
+msgid "Work: "
+msgstr "Kantor: "
+
+#: src/users/chatty-contact.c:319
+msgid "Other: "
+msgstr "Lainnya: "

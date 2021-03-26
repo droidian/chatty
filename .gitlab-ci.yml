@@ -19,13 +19,13 @@ before_script:
   - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
   - apt-get -y update
   - apt-get -y build-dep .
-  - apt-get -y install libgtk-3-bin xvfb
 
 build-debian-gcc-buster:
   <<: *tags
   image: debian:buster
   stage: build
   script:
+    - apt-get -y install libgtk-3-bin xvfb
     - export LC_ALL=C.UTF-8
     - meson . _build -Db_coverage=true --werror
     - ninja -C _build
@@ -59,6 +59,7 @@ test:debian-gcc:
   dependencies:
     - build-debian-gcc-buster
   script:
+    - apt-get -y install libgtk-3-bin xvfb
     - export G_DEBUG=fatal-warnings
     - export LC_ALL=C.UTF-8
     - xvfb-run -a -s "-screen 0 1024x768x24" ninja -C _build test
@@ -95,6 +96,7 @@ autopkgtest-debian-buster-package:
   extends: .l5-autopkgtest-debian-package
 
 lintian-debian-buster-package:
+  before_script: []
   dependencies:
     - package:deb-debian-buster
   extends: .l5-lintian-debian-package

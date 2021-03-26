@@ -14,6 +14,10 @@ test_items = [
   'history',
   'settings',
   'utils',
+  'matrix-api',
+  'matrix-db',
+  'matrix-enc',
+  'matrix-utils',
 ]
 
 foreach item: test_items
@@ -24,5 +28,5 @@ foreach item: test_items
     link_with: libchatty.get_static_lib(),
     dependencies: chatty_deps,
   )
-  test(item, t, env: env)
+  test(item, t, env: env, timeout: 120)
 endforeach

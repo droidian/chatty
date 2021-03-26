@@ -32,6 +32,9 @@ struct _ChattyItemClass
   const char      *(*get_name)            (ChattyItem           *self);
   void             (*set_name)            (ChattyItem           *self,
                                            const char           *name);
+  ChattyItemState  (*get_state)           (ChattyItem           *self);
+  void             (*set_state)           (ChattyItem           *self,
+                                           ChattyItemState       state);
   GdkPixbuf       *(*get_avatar)          (ChattyItem           *self);
   void             (*get_avatar_async)    (ChattyItem           *self,
                                            GCancellable         *cancellable,
@@ -61,6 +64,9 @@ int              chatty_item_compare              (ChattyItem          *a,
 const char      *chatty_item_get_name            (ChattyItem           *self);
 void             chatty_item_set_name            (ChattyItem           *self,
                                                   const char           *name);
+ChattyItemState  chatty_item_get_state           (ChattyItem           *self);
+void             chatty_item_set_state           (ChattyItem           *self,
+                                                  ChattyItemState       state);
 GdkPixbuf       *chatty_item_get_avatar          (ChattyItem           *self);
 void             chatty_item_get_avatar_async    (ChattyItem           *self,
                                                   GCancellable         *cancellable,

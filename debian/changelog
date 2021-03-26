@@ -1,3 +1,451 @@
+chatty (0.3.0~beta) experimental; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * history: Remove get_default()
+  * flatpak: Use fallback-x11
+  * flatpak: Remove some dependencies
+  * tests: Use the right schema for history migration tests
+  * various: Handle message content type
+  * user-info-dialog: Handle matrix accounts separately
+  * build: set HAVE_EXPLICIT_BZERO if available
+  * application: Create matrix cache directories on startup
+  * window: Handle pp-chat separately
+  * xep-0352: Handle only pp-account
+  * Add matrix-enums.h
+  * build: Add several dependencies
+  * debian/control: Add several dependencies
+  * Add matrix-utils
+  * tests: Add matrix-utils test
+  * Add chatty-ma-buddy
+  * Add matrix-enc
+  * Add matrix-api
+  * Add matrix-db
+  * Add chatty-ma-chat
+  *  Add chatty-ma-account
+  * Add chatty-secret-store
+  * ma-account: Handle account secrets
+  * secret-store: Add API to load accounts
+  * settings: Add API to enable experimental features
+  * manager: Load matrix accounts
+  * manager: Add API to save and delete matrix accounts
+  * window: Handle deleting matrix chats
+  * window: Show matrix chats
+  * chat-view: Handle matrix chats
+  * settings-dialog: Handle matrix accounts
+  * tests: Add matrix-enc tests
+  * tests: Add matrix-db tests
+  * Update POTFILES
+  * matrix-enc: Ignore encrypted messages with no matching session
+  * avatar: Skip ’@’ for matrix account names
+  * manager: Don't load purple-matrix accounts if native matrix enabled
+  * manager: Update matrix chat list on status change
+  * account: Add API to connect and disconnect
+  * pp-account: Implement connect and disconnect
+  * ma-account: Implement connect and disconnect
+  * ma-account: Update status on connection fail
+  * application: Return active chat only if window is focused
+  * matrix: Allow leaving from a chat
+  * api: Sanitize uri when setting homeserver
+  * tests: Add matrix-api test
+  * matrix-api: Set homeserver with set_homeserver() API
+  * ma-account: Save pickle only if access token present
+  * ma-account: Update connection status on password login
+  * matrix-db: Update existing row when device id is updated
+  * matrix-api: Add more debug messages
+  * ma-chat: Return room id as chat name
+  * history: Save the right name when saving thread
+  * api: Return early on initial sync
+  * ma-account: Connect only if account is enabled
+  * ma-account: Connect after some delay
+  * chat: Add API to load past messages
+  * pp-chat: Implement loading past messages
+  * ma-chat: Implement loading past messages
+  * manager: Use new API to load past messages
+  * chat-view: Use new API to load past messages
+  * window: Use new API to load past messages
+  * various: Remove unused code
+  * history: Add visibility column to threads table
+  * enum: Add ChattyItemState
+  * item: Add API to get and set state
+  * ma-chat: Implement getting and setting state
+  * history: Add API to update chat details
+  * ma-account: Update chat state in history on leaving chat
+  * history: Add API to get all chats of an account
+  * ma-chat: Add API to create new chat
+  * ma-account: Load chat list from db before connecting
+  * matrix-api: Don't load full state if next_batch set
+  * ma-chat: Allow enc to be NULL
+  * ma-account: Add API to add chat
+  * tests: Add tests for new history chat APIs
+  * ma-chat: Implement loading past messages from server
+  * ma-account: Unescape secret strings before use
+  * matrix-api: Increase connections limit
+  * history: Fix possible invalid pointer
+  * history: Load past messages by time
+  * matrix-db: Add API to save/load room details
+  * ma-chat: Save prev-batch details to db
+  * flatpak: Add 'olm' dependency
+  * ma-chat: Save chat after loading room state
+  * ma-chat: Remove unused code
+  * matrix: Implement safe sending of messages
+  * window: Add more debug code and set log domain
+  * window: Update view after leaving matrix room
+  * pp-chat: Update ui_data only if non-NULL
+  * ci: Override global before_script for building packages
+  * Implement new notifications
+  * manager: Use the new notifications
+  * Remove old chatty-notify
+  * ma-account: Use get_chat_name() to get room id
+  * ma-chat: Remove unused code
+  * history: Save and load message status
+  * history: Update thread_members when new message is added
+  * message: Add API to get and set sms id
+  * new-chat-dialog: Hide chats without accounts
+  * chat: Add 'loading-history' property
+  * pp-chat: Notify when loading history
+  * ma-chat: Notify when loading history
+  * chat-view: Show a spinner when loading history
+  * chat-view: Hide empty labels for matrix chat
+  * ma-chat: Repeat loading more items until we have some
+  * chat: Add API to set typing
+  * pp-chat: Implement set_typing()
+  * ma-chat: Implement set_typing()
+  * chat-view: Use new API to set typing
+  * ma-chat: Pass the right variable
+  * Implement custom logger
+  * application: Use the new logger
+  * application: Use ’v’ as the short name for ’verbose’
+  * log: Always show logs if domain is “all”
+  * matrix: Prefix log domain with 'chatty'
+  * history: Don't warn if message type is unknown
+  * matrix-api: Set high priority for sync request
+  * ma-account: Connect only if network is available
+  * application: Show version info on debug output
+  * matrix-api: Improve debug logs
+  * ma-chat: Improve debug logs
+  * ma-account: Improve debug logs
+  * message: Add API to set sender
+  * chat: Add API to send message
+  * history: Remove get_default()
+  * flatpak: Use fallback-x11
+  * flatpak: Remove some dependencies
+  * tests: Use the right schema for history migration tests
+  * various: Handle message content type
+  * user-info-dialog: Handle matrix accounts separately
+  * build: set HAVE_EXPLICIT_BZERO if available
+  * application: Create matrix cache directories on startup
+  * window: Handle pp-chat separately
+  * xep-0352: Handle only pp-account
+  * Add matrix-enums.h
+  * build: Add several dependencies
+  * debian/control: Add several dependencies
+  * Add matrix-utils
+  * tests: Add matrix-utils test
+  * Add chatty-ma-buddy
+  * Add matrix-enc
+  * Add matrix-api
+  * Add matrix-db
+  * Add chatty-ma-chat
+  *  Add chatty-ma-account
+  * Add chatty-secret-store
+  * ma-account: Handle account secrets
+  * secret-store: Add API to load accounts
+  * settings: Add API to enable experimental features
+  * manager: Load matrix accounts
+  * manager: Add API to save and delete matrix accounts
+  * window: Handle deleting matrix chats
+  * window: Show matrix chats
+  * chat-view: Handle matrix chats
+  * settings-dialog: Handle matrix accounts
+  * tests: Add matrix-enc tests
+  * tests: Add matrix-db tests
+  * Update POTFILES
+  * matrix-enc: Ignore encrypted messages with no matching session
+  * avatar: Skip ’@’ for matrix account names
+  * manager: Don't load purple-matrix accounts if native matrix enabled
+  * manager: Update matrix chat list on status change
+  * account: Add API to connect and disconnect
+  * pp-account: Implement connect and disconnect
+  * ma-account: Implement connect and disconnect
+  * ma-account: Update status on connection fail
+  * application: Return active chat only if window is focused
+  * matrix: Allow leaving from a chat
+  * api: Sanitize uri when setting homeserver
+  * tests: Add matrix-api test
+  * matrix-api: Set homeserver with set_homeserver() API
+  * ma-account: Save pickle only if access token present
+  * ma-account: Update connection status on password login
+  * matrix-db: Update existing row when device id is updated
+  * matrix-api: Add more debug messages
+  * ma-chat: Return room id as chat name
+  * history: Save the right name when saving thread
+  * api: Return early on initial sync
+  * ma-account: Connect only if account is enabled
+  * ma-account: Connect after some delay
+  * chat: Add API to load past messages
+  * pp-chat: Implement loading past messages
+  * ma-chat: Implement loading past messages
+  * manager: Use new API to load past messages
+  * chat-view: Use new API to load past messages
+  * window: Use new API to load past messages
+  * various: Remove unused code
+  * history: Add visibility column to threads table
+  * enum: Add ChattyItemState
+  * item: Add API to get and set state
+  * ma-chat: Implement getting and setting state
+  * history: Add API to update chat details
+  * ma-account: Update chat state in history on leaving chat
+  * history: Add API to get all chats of an account
+  * ma-chat: Add API to create new chat
+  * ma-account: Load chat list from db before connecting
+  * matrix-api: Don't load full state if next_batch set
+  * ma-chat: Allow enc to be NULL
+  * ma-account: Add API to add chat
+  * tests: Add tests for new history chat APIs
+  * ma-chat: Implement loading past messages from server
+  * ma-account: Unescape secret strings before use
+  * matrix-api: Increase connections limit
+  * history: Fix possible invalid pointer
+  * history: Load past messages by time
+  * matrix-db: Add API to save/load room details
+  * ma-chat: Save prev-batch details to db
+  * flatpak: Add 'olm' dependency
+  * ma-chat: Save chat after loading room state
+  * ma-chat: Remove unused code
+  * matrix: Implement safe sending of messages
+  * window: Add more debug code and set log domain
+  * window: Update view after leaving matrix room
+  * pp-chat: Update ui_data only if non-NULL
+  * ci: Override global before_script for building packages
+  * Implement new notifications
+  * manager: Use the new notifications
+  * Remove old chatty-notify
+  * ma-account: Use get_chat_name() to get room id
+  * ma-chat: Remove unused code
+  * history: Save and load message status
+  * history: Update thread_members when new message is added
+  * message: Add API to get and set sms id
+  * new-chat-dialog: Hide chats without accounts
+  * chat: Add 'loading-history' property
+  * pp-chat: Notify when loading history
+  * ma-chat: Notify when loading history
+  * chat-view: Show a spinner when loading history
+  * chat-view: Hide empty labels for matrix chat
+  * ma-chat: Repeat loading more items until we have some
+  * chat: Add API to set typing
+  * pp-chat: Implement set_typing()
+  * ma-chat: Implement set_typing()
+  * chat-view: Use new API to set typing
+  * ma-chat: Pass the right variable
+  * Implement custom logger
+  * application: Use the new logger
+  * application: Use ’v’ as the short name for ’verbose’
+  * log: Always show logs if domain is “all”
+  * matrix: Prefix log domain with 'chatty'
+  * history: Don't warn if message type is unknown
+  * matrix-api: Set high priority for sync request
+  * ma-account: Connect only if network is available
+  * application: Show version info on debug output
+  * matrix-api: Improve debug logs
+  * ma-chat: Improve debug logs
+  * ma-account: Improve debug logs
+  * message: Add API to set sender
+  * chat: Add API to send message
+  * pp-chat: Implement send_message_async()
+  * ma-chat: Implement send_message_async()
+  * chat-view: Use the new API to send message
+  * ma-chat: Remove unused code
+  * manager: Unload purple-matrix plugin if experimental features are enabled
+  * ma-chat: Avoid logging excessively verbose details
+  * ma-account: Fix possible invalid free
+  * matrix-api: Silence a compiler warning
+  * icons: Silence a compiler warning
+  * manager: Silence a compiler warning
+  * message-row: Fix compiler warnings
+  * message-row: Fix possible dereferencing of invalid pointer
+  * utils: Silence a compiler warning
+  * secret-store: Fix a use after free
+  * chat-view: Handle purple sms message only if conv is non-NULL
+  * contrib: Drop use of volatile
+  * application: Fix a memory leak
+  * contact: Fix memory leak
+  * contact-provider: Fix various memory leaks
+  * manager: Fix memory leaks
+  * secret-store: Fix a memory leak
+  * matrix-enc: Add more debug code
+  * matrix-api: Improve debug experience
+  * matrix-api: Reconnect on recoverable network failures
+  * ma-account: Update connection status on network issues
+  * matrix-api: Improve debug
+  * ma-chat: Improve debug
+  * ma-chat: Improve debug log
+  * matrix-api: Improve debug log
+  * ma-account: Improve debug log
+  * matrix-enc: Return NULL if pickle is invalid
+  * matrix-enc: Fix a double free
+  * log: Rewrite log writer
+  * matrix-enc: Improve debug log
+  * matrix-api: Improve debug log
+  * ma-account: Improve debug log
+  * matrix-enc: Generate new pickle key when keys are renewed
+  * matrix-enc: Allow user_id to be null
+  * message: Add API to add files from file name
+  * various: Use the new API to set files
+  * message: Free files on finalize()
+  * matrix-api: Get list of joined rooms before sync
+  * ma-account: Fix populating chat list
+  * ma-chat: Implement get_last_msg_time()
+  * ma-account: Emit chat changed on new messages
+  * ma-chat: Save generated name to db
+  * log: colorize log domain in logs
+  * history: Set message author for matrix chats
+  * matrix-enc: Fix some memory leaks
+  * matrix-enc: Fix last commit
+  * matrix-enc: Fix some memory leaks
+  * matrix-enc: Remove a debug code
+  * matrix-enc: Check if matrix-db is NULL before using
+  * matrix-enc: Override the right method
+  * matrix-enc: Fix cache and lookup of incoming olm sessions
+  * matrix-enc: Remove old keys only when creating new sessions
+  * matrix-enc: Fix a possible double free
+  * tests: Fix matrix-enc test to work with olm3
+  * matrix-api: Fix some memory leaks
+  * log: Use atexit() for cleanup
+  * application: Fix parsing "debug" argument
+  * application: Use g_autofree to free a variable
+  * application: Use g_autoptr() to free css provider
+  * chat-view: Use g_autofree() to free variables
+  * icons: Use g_auto to free variables
+  * window: Use g_autofree to free a variable
+  * settings-dialog: Use g_autoptr for cleanups
+  * various: Remove unused code
+  * new-chat-dialog: Create row only if supported
+  * new-chat-dialog: Allow activating account item from list
+  * new-chat-dialog: Fix account type
+  * new-chat-dialog: Don't list native matrix accounts
+  * chat-view: Add a button to scroll to bottom
+  * manager: Pass the right enum type to sort chat
+  * window: Fix empty view
+  * matrix-enc: Handle normal encrypted messages
+  * Be less verbose when logging
+  * Recover on json parse error
+  * matrix-utils: Return the right error on timeout
+  * history: Fix argument check
+  * history: Return task error on failures
+  * history: Improve error messages
+  * chat: Add API to get/set chat topic
+  * pp-chat: Implement get/set chat topic
+  * pp-chat: Implement get_status()
+  * pp-chat: Improve has_encryption_support()
+  * pp-chat: Pass encryption status when creating chat
+  * pp-chat: Add API to get notification settings
+  * pp-chat: Add API to get show status settings
+  * Add unified info dialog
+  * window: Use the new unified info dialog
+  * Remove no longer used code
+  * window: Don't scroll search bar
+  * window: Add Control+F shortcut to toggle search
+  * pp-buddy: Return ChattyAccount on get_account()
+  * pp-buddy: Remove unused code
+  * manager: List loaded purple plugins in debug log
+  * window: Use non purple API to get phone number
+  * settings-dialog: Don't update username when saving account
+  * settings-dialog: Use A GtkLabel to show username
+  * manager: Load accounts after loading plugins
+  * pp-account: pass encryption support as argument
+  * account: Add API to get fingerprints
+  * account: Add API to get device fingerprint
+  * pp-account: Implement APIs to get fingerprints
+  * Add ChattyFpRow
+  * settings-dialog: Use new ChattyFpRow
+  * fp-row: Improve breaking fingerprint into lines
+  * ma-account: Implement getting device fingerprint
+  * message-row: Style quotes in replies differently
+  * message-row: Always use markup to set message
+  * chat: Add API to invite buddy
+  * pp-chat: Implement invite()
+  * info-dialog: Use the new ChattyChat API to invite
+  * contact-provider: Add a way store contacts over dbus
+  * window: Use the new API to save contacts
+  * Remove no longer used code
+  * log: Add more log verbosity level
+  * manager: Enable notification for new buddy conversations
+  * pp-chat: Add API to hide/show status messages
+  * info-dialog: Use the new API to hide/show status messages
+  * manager: Print purple plugin version in logs
+  * pp-chat: Implement API to load fingerprints
+  * info-dialog: Use the new API to list fingerprints
+  * utils: Remove no longer used code
+  * info-dialog: Fix member count string
+  * window: Update copyright year
+  * new-muc-dialog: Allow clicking account items
+  * info-dialog: Hide encrypt switch for matrix accounts
+  * ci: Fix 'before_script' for buster packages
+  * matrix-db: Match device when loading account
+  * tests: Set timeout to 120 seconds
+
+  [ Julian Sparber ]
+  * Flatpak: fix manifest
+  * Flatpak: fix and update libphonenumber module
+  * Flatpak: remove java dep
+  * Flatpak: add folks
+  * Flatpak: Add more files to cleanups
+  * Flatpak: manually run some cleanups for ci
+  * Flatpak: remove unneeded options from  manifest
+  * Flatpak: bump libical and set libhandy to v0.0.12
+  * flatpak: add libfeedback as allowed --talk-name
+  * Flatpak: fix manifest
+  * Flatpak: fix and update libphonenumber module
+  * Flatpak: remove java dep
+  * Flatpak: add folks
+  * Flatpak: Add more files to cleanups
+  * Flatpak: manually run some cleanups for ci
+  * Flatpak: remove unneeded options from  manifest
+  * Flatpak: bump libical and set libhandy to v0.0.12
+  * flatpak: add libfeedback as allowed --talk-name
+
+  [ Christopher Davis ]
+  * flatpak: Update config opts for dependencies and add libfeedback
+  * flatpak: Update config opts for dependencies and add libfeedback
+
+  [ Andika Triwidada ]
+  * Added Indonesian translation
+  * Added Indonesian translation
+
+  [ fabrixxm ]
+  * xep-0313: Add message to history only if conv is not NULL
+  * xep-0313: Add message to history only if conv is not NULL
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+
+  [ Timo Jyrinki ]
+  * po: Updated Finnish translation from JRfi
+  * po: Updated Finnish translation from JRfi
+
+  [ Chris T ]
+  * message: Add API to set multiple files
+
+  [ Pierre Michel Augustin ]
+  * po: Add Creole Haitian translation
+
+  [ Balázs Meskó ]
+  * Update Hungarian translation
+
+  [ Emin Tufan Çetin ]
+  * po: Update Turkish translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Thu, 25 Mar 2021 13:38:15 +0530
+
 chatty (0.2.0) amber-phone; urgency=high
 
   [ Mohammed Sadiq ]

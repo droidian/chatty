@@ -556,3 +556,20 @@ chatty_settings_set_country_iso_code (ChattySettings *self,
   self->country_code = g_strdup (country_code);
   g_settings_set (G_SETTINGS (self->settings), "country-code", "s", country_code);
 }
+
+gboolean
+chatty_settings_get_experimental_features (ChattySettings *self)
+{
+  g_return_val_if_fail (CHATTY_IS_SETTINGS (self), FALSE);
+
+  return g_settings_get_boolean (G_SETTINGS (self->settings), "experimental-features");
+}
+
+void
+chatty_settings_enable_experimental_features (ChattySettings *self,
+                                              gboolean        enable)
+{
+  g_return_if_fail (CHATTY_IS_SETTINGS (self));
+
+  g_settings_set_boolean (G_SETTINGS (self->settings), "experimental-features", !!enable);
+}

@@ -480,23 +480,19 @@ chatty_pp_buddy_get_object (PurpleBuddy *buddy)
   return node->ui_data;
 }
 
-PurpleAccount *
+ChattyAccount *
 chatty_pp_buddy_get_account (ChattyPpBuddy *self)
 {
+  PurpleAccount *account;
+
   g_return_val_if_fail (CHATTY_IS_PP_BUDDY (self), NULL);
 
   if (self->chat_buddy && self->conv)
-    return self->conv->account;
+    account = self->conv->account;
+  else
+    account = purple_buddy_get_account (self->pp_buddy);
 
-  return purple_buddy_get_account (self->pp_buddy);
-}
-
-PurpleConversation *
-chatty_pp_buddy_get_chat (ChattyPpBuddy *self)
-{
-  g_return_val_if_fail (CHATTY_IS_PP_BUDDY (self), NULL);
-
-  return self->conv;
+  return CHATTY_ACCOUNT (chatty_pp_account_get_object (account));
 }
 
 void

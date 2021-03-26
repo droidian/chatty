@@ -34,5 +34,11 @@ void           chatty_eds_open_contacts_app        (ChattyEds            *self,
 gboolean       chatty_eds_open_contacts_app_finish (ChattyEds            *self,
                                                     GAsyncResult         *result,
                                                     GError              **error);
+void           chatty_eds_write_contact_async      (const char           *name,
+                                                    const char           *phone_number,
+                                                    GAsyncReadyCallback   callback,
+                                                    gpointer              user_data);
+gboolean       chatty_eds_write_contact_finish     (GAsyncResult         *result,
+                                                    GError              **error);
 
 G_END_DECLS

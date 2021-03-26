@@ -9,16 +9,24 @@ CREATE TABLE files (
   mime_type TEXT,
   size INTEGER
 );
+CREATE TABLE media (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL UNIQUE,
+  thumbnail_id INTEGER REFERENCES media(id),
+  width INTEGER,
+  height INTEGER,
+  FOREIGN KEY(file_id) REFERENCES files(id)
+);
 CREATE TABLE users (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL,
-  alias TEXT, avatar_id INTEGER REFERENCES files(id),
-  thumbnail_id INTEGER REFERENCES files(id),
+  alias TEXT,
+  avatar_id INTEGER REFERENCES media(id),
   type INTEGER NOT NULL,
   UNIQUE (username, type)
 );
-INSERT INTO users VALUES(1,'SMS',NULL,NULL,NULL,1);
-INSERT INTO users VALUES(2,'MMS',NULL,NULL,NULL,1);
+INSERT INTO users VALUES(1,'SMS',NULL,NULL,1);
+INSERT INTO users VALUES(2,'MMS',NULL,NULL,1);
 CREATE TABLE accounts (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id),
@@ -33,6 +41,7 @@ CREATE TABLE threads (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   alias TEXT,
+  avatar_id INTEGER REFERENCES media(id),
   account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   type INTEGER NOT NULL,
   encrypted INTEGER DEFAULT 0,
@@ -58,28 +67,20 @@ CREATE TABLE messages (
   encrypted INTEGER DEFAULT 0,
   UNIQUE (uid, thread_id, body, time)
 );
-CREATE TABLE media (
-  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  file_id INTEGER NOT NULL UNIQUE,
-  thumbnail_id INTEGER REFERENCES media(id),
-  width INTEGER,
-  height INTEGER,
-  FOREIGN KEY(file_id) REFERENCES files(id)
-);
 ALTER TABLE threads ADD COLUMN last_read_id INTEGER REFERENCES messages(id);
 
-INSERT INTO users VALUES(3,'New Person','New Person',NULL,NULL,1);
-INSERT INTO users VALUES(4,'+19876543210',NULL,NULL,NULL,1);
-INSERT INTO users VALUES(5,'+19812121212',NULL,NULL,NULL,1);
-INSERT INTO users VALUES(6,'Random Person','Random Person',NULL,NULL,1);
-INSERT INTO users VALUES(7,'Bob','Bob',NULL,NULL,1);
+INSERT INTO users VALUES(3,'New Person','New Person',NULL,1);
+INSERT INTO users VALUES(4,'+19876543210',NULL,NULL,1);
+INSERT INTO users VALUES(5,'+19812121212',NULL,NULL,1);
+INSERT INTO users VALUES(6,'Random Person','Random Person',NULL,1);
+INSERT INTO users VALUES(7,'Bob','Bob',NULL,1);
 
 INSERT INTO accounts VALUES(3,4,NULL,0,5);
 INSERT INTO accounts VALUES(4,5,NULL,0,5);
 
-INSERT INTO threads VALUES(1,'Random room','Random room',4,1,0,NULL);
-INSERT INTO threads VALUES(2,'Random room','Random room',3,1,0,NULL);
-INSERT INTO threads VALUES(3,'Another Room@example.com','Another Room@example.com',3,1,0,NULL);
+INSERT INTO threads VALUES(1,'Random room','Random room',NULL,4,1,0,NULL);
+INSERT INTO threads VALUES(2,'Random room','Random room',NULL,3,1,0,NULL);
+INSERT INTO threads VALUES(3,'Another Room@example.com','Another Room@example.com',NULL,3,1,0,NULL);
 
 INSERT INTO thread_members VALUES(1,1,3);
 INSERT INTO thread_members VALUES(2,2,3);

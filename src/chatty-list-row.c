@@ -233,7 +233,6 @@ list_row_user_flag_to_str (ChattyUserFlag flags)
 static void
 chatty_list_row_update (ChattyListRow *self)
 {
-  PurpleAccount *pp_account;
   const char *subtitle = NULL;
 
   g_assert (CHATTY_IS_LIST_ROW (self));
@@ -241,8 +240,10 @@ chatty_list_row_update (ChattyListRow *self)
 
   if (CHATTY_IS_PP_BUDDY (self->item)) {
     if (chatty_pp_buddy_get_buddy (CHATTY_PP_BUDDY (self->item))) { /* Buddy in contact list */
-      pp_account = chatty_pp_buddy_get_account (CHATTY_PP_BUDDY (self->item));
-      subtitle = purple_account_get_username (pp_account);
+      ChattyAccount *account;
+
+      account = chatty_pp_buddy_get_account (CHATTY_PP_BUDDY (self->item));
+      subtitle = chatty_account_get_username (account);
     } else { /* Buddy in chat list */
       g_autofree char *markup = NULL;
       ChattyUserFlag flag;

@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <handy.h>
+
 #include "chatty-item.h"
 #include "chatty-enums.h"
 
@@ -31,6 +33,9 @@ struct _ChattyAccountClass
   gboolean     (*get_enabled)           (ChattyAccount *self);
   void         (*set_enabled)           (ChattyAccount *self,
                                          gboolean       enable);
+  void         (*connect)               (ChattyAccount *self,
+                                         gboolean       delay);
+  void         (*disconnect)            (ChattyAccount *self);
   const char  *(*get_password)          (ChattyAccount *self);
   void         (*set_password)          (ChattyAccount *self,
                                          const char    *password);
@@ -39,6 +44,14 @@ struct _ChattyAccountClass
                                          gboolean       remember);
   void         (*save)                  (ChattyAccount *self);
   void         (*delete)                (ChattyAccount *self);
+  HdyValueObject *(*get_device_fp)      (ChattyAccount *self);
+  GListModel  *(*get_fp_list)           (ChattyAccount *self);
+  void         (*load_fp_async)         (ChattyAccount *self,
+                                         GAsyncReadyCallback callback,
+                                         gpointer       user_data);
+  gboolean     (*load_fp_finish)        (ChattyAccount *self,
+                                         GAsyncResult  *result,
+                                         GError       **error);
 };
 
 
@@ -51,6 +64,9 @@ GListModel   *chatty_account_get_buddies           (ChattyAccount *self);
 gboolean      chatty_account_get_enabled           (ChattyAccount *self);
 void          chatty_account_set_enabled           (ChattyAccount *self,
                                                     gboolean       enable);
+void          chatty_account_connect               (ChattyAccount *self,
+                                                    gboolean       delay);
+void          chatty_account_disconnect            (ChattyAccount *self);
 const char   *chatty_account_get_password          (ChattyAccount *self);
 void          chatty_account_set_password          (ChattyAccount *self,
                                                     const char    *password);
@@ -59,5 +75,13 @@ void          chatty_account_set_remember_password (ChattyAccount *self,
                                                     gboolean       remember);
 void          chatty_account_save                  (ChattyAccount *self);
 void          chatty_account_delete                (ChattyAccount *self);
+HdyValueObject *chatty_account_get_device_fp       (ChattyAccount *self);
+GListModel   *chatty_account_get_fp_list           (ChattyAccount *self);
+void          chatty_account_load_fp_async         (ChattyAccount *self,
+                                                    GAsyncReadyCallback callback,
+                                                    gpointer       user_data);
+gboolean      chatty_account_load_fp_finish        (ChattyAccount *self,
+                                                    GAsyncResult  *result,
+                                                    GError       **error);
 
 G_END_DECLS
