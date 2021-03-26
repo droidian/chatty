@@ -14,3 +14,8 @@ override_dh_installman:
 	help2man --no-info --name "XMPP and SMS messaging" --section=1 \
 		debian/chatty/usr/bin/chatty > \
 		debian/chatty/usr/share/man/man1/chatty.1
+
+# otherwise the tests running gtk-builder-tool to validate
+# .ui files might fail
+override_dh_auto_test:
+	xvfb-run dh_auto_test
