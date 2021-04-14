@@ -1,5 +1,6 @@
 include:
  - 'https://source.puri.sm/Librem5/librem5-ci/raw/master/librem5-pipeline-definitions.yml'
+ - 'https://source.puri.sm/Librem5/librem5-ci/raw/master/librem5-pipeline-byzantium-jobs.yml'
 
 stages:
   - build
@@ -14,38 +15,14 @@ stages:
 before_script:
   - export DEBIAN_FRONTEND=noninteractive
   - apt-get -y update
-  - apt-get -y install build-essential wget ca-certificates gnupg lcov
-  - echo "deb http://ci.puri.sm/ scratch librem5" > /etc/apt/sources.list.d/ci.list
-  - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
-  - apt-get -y update
-  - apt-get -y build-dep .
 
-build-debian-gcc-buster:
+build-pureos-gcc-byzantium:
   <<: *tags
-  image: debian:buster
+  image: pureos/byzantium
   stage: build
   script:
-    - apt-get -y install libgtk-3-bin xvfb
-    - export LC_ALL=C.UTF-8
-    - meson . _build -Db_coverage=true --werror
-    - ninja -C _build
-  artifacts:
-    paths:
-      - _build
-
-build-debian-gcc-bullseye:
-  <<: *tags
-  image: debian:bullseye
-  stage: build
-  before_script:
-    - export DEBIAN_FRONTEND=noninteractive
-    - apt-get -y update
-    - apt-get -y install build-essential wget ca-certificates gnupg lcov
-    - echo "deb http://ci.puri.sm/ bullseyeci main" > /etc/apt/sources.list.d/ci.list
-    - wget -O- https://ci.puri.sm/ci-repo.key | apt-key add -
-    - apt-get -y update
     - apt-get -y build-dep .
-  script:
+    - apt-get -y install libgtk-3-bin xvfb
     - export LC_ALL=C.UTF-8
     - meson . _build -Db_coverage=true --werror
     - ninja -C _build
@@ -56,10 +33,12 @@ build-debian-gcc-bullseye:
 test:debian-gcc:
   <<: *tags
   stage: test
+  image: pureos/byzantium
   dependencies:
-    - build-debian-gcc-buster
+    - build-pureos-gcc-byzantium
   script:
-    - apt-get -y install libgtk-3-bin xvfb
+    - apt-get -y build-dep .
+    - apt-get -y install libgtk-3-bin xvfb lcov
     - export G_DEBUG=fatal-warnings
     - export LC_ALL=C.UTF-8
     - xvfb-run -a -s "-screen 0 1024x768x24" ninja -C _build test
@@ -71,7 +50,7 @@ check-po:
   stage: test
   image: debian:bullseye
   dependencies:
-    - build-debian-gcc-buster
+    - build-pureos-gcc-byzantium
   before_script:
     - apt-get -y update
     - apt-get -y install intltool
@@ -81,23 +60,3 @@ check-po:
     # in this case
     - cd po/
     - intltool-update -m 2>&1 | grep -qs '/.*\.c' && { intltool-update -m; exit 1; } || exit 0
-
-package:deb-debian-buster:
-  extends: .l5-build-debian-package
-
-package:deb-debian-buster:arm64:
-  tags:
-    - librem5:arm64
-  extends: .l5-build-debian-package
-
-autopkgtest-debian-buster-package:
-  dependencies:
-    - package:deb-debian-buster
-  extends: .l5-autopkgtest-debian-package
-
-lintian-debian-buster-package:
-  before_script: []
-  dependencies:
-    - package:deb-debian-buster
-  extends: .l5-lintian-debian-package
-

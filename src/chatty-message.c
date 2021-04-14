@@ -36,7 +36,6 @@ struct _ChattyMessage
   char            *uid;
   char            *id;
 
-  ChattyFileInfo  *file;
   ChattyFileInfo  *preview;
   GList           *files;
 
@@ -149,24 +148,6 @@ chatty_message_set_encrypted (ChattyMessage *self,
   g_return_if_fail (CHATTY_IS_MESSAGE (self));
 
   self->encrypted = !!is_encrypted;
-}
-
-ChattyFileInfo *
-chatty_message_get_file (ChattyMessage *self)
-{
-  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
-
-  return self->file;
-}
-
-void
-chatty_message_set_file (ChattyMessage  *self,
-                         ChattyFileInfo *file)
-{
-  g_return_if_fail (CHATTY_IS_MESSAGE (self));
-  g_return_if_fail (!self->file);
-
-  self->file = file;
 }
 
 /**

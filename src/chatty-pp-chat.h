@@ -26,8 +26,11 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (ChattyPpChat, chatty_pp_chat, CHATTY, PP_CHAT, ChattyChat)
 
+ChattyChat         *chatty_pp_chat_get_object             (PurpleChat         *pp_chat);
 ChattyPpChat       *chatty_pp_chat_new_im_chat            (PurpleAccount      *account,
                                                            PurpleBuddy        *buddy,
+                                                           gboolean            supports_encryption);
+ChattyPpChat       *chatty_pp_chat_new_buddy_chat         (ChattyPpBuddy      *buddy,
                                                            gboolean            supports_encryption);
 ChattyPpChat       *chatty_pp_chat_new_purple_chat        (PurpleChat         *pp_chat,
                                                            gboolean            supports_encryption);
@@ -39,8 +42,11 @@ ChattyProtocol      chatty_pp_chat_get_protocol           (ChattyPpChat       *s
 PurpleChat         *chatty_pp_chat_get_purple_chat        (ChattyPpChat       *self);
 PurpleBuddy        *chatty_pp_chat_get_purple_buddy       (ChattyPpChat       *self);
 PurpleConversation *chatty_pp_chat_get_purple_conv        (ChattyPpChat       *self);
+void                chatty_pp_chat_show_file_upload       (ChattyPpChat       *self);
 gboolean            chatty_pp_chat_are_same               (ChattyPpChat       *a,
                                                            ChattyPpChat       *b);
+gboolean            chatty_pp_chat_run_command            (ChattyPpChat       *self,
+                                                           const char         *command);
 gboolean            chatty_pp_chat_match_purple_conv      (ChattyPpChat       *self,
                                                            PurpleConversation *conv);
 ChattyMessage      *chatty_pp_chat_find_message_with_id   (ChattyPpChat       *self,
@@ -79,6 +85,14 @@ const char         *chatty_pp_chat_get_status             (ChattyPpChat       *s
 gboolean            chatty_pp_chat_get_auto_join          (ChattyPpChat       *self);
 void                chatty_pp_chat_set_buddy_typing       (ChattyPpChat       *self,
                                                            gboolean            is_typing);
+void                chatty_pp_chat_join                   (ChattyPpChat       *self);
+void                chatty_pp_chat_leave                  (ChattyPpChat       *self);
 void                chatty_pp_chat_delete                 (ChattyPpChat       *self);
+void                chatty_pp_chat_save_to_contacts_async (ChattyPpChat       *self,
+                                                           GAsyncReadyCallback callback,
+                                                           gpointer            user_data);
+gboolean            chatty_pp_chat_save_to_contacts_finish (ChattyPpChat       *self,
+                                                            GAsyncResult       *result,
+                                                            GError            **error);
 
 G_END_DECLS

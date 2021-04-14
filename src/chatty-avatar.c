@@ -13,7 +13,6 @@
 # include "config.h"
 #endif
 
-#include <purple.h>
 #include <math.h>
 
 #include "users/chatty-pp-buddy.h"
@@ -155,21 +154,8 @@ chatty_avatar_draw_label (ChattyAvatar *self,
   guint size;
   gboolean blur = FALSE;
 
-  if (CHATTY_IS_PP_BUDDY (self->item) || CHATTY_IS_PP_CHAT (self->item)) {
-    PurpleBuddy *buddy;
-    gboolean should_blur;
-
-    if (CHATTY_IS_PP_BUDDY (self->item))
-      buddy = chatty_pp_buddy_get_buddy (CHATTY_PP_BUDDY (self->item));
-    else
-      buddy = chatty_pp_chat_get_purple_buddy (CHATTY_PP_CHAT (self->item));
-
-    should_blur = chatty_settings_get_greyout_offline_buddies (chatty_settings_get_default ());
-
-    if (should_blur && buddy)
-      blur = !PURPLE_BUDDY_IS_ONLINE(buddy);
-  } else if (CHATTY_IS_CONTACT (self->item) &&
-             chatty_contact_is_dummy (CHATTY_CONTACT (self->item))) {
+  if (CHATTY_IS_CONTACT (self->item) &&
+      chatty_contact_is_dummy (CHATTY_CONTACT (self->item))) {
     /*
      * Dummy contact is used as a placeholder to create new contacts,
      * So the avatar is always blurred with a ‘+’ symbol on it.
@@ -364,8 +350,6 @@ chatty_avatar_set_item (ChattyAvatar *self,
                         "swapped-object-signal::notify::indicate-unknown-contacts",
                         G_CALLBACK (gtk_widget_queue_draw), self,
                         "swapped-object-signal::notify::blur-idle-buddies",
-                        G_CALLBACK (gtk_widget_queue_draw), self,
-                        "swapped-object-signal::notify::greyout-offline-buddies",
                         G_CALLBACK (gtk_widget_queue_draw), self,
                         NULL);
     }

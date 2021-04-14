@@ -140,6 +140,9 @@ message_row_update_quotes (ChattyMessageRow *self)
       attribute->start_index = quote - text;
       attribute->end_index = end - text + 1;
       pango_attr_list_insert (list, attribute);
+    } else if (quote && *quote) {
+      /* Move forward one character if '>' happend midst a line */
+      end = end + 1;
     }
   } while (quote && *quote);
 }

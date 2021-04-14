@@ -82,6 +82,12 @@ chatty_chat_real_is_im (ChattyChat *self)
   return priv->is_im;
 }
 
+static gboolean
+chatty_chat_real_has_file_upload (ChattyChat *self)
+{
+  return FALSE;
+}
+
 static const char *
 chatty_chat_real_get_chat_name (ChattyChat *self)
 {
@@ -346,6 +352,7 @@ chatty_chat_class_init (ChattyChatClass *klass)
 
   klass->set_data = chatty_chat_real_set_data;
   klass->is_im = chatty_chat_real_is_im;
+  klass->has_file_upload = chatty_chat_real_has_file_upload;
   klass->get_chat_name = chatty_chat_real_get_chat_name;
   klass->get_username = chatty_chat_real_get_username;
   klass->get_account = chatty_chat_real_get_account;
@@ -453,6 +460,14 @@ chatty_chat_is_im (ChattyChat *self)
   g_return_val_if_fail (CHATTY_IS_CHAT (self), FALSE);
 
   return CHATTY_CHAT_GET_CLASS (self)->is_im (self);
+}
+
+gboolean
+chatty_chat_has_file_upload (ChattyChat *self)
+{
+  g_return_val_if_fail (CHATTY_IS_CHAT (self), FALSE);
+
+  return CHATTY_CHAT_GET_CLASS (self)->has_file_upload (self);
 }
 
 /**
