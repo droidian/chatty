@@ -18,15 +18,6 @@
 G_BEGIN_DECLS
 
 typedef enum {
-  CHATTY_MSG_TYPE_UNKNOWN,
-  CHATTY_MSG_TYPE_IM,
-  CHATTY_MSG_TYPE_IM_E2EE,
-  CHATTY_MSG_TYPE_MUC,
-  CHATTY_MSG_TYPE_SMS,
-  CHATTY_MSG_TYPE_LAST
-} e_msg_type;
-
-typedef enum {
   ADD_MESSAGE_ON_BOTTOM,
   ADD_MESSAGE_ON_TOP,
 } e_msg_pos;
@@ -42,7 +33,5 @@ void        chatty_chat_view_purple_uninit (void);
 void        chatty_chat_view_set_chat (ChattyChatView *self,
                                        ChattyChat     *chat);
 ChattyChat *chatty_chat_view_get_chat (ChattyChatView *self);
-void        chatty_chat_view_load     (ChattyChatView *self,
-                                       guint           limit);
 
 G_END_DECLS

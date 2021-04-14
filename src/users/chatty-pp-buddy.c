@@ -367,7 +367,7 @@ static void
 chatty_pp_buddy_constructed (GObject *object)
 {
   ChattyPpBuddy *self = (ChattyPpBuddy *)object;
-  ChattyPpAccount *account;
+  ChattyAccount *account;
   GListModel *model;
   gboolean has_pp_buddy;
 
@@ -388,7 +388,7 @@ chatty_pp_buddy_constructed (GObject *object)
   g_object_add_weak_pointer (G_OBJECT (self), (gpointer *)&PURPLE_BLIST_NODE (self->pp_buddy)->ui_data);
 
   account = self->pp_buddy->account->ui_data;
-  model = chatty_pp_account_get_buddy_list (account);
+  model = chatty_account_get_buddies (account);
   g_list_store_append (G_LIST_STORE (model), self);
 
   if (!has_pp_buddy)

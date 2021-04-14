@@ -18,6 +18,7 @@
 #include "matrix/matrix-utils.h"
 #include "matrix/chatty-ma-account.h"
 #include "chatty-secret-store.h"
+#include "chatty-log.h"
 
 #define PROTOCOL_MATRIX_STR  "matrix"
 
@@ -116,6 +117,7 @@ secret_load_cb (GObject      *object,
   g_assert_true (G_IS_TASK (task));
 
   secrets = secret_service_search_finish (NULL, result, &error);
+  CHATTY_TRACE_MSG ("secret accounts loaded, has-error: %d", !!error);
 
   if (error) {
     g_task_return_error (task, error);
@@ -129,7 +131,9 @@ secret_load_cb (GObject      *object,
       accounts = g_ptr_array_new_full (5, g_object_unref);
 
     account = chatty_ma_account_new_secret (item->data);
-    g_ptr_array_insert (accounts, -1, account);
+
+    if (account)
+      g_ptr_array_insert (accounts, -1, account);
   }
 
   if (secrets)
@@ -153,6 +157,7 @@ chatty_secret_load_async  (GCancellable        *cancellable,
   task = g_task_new (NULL, cancellable, callback, user_data);
   attr = secret_attributes_build (schema, NULL);
 
+  CHATTY_TRACE_MSG ("loading secret accounts");
   secret_service_search (NULL, schema, attr,
                          SECRET_SEARCH_ALL | SECRET_SEARCH_UNLOCK | SECRET_SEARCH_LOAD_SECRETS,
                          cancellable, secret_load_cb, task);

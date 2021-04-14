@@ -239,11 +239,6 @@
         <property name="visible">True</property>
       </object>
     </child>
-    <child>
-      <object class="GtkLabel" id="empty_label2">
-        <property name="visible">True</property>
-      </object>
-    </child>
   </object>
 
 </interface>

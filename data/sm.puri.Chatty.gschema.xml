@@ -38,12 +38,6 @@
       <description>Whether to Send typing notifications</description>
     </key>
 
-    <key name="greyout-offline-buddies" type="b">
-      <default>true</default>
-      <summary>Mark offline users differently</summary>
-      <description>Mark offline users differently</description>
-    </key>
-
     <key name="blur-idle-buddies" type="b">
       <default>true</default>
       <summary>Mark Idle users differently</summary>

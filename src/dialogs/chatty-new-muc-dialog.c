@@ -18,11 +18,6 @@
 #include "chatty-new-muc-dialog.h"
 
 
-static void chatty_new_muc_name_check (ChattyNewMucDialog *self, 
-                                       GtkEntry           *entry, 
-                                       GtkWidget          *button);
-
-
 struct _ChattyNewMucDialog
 {
   GtkDialog  parent_instance;
@@ -43,75 +38,43 @@ G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, GTK_TYPE_DIALOG)
 
 
 static void
-chatty_blist_join_group_chat (PurpleAccount *account,
-                              const char    *group_chat_id,
-                              const char    *room_alias,
-                              const char    *user_alias,
-                              const char    *pwd)
+join_new_chat_cb (GObject      *object,
+                  GAsyncResult *result,
+                  gpointer      user_data)
 {
-  PurpleChat               *chat;
-  PurpleGroup              *group;
-  PurpleConnection         *gc;
-  PurplePluginProtocolInfo *info;
-  GHashTable               *hash = NULL;
+  g_autoptr(ChattyNewMucDialog) self = user_data;
 
-  if (!purple_account_is_connected (account) || !group_chat_id)
-    return;
-
-  gc = purple_account_get_connection (account);
-
-  info = PURPLE_PLUGIN_PROTOCOL_INFO(purple_connection_get_prpl (gc));
-
-  if (info->chat_info_defaults != NULL)
-    hash = info->chat_info_defaults(gc, group_chat_id);
-
-  if (*user_alias != '\0')
-    g_hash_table_replace (hash, "handle", g_strdup (user_alias));
-
-  chat = purple_chat_new (account, group_chat_id, hash);
-
-  if (chat != NULL) {
-    if ((group = purple_find_group ("Chats")) == NULL) {
-      group = purple_group_new ("Chats");
-      purple_blist_add_group (group, NULL);
-    }
-
-    purple_blist_add_chat (chat, group, NULL);
-    purple_blist_alias_chat (chat, room_alias);
-    purple_blist_node_set_bool ((PurpleBlistNode*)chat,
-                                "chatty-autojoin",
-                                TRUE);
-
-    chatty_conv_join_chat (chat);
-  }
+  g_assert (CHATTY_IS_NEW_MUC_DIALOG (self));
 }
-
 
 static void
 button_join_chat_clicked_cb (ChattyNewMucDialog *self)
 {
-  PurpleAccount *account;
+  ChattyChat *chat;
 
   g_assert (CHATTY_IS_NEW_MUC_DIALOG(self));
 
-  account = chatty_pp_account_get_account (self->selected_account);
-
-  chatty_blist_join_group_chat (account,
-                                gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_id)),
-                                gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_room_alias)),
-                                gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_user_alias)),
-                                gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_pw)));
+  chat = chatty_pp_account_join_chat (CHATTY_PP_ACCOUNT (self->selected_account),
+                                      gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_id)),
+                                      gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_room_alias)),
+                                      gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_user_alias)),
+                                      gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_pw)));
+  chatty_account_join_chat_async (CHATTY_ACCOUNT (self->selected_account), chat,
+                                  join_new_chat_cb, g_object_ref (self));
 }
 
 
 static void
 chat_name_changed_cb (ChattyNewMucDialog *self)
 {
+  const char *name;
+  gboolean buddy_exists;
+
   g_assert (CHATTY_IS_NEW_MUC_DIALOG(self));
 
-  chatty_new_muc_name_check (self,
-                             GTK_ENTRY(self->entry_group_chat_id), 
-                             self->button_join_chat);
+  name = gtk_entry_get_text (GTK_ENTRY (self->entry_group_chat_id));
+  buddy_exists = chatty_account_buddy_exists (CHATTY_ACCOUNT (self->selected_account), name);
+  gtk_widget_set_sensitive (self->button_join_chat, !buddy_exists);
 }
 
 
@@ -132,34 +95,6 @@ account_list_row_activated_cb (ChattyNewMucDialog *self,
 
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(prefix_radio), TRUE);
 }
-
-
-static void
-chatty_new_muc_name_check (ChattyNewMucDialog *self,
-                           GtkEntry           *entry,
-                           GtkWidget          *button)
-{
-  PurpleAccount *account;
-  PurpleBuddy   *buddy = NULL;
-  const char    *name;
-
-  g_return_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self));
-
-  name = gtk_entry_get_text (entry);
-
-  account = chatty_pp_account_get_account (self->selected_account);
-
-  if ((*name != '\0') && account) {
-    buddy = purple_find_buddy (account, name);
-  }
-
-  if ((*name != '\0') && !buddy) {
-    gtk_widget_set_sensitive (button, TRUE);
-  } else {
-    gtk_widget_set_sensitive (button, FALSE);
-  }
-}
-
 
 static void
 chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,

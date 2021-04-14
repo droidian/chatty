@@ -1,3 +1,95 @@
+chatty (0.3.0~beta2) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * matrix-enc: Remove unused code
+  * matrix-enc: Fix order of hash table free funcs
+  * message-row: Fix being stuck in the loop updating quote
+  * ma-chat: Set username when message is created
+  * manager: Log if loading accounts failed with error
+  * secret-store: Add trace messages when loading accounts
+  * log: Prefer logging to journald if available
+  * ma-account: Return NULL if credentials are not loaded
+  * secret-store: Add account to list only if non-NULL
+  * ma-chat: Add a way to mark chat as encrypted
+  * history: Save and load chat encryption details
+  * log: Allow listing multiple domains in filter
+  * settings-dialog: Allow empty passwords for new telegram accounts
+  * pp-account: Implement get_buddies()
+  * account: Add API to check if buddy exists
+  * pp-account: Implement buddy_exists()
+  * new-chat-dialog: Replace purple specific code
+  * new-chat-dialog: Simplify checking if a number is valid
+  * message: Remove unused code
+  * account: Add API to start direct chat
+  * pp-account: Add a way to start IM chat
+  * new-chat-dialog: Use the new API to create IM chat
+  * window: Use new API to start IM chat
+  * manager: Remove no longer used code
+  * pp-chat: Handle purple commands
+  * chat-view: Use the new API to handle purple commands
+  * chat: Add API to check if file upload is supported
+  * pp-chat: Add file upload support
+  * chat-view: Simplify file uploading
+  * chat-view: Remove PurpleConversation from class struct
+  * window: Simplify check for contact
+  * new-muc-dialog: Simplify check if muc exists
+  * account: Add API to leave a chat
+  * ma-account: Cleanup leave chat API
+  * pp-chat: Add a way to leave chat
+  * pp-account: Implement leave chat
+  * window: Use the new API to leave chat
+  * manager: Add API to set uri
+  * window: Simplify setting uri
+  * pp-chat: Add API to save buddy to contacts
+  * window: Simplify adding chat to contacts
+  * window: Remove redundant 'Add in contacts' button
+  * ci: Update to use pureOS images
+  * ci: Build only for byzantium
+  * window: Remove unused code
+  * settings: Don't greyout offline contacts
+  * window: Simplify empty state titles
+  * window: Don't set label for chat view widgets
+  * account: Add API to join chat
+  * pp-chat: Add API to get object for chat
+  * pp-chat: Add a way to join chat
+  * pp-account: Implement join chat
+  * pp-account: Add a way to join chat
+  * new-muc-dialog: Use the new API to join chat
+  * window: Use new API to join chat
+  * manager: Remove no longer used code
+  * pp-chat: Implement joining IM chat
+  * pp-chat: Add a way to create a new IM chat
+  * window: Use newly Added APIs to create chat
+  * window: Use a stack to list chats
+  * window: Let search entry be a direct child of headerbar
+  * window: Set defaults in ui file
+  * chat-view: Remove unused code
+  * chat-view: Always show the spinner widget
+  * message: Remove unused code
+  * chat-view: Don't split translatable strings
+
+  [ Evangelos Ribeiro Tzaras ]
+  * d/rules: Run tests using C locale
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+  [ Jan Jasper de Kroon ]
+  * po: Add Dutch translation
+
+  [ Adrien Plazas ]
+  * meson: Bump libhandy to 1.1.90
+  * window: Drop overlay_label_3
+  * window: Drop unused fields in overlay_content_t
+  * window: Use HdyStatusPage for the empty state
+  * window: Use title case for empty state titles
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 14 Apr 2021 15:31:41 +0530
+
 chatty (0.3.0~beta) experimental; urgency=medium
 
   [ Mohammed Sadiq ]

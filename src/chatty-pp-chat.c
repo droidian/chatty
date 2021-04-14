@@ -73,6 +73,10 @@ struct _ChattyPpChat
   gboolean            initial_history_loaded;
   gboolean            history_is_loading;
   gboolean            supports_encryption;
+
+  gboolean            file_upload_checked;
+  void (*upload_file_callback)(gpointer, gpointer);
+  gpointer            callback_userdata;
 };
 
 G_DEFINE_TYPE (ChattyPpChat, chatty_pp_chat, CHATTY_TYPE_CHAT)
@@ -95,6 +99,63 @@ emit_avatar_changed (ChattyPpChat *self)
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   g_signal_emit_by_name (self, "avatar-changed");
+}
+
+static void
+pp_chat_add_history_since_component (ChattyPpChat *self,
+                                     GHashTable   *components,
+                                     const char   *account,
+                                     const char   *room)
+{
+  time_t mtime;
+  struct tm * timeinfo;
+  char *iso_timestamp = g_malloc0 (MAX_GMT_ISO_SIZE * sizeof (char));
+
+  mtime = chatty_history_get_last_message_time (self->history, account, room);
+  mtime += 1; // Use the next epoch to exclude the last stored message(s)
+  timeinfo = gmtime (&mtime);
+  g_return_if_fail (strftime (iso_timestamp, MAX_GMT_ISO_SIZE * sizeof(char),
+                              "%Y-%m-%dT%H:%M:%SZ", timeinfo));
+
+  g_hash_table_steal (components, "history_since");
+  g_hash_table_insert (components, "history_since", iso_timestamp);
+}
+
+static void
+pp_chat_setup_file_upload (ChattyPpChat *self)
+{
+  PurplePluginProtocolInfo *prpl_info;
+  PurpleConnection *gc;
+  PurpleBlistNode *node = NULL;
+  g_autoptr(GList) list = NULL;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  gc = purple_conversation_get_gc (self->conv);
+  if (gc)
+    node = chatty_utils_get_conv_blist_node (self->conv);
+  if (node)
+    prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (gc->prpl);
+
+  if (!prpl_info)
+    return;
+
+  self->file_upload_checked = TRUE;
+  if (prpl_info->blist_node_menu)
+    list = prpl_info->blist_node_menu (node);
+
+  for (GList *l = list; l; l = l->next) {
+    PurpleMenuAction *act = l->data;
+
+    if (g_strcmp0 (act->label, "HTTP File Upload") == 0) {
+      self->upload_file_callback = (gpointer)act->callback;
+      self->callback_userdata = act->data;
+      purple_menu_action_free (act);
+      break;
+    }
+
+    purple_menu_action_free (act);
+  }
 }
 
 static void
@@ -366,6 +427,19 @@ chatty_pp_chat_is_im (ChattyChat *chat)
     type = purple_conversation_get_type (self->conv);
 
   return type == PURPLE_CONV_TYPE_IM;
+}
+
+static gboolean
+chatty_pp_chat_has_file_upload (ChattyChat *chat)
+{
+  ChattyPpChat *self = (ChattyPpChat *)chat;
+
+  g_assert (CHATTY_IS_PP_CHAT (self));
+
+  if (!self->file_upload_checked)
+    pp_chat_setup_file_upload (self);
+
+  return self->upload_file_callback != NULL;
 }
 
 static const char *
@@ -923,6 +997,7 @@ chatty_pp_chat_class_init (ChattyPpChatClass *klass)
 
   chat_class->set_data = chatty_pp_chat_set_data;
   chat_class->is_im = chatty_pp_chat_is_im;
+  chat_class->has_file_upload = chatty_pp_chat_has_file_upload;
   chat_class->get_chat_name = chatty_pp_chat_get_chat_name;
   chat_class->get_username = chatty_pp_chat_get_username;
   chat_class->get_account = chatty_pp_chat_get_account;
@@ -958,6 +1033,18 @@ chatty_pp_chat_init (ChattyPpChat *self)
   self->encrypt = CHATTY_ENCRYPTION_UNSUPPORTED;
 }
 
+ChattyChat *
+chatty_pp_chat_get_object (PurpleChat *pp_chat)
+{
+  PurpleBlistNode *node;
+
+  g_return_val_if_fail (pp_chat, NULL);
+
+  node = PURPLE_BLIST_NODE (pp_chat);
+
+  return node->ui_data;
+}
+
 ChattyPpChat *
 chatty_pp_chat_new_im_chat (PurpleAccount *account,
                             PurpleBuddy   *buddy,
@@ -974,6 +1061,23 @@ chatty_pp_chat_new_im_chat (PurpleAccount *account,
   chatty_pp_chat_set_purple_buddy (self, buddy);
 
   return self;
+}
+
+ChattyPpChat *
+chatty_pp_chat_new_buddy_chat (ChattyPpBuddy *buddy,
+                               gboolean       supports_encryption)
+{
+  ChattyAccount *account;
+  PurpleAccount *pp_account;
+  PurpleBuddy *pp_buddy;
+
+  g_return_val_if_fail (CHATTY_IS_PP_BUDDY (buddy), NULL);
+
+  account = chatty_pp_buddy_get_account (buddy);
+  pp_account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (account));
+  pp_buddy = chatty_pp_buddy_get_buddy (buddy);
+
+  return chatty_pp_chat_new_im_chat (pp_account, pp_buddy, supports_encryption);
 }
 
 ChattyPpChat *
@@ -1083,6 +1187,19 @@ chatty_pp_chat_get_purple_conv (ChattyPpChat *self)
   return self->conv;
 }
 
+void
+chatty_pp_chat_show_file_upload (ChattyPpChat *self)
+{
+  PurpleBlistNode *node;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+
+  node = chatty_utils_get_conv_blist_node (self->conv);
+
+  if (self->upload_file_callback)
+    self->upload_file_callback (node, self->callback_userdata);
+}
+
 gboolean
 chatty_pp_chat_are_same (ChattyPpChat *a,
                          ChattyPpChat *b)
@@ -1111,6 +1228,101 @@ chatty_pp_chat_are_same (ChattyPpChat *a,
   if (b->conv &&
       chatty_pp_chat_match_purple_conv (a, b->conv))
     return TRUE;
+
+  return FALSE;
+}
+
+/**
+ * chatty_pp_chat_run_command:
+ * @self: A #ChattyPpChat
+ * @command: The command to run
+ *
+ * Try to run the command @command.
+ *
+ * Returns: %TRUE if @command was handled.
+ * %FALSE otherwise.
+ */
+gboolean
+chatty_pp_chat_run_command (ChattyPpChat *self,
+                            const char   *command)
+{
+  g_autofree char *error = NULL;
+  PurpleCmdStatus status;
+  PurpleMessageFlags flags = PURPLE_MESSAGE_NO_LOG | PURPLE_MESSAGE_SYSTEM;
+
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), FALSE);
+
+  if (!command || *command != '/' || !self->conv)
+    return FALSE;
+
+  command = command + strlen ("/");
+  purple_conversation_write (self->conv, "", command, flags, time (NULL));
+  status = purple_cmd_do_command (self->conv, command, command, &error);
+
+  switch (status) {
+  case PURPLE_CMD_STATUS_OK:
+    return TRUE;
+
+  case PURPLE_CMD_STATUS_NOT_FOUND:
+    {
+      PurplePluginProtocolInfo *prpl_info = NULL;
+      PurpleConnection *gc;
+
+      if ((gc = purple_conversation_get_gc (self->conv)))
+        prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl);
+
+      if ((prpl_info != NULL) &&
+          (prpl_info->options & OPT_PROTO_SLASH_COMMANDS_NATIVE)) {
+        const char *spaceslash;
+
+        /* If the first word in the entered text has a '/' in it, then the user
+         * probably didn't mean it as a command. So send the text as message. */
+        spaceslash = command;
+
+        while (*spaceslash && *spaceslash != ' ' && *spaceslash != '/')
+          spaceslash++;
+
+        if (*spaceslash != '/') {
+          purple_conversation_write (self->conv, "",
+                                     "Unknown command. Get a list of available commands with '/chatty help'",
+                                     flags, time (NULL));
+          return TRUE;
+        }
+      }
+    }
+    break;
+
+  case PURPLE_CMD_STATUS_WRONG_ARGS:
+    purple_conversation_write (self->conv, "",
+                               "Wrong number of arguments for the command.",
+                               flags, time (NULL));
+    return TRUE;
+
+  case PURPLE_CMD_STATUS_FAILED:
+    purple_conversation_write (self->conv, "",
+                               error ? error : "The command failed.",
+                               flags, time (NULL));
+    return TRUE;
+
+  case PURPLE_CMD_STATUS_WRONG_TYPE:
+    if (purple_conversation_get_type (self->conv) == PURPLE_CONV_TYPE_IM)
+      purple_conversation_write (self->conv, "",
+                                 "That command only works in chats, not IMs.",
+                                 flags, time (NULL));
+    else
+      purple_conversation_write (self->conv, "",
+                                 "That command only works in IMs, not chats.",
+                                 flags, time (NULL));
+    return TRUE;
+
+  case PURPLE_CMD_STATUS_WRONG_PRPL:
+    purple_conversation_write (self->conv, "",
+                               "That command doesn't work on this protocol.",
+                               flags, time (NULL));
+    return TRUE;
+  default:
+    break;
+  }
 
   return FALSE;
 }
@@ -1568,6 +1780,82 @@ chatty_pp_chat_set_buddy_typing (ChattyPpChat *self,
 }
 
 void
+chatty_pp_chat_leave (ChattyPpChat *self)
+{
+  PurpleBlistNode *node;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+
+  node = (gpointer)self->buddy;
+
+  if (!node)
+    node = (gpointer)self->pp_chat;
+
+  if (node)
+    purple_blist_node_set_bool (node, "chatty-autojoin", FALSE);
+
+  if (self->conv)
+    purple_conversation_destroy (self->conv);
+}
+
+void
+chatty_pp_chat_join (ChattyPpChat *self)
+{
+  ChattyAccount *account;
+  PurplePluginProtocolInfo *prpl_info;
+  PurpleAccount *pp_account;
+  PurpleConversation *conv;
+  PurpleBlistNode *node;
+  GHashTable *components;
+  g_autofree char *chat_name = NULL;
+  const char *name = NULL;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+  g_return_if_fail (self->pp_chat || self->buddy);
+
+  node = (PurpleBlistNode *)self->pp_chat;
+
+  if (!node)
+    node = (PurpleBlistNode *)self->buddy;
+
+  account = chatty_chat_get_account (CHATTY_CHAT (self));
+  purple_blist_node_set_bool (node, "chatty-autojoin", TRUE);
+
+  if (self->buddy) {
+    GPtrArray *buddies;
+
+    buddies = g_ptr_array_new_full (1, g_free);
+    g_ptr_array_add (buddies, g_strdup (purple_buddy_get_name (self->buddy)));
+    chatty_account_start_direct_chat_async (account, buddies, NULL, NULL);
+
+    return;
+  }
+
+  pp_account = purple_chat_get_account (self->pp_chat);
+  prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (purple_find_prpl (purple_account_get_protocol_id (pp_account)));
+
+  components = purple_chat_get_components (self->pp_chat);
+
+  if (prpl_info && prpl_info->get_chat_name)
+    name = chat_name = prpl_info->get_chat_name (components);
+
+  if (!name)
+    name = purple_chat_get_name (self->pp_chat);
+
+  conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_CHAT, name, pp_account);
+
+  if (conv)
+    self->conv = conv;
+
+  if (!conv || purple_conv_chat_has_left (PURPLE_CONV_CHAT (conv))) {
+    pp_chat_add_history_since_component (self, components, pp_account->username, name);
+    serv_join_chat (purple_account_get_connection (pp_account), components);
+  } else if (conv) {
+    purple_conversation_present (conv);
+  }
+}
+
+void
 chatty_pp_chat_delete (ChattyPpChat *self)
 {
   g_return_if_fail (CHATTY_IS_PP_CHAT (self));
@@ -1593,4 +1881,72 @@ chatty_pp_chat_delete (ChattyPpChat *self)
     g_hash_table_steal (components, "history_since");
     purple_blist_remove_chat (self->pp_chat);
   }
+}
+
+static void
+write_buddy_contact_cb (GObject      *object,
+                        GAsyncResult *result,
+                        gpointer      user_data)
+{
+  g_autoptr(GTask) task = user_data;
+  GError *error = NULL;
+  gboolean status;
+
+  g_assert (G_IS_TASK (task));
+
+  status = chatty_eds_write_contact_finish (result, &error);
+
+  if (error)
+    g_task_return_error (task, error);
+  else
+    g_task_return_boolean (task, status);
+}
+
+void
+chatty_pp_chat_save_to_contacts_async (ChattyPpChat        *self,
+                                       GAsyncReadyCallback  callback,
+                                       gpointer             user_data)
+{
+  PurpleAccount *pp_account;
+  g_autoptr(GTask) task = NULL;
+
+  g_return_if_fail (CHATTY_IS_PP_CHAT (self));
+  g_return_if_fail (self->buddy);
+
+  pp_account = purple_conversation_get_account (self->conv);
+  purple_account_add_buddy (pp_account, self->buddy);
+  purple_blist_node_remove_setting (PURPLE_BLIST_NODE (self->buddy), "chatty-unknown-contact");
+  purple_blist_node_set_bool (PURPLE_BLIST_NODE (self->buddy), "chatty-notifications", TRUE);
+
+  task = g_task_new (self, NULL, callback, user_data);
+
+  if (chatty_item_get_protocols (CHATTY_ITEM (self)) == CHATTY_PROTOCOL_SMS) {
+    ChattyPpBuddy *buddy;
+    g_autofree char *number = NULL;
+    const char *who, *country_code;
+
+    who = purple_buddy_get_name (self->buddy);
+    country_code = chatty_settings_get_country_iso_code (chatty_settings_get_default ());
+    number = chatty_utils_check_phonenumber (who, country_code);
+    buddy = chatty_pp_buddy_get_object (self->buddy);
+
+    if (!chatty_pp_buddy_get_contact (buddy))
+      chatty_eds_write_contact_async (who, number, write_buddy_contact_cb,
+                                      g_steal_pointer (&task));
+    else
+      g_task_return_boolean (task, TRUE);
+  } else {
+    g_task_return_boolean (task, TRUE);
+  }
+
+}
+
+gboolean
+chatty_pp_chat_save_to_contacts_finish (ChattyPpChat  *self,
+                                        GAsyncResult  *result,
+                                        GError       **error)
+{
+  g_return_val_if_fail (CHATTY_IS_PP_CHAT (self), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }

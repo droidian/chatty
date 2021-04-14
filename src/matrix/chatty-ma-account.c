@@ -707,6 +707,84 @@ chatty_ma_account_get_device_fp (ChattyAccount *account)
   return self->device_fp;
 }
 
+static void
+ma_account_leave_chat_cb (GObject      *object,
+                          GAsyncResult *result,
+                          gpointer      user_data)
+{
+  ChattyMaAccount *self;
+  g_autoptr(GTask) task = user_data;
+  ChattyChat *chat;
+  GError *error = NULL;
+  gboolean success;
+
+  g_assert (G_IS_TASK (task));
+
+  self = g_task_get_source_object (task);
+  chat = g_task_get_task_data (task);
+  g_assert (CHATTY_IS_MA_ACCOUNT (self));
+
+  success = matrix_api_leave_chat_finish (self->matrix_api, result, &error);
+  CHATTY_TRACE_MSG ("Leaving chat: %s(%s), success: %d",
+                    chatty_item_get_name (CHATTY_ITEM (chat)),
+                    chatty_chat_get_chat_name (chat),
+                    success);
+
+  if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    g_warning ("Error deleting chat: %s", error->message);
+
+  /* Failed deleting from server, re-add in local chat list */
+  if (!success) {
+    ChattyItemState old_state;
+
+    g_list_store_append (self->chat_list, chat);
+    chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
+
+    old_state = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "state"));
+    chatty_item_set_state (CHATTY_ITEM (chat), old_state);
+    chatty_history_update_chat (self->history_db, chat);
+  }
+
+  if (error)
+    g_task_return_error (task, error);
+  else
+    g_task_return_boolean (task, success);
+}
+
+static void
+chatty_ma_account_leave_chat_async (ChattyAccount       *account,
+                                    ChattyChat          *chat,
+                                    GAsyncReadyCallback  callback,
+                                    gpointer             user_data)
+{
+  ChattyMaAccount *self = (ChattyMaAccount *)account;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_MA_ACCOUNT (self));
+
+  task = g_task_new (self, NULL, callback, user_data);
+  g_task_set_task_data (task, g_object_ref (chat), g_object_unref);
+
+  /* Remove the item so that it’s no longer listed in chat list */
+  /* TODO: Handle edge case where the item was deleted from two
+   * different sessions the same time */
+  if (!chatty_utils_remove_list_item (self->chat_list, chat))
+    g_return_if_reached ();
+
+  CHATTY_TRACE_MSG ("Leaving chat: %s(%s)",
+                    chatty_item_get_name (CHATTY_ITEM (chat)),
+                    chatty_chat_get_chat_name (chat));
+
+  g_object_set_data (G_OBJECT (task), "state",
+                     GINT_TO_POINTER (chatty_item_get_state (CHATTY_ITEM (chat))));
+  chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
+  chatty_history_update_chat (self->history_db, chat);
+  matrix_api_leave_chat_async (self->matrix_api,
+                               chatty_chat_get_chat_name (chat),
+                               ma_account_leave_chat_cb,
+                               g_steal_pointer (&task));
+}
+
 static ChattyProtocol
 chatty_ma_account_get_protocols (ChattyItem *item)
 {
@@ -783,6 +861,7 @@ chatty_ma_account_class_init (ChattyMaAccountClass *klass)
   account_class->save = chatty_ma_account_save;
   account_class->delete = chatty_ma_account_delete;
   account_class->get_device_fp = chatty_ma_account_get_device_fp;
+  account_class->leave_chat_async = chatty_ma_account_leave_chat_async;
 }
 
 static void
@@ -848,14 +927,19 @@ chatty_ma_account_new_secret (gpointer secret_item)
   g_autoptr(GHashTable) attributes = NULL;
   SecretItem *item = secret_item;
   SecretValue *value;
-  const char *username, *homeserver, *credentials;
+  const char *username, *homeserver, *credentials = NULL;
   char *password, *token, *device_id;
   char *password_str, *token_str = NULL;
 
   g_return_val_if_fail (SECRET_IS_ITEM (item), NULL);
 
   value = secret_item_get_secret (item);
-  credentials = secret_value_get_text (value);
+
+  if (value)
+    credentials = secret_value_get_text (value);
+
+  if (!credentials)
+    return NULL;
 
   attributes = secret_item_get_attributes (item);
   username = g_hash_table_lookup (attributes, CHATTY_USERNAME_ATTRIBUTE);
@@ -1155,96 +1239,6 @@ chatty_ma_account_send_file (ChattyMaAccount *self,
                              const char      *file_name)
 {
   /* TODO */
-}
-
-static void
-ma_account_leave_chat_cb (GObject      *object,
-                          GAsyncResult *result,
-                          gpointer      user_data)
-{
-  ChattyMaAccount *self;
-  g_autoptr(GTask) task = user_data;
-  GError *error = NULL;
-  gboolean success;
-
-  CHATTY_ENTRY;
-
-  g_assert (G_IS_TASK (task));
-
-  self = g_task_get_source_object (task);
-  g_assert (CHATTY_IS_MA_ACCOUNT (self));
-
-  success = matrix_api_leave_chat_finish (self->matrix_api, result, &error);
-
-  if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-    g_warning ("Error deleting chat: %s", error->message);
-
-  /* Failed deleting from server, re-add in local chat list */
-  if (!success) {
-    ChattyChat *chat;
-    ChattyItemState old_state;
-
-    chat = g_task_get_task_data (task);
-    g_list_store_append (self->chat_list, chat);
-    chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
-
-    old_state = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "state"));
-    chatty_item_set_state (CHATTY_ITEM (chat), old_state);
-    chatty_history_update_chat (self->history_db, chat);
-  }
-
-  if (error)
-    g_task_return_error (task, error);
-  else
-    g_task_return_boolean (task, success);
-  CHATTY_EXIT;
-}
-
-void
-chatty_ma_account_leave_chat_async (ChattyMaAccount     *self,
-                                    ChattyChat          *chat,
-                                    GAsyncReadyCallback  callback,
-                                    gpointer             user_data)
-{
-  g_autoptr(GTask) task = NULL;
-
-  g_return_if_fail (CHATTY_IS_MA_ACCOUNT (self));
-  g_return_if_fail (CHATTY_IS_MA_CHAT (chat));
-
-  task = g_task_new (self, NULL, callback, user_data);
-  g_task_set_task_data (task, g_object_ref (chat), g_object_unref);
-
-  /* Remove the item so that it’s no longer listed in chat list */
-  /* TODO: Handle edge case where the item was deleted from two
-   * different sessions the same time */
-  if (!chatty_utils_remove_list_item (self->chat_list, chat))
-    g_return_if_reached ();
-
-  CHATTY_TRACE_MSG ("Leaving chat: %s(%s)",
-                    chatty_item_get_name (CHATTY_ITEM (chat)),
-                    chatty_chat_get_chat_name (chat));
-
-  g_object_set_data (G_OBJECT (task), "state",
-                     GINT_TO_POINTER (chatty_item_get_state (CHATTY_ITEM (chat))));
-  chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
-  chatty_history_update_chat (self->history_db, chat);
-  matrix_api_leave_chat_async (self->matrix_api,
-                               chatty_chat_get_chat_name (chat),
-                               ma_account_leave_chat_cb,
-                               g_steal_pointer (&task));
-}
-
-gboolean
-chatty_ma_account_leave_chat_finish (ChattyMaAccount  *self,
-                                     GAsyncResult     *result,
-                                     GError          **error)
-{
-  CHATTY_ENTRY;
-
-  g_return_val_if_fail (CHATTY_IS_MA_ACCOUNT (self), FALSE);
-  g_return_val_if_fail (G_IS_TASK (result), FALSE);
-
-  CHATTY_RETURN (g_task_propagate_boolean (G_TASK (result), error));
 }
 
 void

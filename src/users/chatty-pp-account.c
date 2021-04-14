@@ -18,6 +18,7 @@
 #include "chatty-settings.h"
 #include "chatty-account.h"
 #include "chatty-window.h"
+#include "chatty-pp-chat.h"
 #include "chatty-pp-account.h"
 
 /**
@@ -238,6 +239,33 @@ chatty_pp_account_set_username (ChattyAccount *account,
   purple_account_set_username (self->pp_account, username);
 }
 
+static GListModel *
+chatty_pp_account_get_buddies (ChattyAccount *account)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)account;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  return G_LIST_MODEL (self->buddy_list);
+}
+
+static gboolean
+chatty_pp_account_buddy_exists (ChattyAccount *account,
+                                const char    *buddy_username)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)account;
+  PurpleBuddy *buddy;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  if (!buddy_username || !*buddy_username)
+    return FALSE;
+
+  buddy = purple_find_buddy (self->pp_account, buddy_username);
+
+  return buddy != NULL;
+}
+
 static gboolean
 chatty_pp_account_get_enabled (ChattyAccount *account)
 {
@@ -456,6 +484,73 @@ chatty_pp_account_load_fp_async (ChattyAccount       *account,
                       self->pp_account,
                       get_fp_list_cb,
                       task);
+}
+
+static void
+chatty_pp_account_join_chat_async (ChattyAccount       *account,
+                                   ChattyChat          *chat,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             user_data)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)account;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+  g_return_if_fail (CHATTY_IS_PP_CHAT (chat));
+
+  chatty_pp_chat_join (CHATTY_PP_CHAT (chat));
+
+  /* Assume we succeeded! */
+  task = g_task_new (self, NULL, callback, user_data);
+  g_task_return_boolean (task, TRUE);
+}
+
+static void
+chatty_pp_account_leave_chat_async (ChattyAccount       *account,
+                                    ChattyChat          *chat,
+                                    GAsyncReadyCallback  callback,
+                                    gpointer             user_data)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)account;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  chatty_pp_chat_leave (CHATTY_PP_CHAT (chat));
+
+  /* Assume we succeeded! */
+  task = g_task_new (self, NULL, callback, user_data);
+  g_task_return_boolean (task, TRUE);
+}
+
+static void
+chatty_pp_account_start_direct_chat_async (ChattyAccount       *account,
+                                           GPtrArray           *buddies,
+                                           GAsyncReadyCallback  callback,
+                                           gpointer             user_data)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)account;
+  PurpleConversation *conv;
+  const char *name;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  g_return_if_fail (buddies->len == 1);
+  g_return_if_fail (purple_account_is_connected (self->pp_account));
+
+  task = g_task_new (self, NULL, callback, user_data);
+  name = buddies->pdata[0];
+  conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_IM, name, self->pp_account);
+
+  if (!conv)
+    conv = purple_conversation_new (PURPLE_CONV_TYPE_IM, self->pp_account, name);
+
+  purple_conversation_present (conv);
+  g_ptr_array_unref (buddies);
+
+  /* Just assume we succeeded, what else can we do! */
+  g_task_return_boolean (task, TRUE);
 }
 
 static gboolean
@@ -694,6 +789,8 @@ chatty_pp_account_class_init (ChattyPpAccountClass *klass)
   account_class->get_status   = chatty_pp_account_get_status;
   account_class->get_username = chatty_pp_account_get_username;
   account_class->set_username = chatty_pp_account_set_username;
+  account_class->get_buddies  = chatty_pp_account_get_buddies;
+  account_class->buddy_exists = chatty_pp_account_buddy_exists;
   account_class->get_enabled  = chatty_pp_account_get_enabled;
   account_class->set_enabled  = chatty_pp_account_set_enabled;
   account_class->get_password = chatty_pp_account_get_password;
@@ -707,6 +804,9 @@ chatty_pp_account_class_init (ChattyPpAccountClass *klass)
   account_class->get_device_fp = chatty_pp_account_get_device_fp;
   account_class->get_fp_list = chatty_pp_account_get_fp_list;
   account_class->load_fp_async = chatty_pp_account_load_fp_async;
+  account_class->join_chat_async = chatty_pp_account_join_chat_async;
+  account_class->leave_chat_async = chatty_pp_account_leave_chat_async;
+  account_class->start_direct_chat_async = chatty_pp_account_start_direct_chat_async;
 
   properties[PROP_USERNAME] =
     g_param_spec_string ("username",
@@ -837,12 +937,45 @@ chatty_pp_account_add_purple_buddy (ChattyPpAccount *self,
   return buddy;
 }
 
-GListModel *
-chatty_pp_account_get_buddy_list (ChattyPpAccount *self)
+ChattyChat *
+chatty_pp_account_join_chat (ChattyPpAccount *self,
+                             const char      *chat_id,
+                             const char      *room_alias,
+                             const char      *user_alias,
+                             const char      *password)
 {
-  g_return_val_if_fail (CHATTY_IS_PP_ACCOUNT (self), NULL);
+  PurplePluginProtocolInfo *info;
+  PurpleConnection *gc;
+  PurpleGroup *group;
+  PurpleChat *chat;
+  GHashTable *hash = NULL;
 
-  return G_LIST_MODEL (self->buddy_list);
+  g_return_val_if_fail (CHATTY_IS_PP_ACCOUNT (self), NULL);
+  g_return_val_if_fail (chat_id && *chat_id, NULL);
+
+  if (!purple_account_is_connected (self->pp_account))
+    return NULL;
+
+  gc = purple_account_get_connection (self->pp_account);
+  info = PURPLE_PLUGIN_PROTOCOL_INFO (purple_connection_get_prpl (gc));
+
+  if (info->chat_info_defaults != NULL)
+    hash = info->chat_info_defaults (gc, chat_id);
+
+  if (user_alias && *user_alias)
+    g_hash_table_replace (hash, "handle", g_strdup (user_alias));
+
+  chat = purple_chat_new (self->pp_account, chat_id, hash);
+  if ((group = purple_find_group ("Chats")) == NULL) {
+    group = purple_group_new ("Chats");
+    purple_blist_add_group (group, NULL);
+  }
+
+  purple_blist_add_chat (chat, group, NULL);
+  purple_blist_alias_chat (chat, room_alias);
+  purple_blist_node_set_bool ((PurpleBlistNode*)chat, "chatty-autojoin", TRUE);
+
+  return chatty_pp_chat_get_object (chat);
 }
 
 /* XXX: a helper API till the dust settles */
