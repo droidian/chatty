@@ -785,10 +785,10 @@ insert_or_ignore_thread (ChattyHistory *self,
     return 0;
 
   sqlite3_prepare_v2 (self->db,
-                      "INSERT INTO threads(name,alias,account_id,type,visibility) "
-                      "VALUES(?1,?2,?3,?4,?5) "
+                      "INSERT INTO threads(name,alias,account_id,type,visibility,encrypted) "
+                      "VALUES(?1,?2,?3,?4,?5,?6) "
                       "ON CONFLICT(name,account_id,type) "
-                      "DO UPDATE SET alias=?2, visibility=?5",
+                      "DO UPDATE SET alias=?2, visibility=?5, encrypted=?6",
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, chatty_chat_get_chat_name (chat), "binding when adding thread");
   history_bind_text (stmt, 2, chatty_item_get_name (CHATTY_ITEM (chat)), "binding when adding thread");
@@ -796,6 +796,8 @@ insert_or_ignore_thread (ChattyHistory *self,
   history_bind_int (stmt, 4, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
                     "binding when adding thread");
   history_bind_int (stmt, 5, history_visibility_to_value (chatty_item_get_state (CHATTY_ITEM (chat))),
+                    "binding when adding thread");
+  history_bind_int (stmt, 6, chatty_chat_get_encryption (chat) == CHATTY_ENCRYPTION_ENABLED,
                     "binding when adding thread");
   sqlite3_step (stmt);
   sqlite3_finalize (stmt);
@@ -2226,7 +2228,7 @@ history_get_chats (ChattyHistory *self,
   ChattyAccount *account;
   sqlite3_stmt *stmt;
   const char *user_id;
-  int protocol;
+  int protocol, encrypted;
 
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
@@ -2247,7 +2249,7 @@ history_get_chats (ChattyHistory *self,
   protocol = PROTOCOL_MATRIX;
 
   sqlite3_prepare_v2 (self->db,
-                      "SELECT threads.id,threads.name,threads.alias FROM threads "
+                      "SELECT threads.id,threads.name,threads.alias,threads.encrypted FROM threads "
                       "INNER JOIN accounts ON accounts.id=threads.account_id "
                       "INNER JOIN users ON users.id=accounts.user_id "
                       "AND users.username=? AND accounts.protocol=? "
@@ -2268,8 +2270,10 @@ history_get_chats (ChattyHistory *self,
     thread_id = sqlite3_column_int (stmt, 0);
     name = (const char *)sqlite3_column_text (stmt, 1);
     alias = (const char *)sqlite3_column_text (stmt, 2);
+    encrypted = sqlite3_column_int (stmt, 3);
 
     chat = (gpointer)chatty_ma_chat_new (name, alias);
+    chatty_chat_set_encryption (CHATTY_CHAT (chat), encrypted);
     messages = get_messages_before_time (self, chat, NULL, thread_id, INT_MAX, 1);
     chatty_ma_chat_add_messages (CHATTY_MA_CHAT (chat), messages);
 

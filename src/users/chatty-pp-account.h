@@ -42,7 +42,11 @@ ChattyPpBuddy   *chatty_pp_account_add_buddy          (ChattyPpAccount *self,
                                                        const char      *name);
 ChattyPpBuddy   *chatty_pp_account_add_purple_buddy   (ChattyPpAccount *self,
                                                        PurpleBuddy     *pp_buddy);
-GListModel      *chatty_pp_account_get_buddy_list     (ChattyPpAccount *self);
+ChattyChat      *chatty_pp_account_join_chat          (ChattyPpAccount *self,
+                                                       const char      *room_id,
+                                                       const char      *room_alias,
+                                                       const char      *user_alias,
+                                                       const char      *password);
 
 PurpleAccount   *chatty_pp_account_get_account        (ChattyPpAccount *self);
 PurpleStatus    *chatty_pp_account_get_active_status  (ChattyPpAccount *self);

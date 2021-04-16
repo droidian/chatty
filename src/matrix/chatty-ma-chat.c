@@ -543,6 +543,7 @@ matrix_add_message_from_data (ChattyMaChat  *self,
 
   /* We should move to more precise time (ie, time in ms) as it is already provided */
   message = chatty_message_new (CHATTY_ITEM (buddy), NULL, body, uuid, ts, msg_type, direction, 0);
+  chatty_message_set_user_name (message, chatty_ma_buddy_get_id (CHATTY_MA_BUDDY (buddy)));
   chatty_message_set_encrypted (message, encrypted);
 
   if (msg_type != CHATTY_MESSAGE_TEXT)
@@ -1272,6 +1273,24 @@ chatty_ma_chat_get_encryption (ChattyChat *chat)
   return CHATTY_ENCRYPTION_DISABLED;
 }
 
+static void
+chatty_ma_chat_set_encryption (ChattyChat *chat,
+                               gboolean    enable)
+{
+  ChattyMaChat *self = (ChattyMaChat *)chat;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  /* If encryption is already enabled, we can't change it */
+  if (self->encryption)
+    return;
+
+  if (enable)
+    self->encryption = g_strdup ("encrypted");
+
+  g_object_notify (G_OBJECT (self), "encrypt");
+}
+
 static const char *
 chatty_ma_chat_get_last_message (ChattyChat *chat)
 {
@@ -1549,6 +1568,7 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
   chat_class->get_messages = chatty_ma_chat_get_messages;
   chat_class->get_account  = chatty_ma_chat_get_account;
   chat_class->get_encryption = chatty_ma_chat_get_encryption;
+  chat_class->set_encryption = chatty_ma_chat_set_encryption;
   chat_class->get_last_message = chatty_ma_chat_get_last_message;
   chat_class->get_unread_count = chatty_ma_chat_get_unread_count;
   chat_class->set_unread_count = chatty_ma_chat_set_unread_count;

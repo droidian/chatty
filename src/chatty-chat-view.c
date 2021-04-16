@@ -43,15 +43,12 @@ struct _ChattyChatView
   GtkWidget  *empty_view;
   GtkWidget  *empty_label0;
   GtkWidget  *empty_label1;
-  GtkWidget  *empty_label2;
   GtkWidget  *scroll_down_button;
   GtkTextBuffer *message_input_buffer;
   GtkAdjustment *vadjustment;
 
   ChattyChat *chat;
-  PurpleConversation *conv;
   char       *last_message_id;  /* id of last sent message, currently used only for SMS */
-  guint       message_type;
   guint       refresh_typing_id;
   gboolean    first_scroll_to_bottom;
 };
@@ -65,24 +62,6 @@ static GHashTable *ht_sms_id = NULL;
 
 G_DEFINE_TYPE (ChattyChatView, chatty_chat_view, GTK_TYPE_BOX)
 
-
-const char *disclaimer_strings[][3] = {
-  {
-    N_("This is an IM conversation."),
-    N_("Your messages are not encrypted,"),
-    N_("ask your counterpart to use E2EE."),
-  },
-  {
-    N_("This is an IM conversation."),
-    N_("Your messages are secured"),
-    N_("by end-to-end encryption."),
-  },
-  {
-    N_("This is an SMS conversation."),
-    N_("Your messages are not encrypted,"),
-    N_("and carrier rates may apply."),
-  },
-};
 
 const char *emoticons[][15] = {
   {":)", "🙂"},
@@ -224,92 +203,47 @@ chatty_check_for_emoticon (ChattyChatView *self)
 }
 
 static void
-chat_view_setup_file_upload (ChattyChatView *self)
-{
-  PurplePluginProtocolInfo *prpl_info;
-  PurpleConnection         *gc;
-  PurpleBlistNode          *node;
-  g_autoptr(GList)          list = NULL;
-
-  g_assert (CHATTY_IS_CHAT_VIEW (self));
-
-  gtk_widget_show (self->send_file_button);
-
-  gc = purple_conversation_get_gc (self->conv);
-  node = chatty_utils_get_conv_blist_node (self->conv);
-  prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO (gc->prpl);
-
-  if (prpl_info->blist_node_menu)
-    list = prpl_info->blist_node_menu (node);
-
-  for (GList *l = list; l; l = l->next) {
-    PurpleMenuAction *act = l->data;
-
-    if (g_strcmp0 (act->label, "HTTP File Upload") == 0) {
-      g_object_set_data (G_OBJECT (self->send_file_button),
-                         "callback", act->callback);
-
-      g_object_set_data (G_OBJECT (self->send_file_button),
-                         "callback-data", act->data);
-    }
-    purple_menu_action_free (act);
-  }
-}
-
-static void
 chatty_chat_view_update (ChattyChatView *self)
 {
   GtkStyleContext *context;
-  int index = -1;
-
+  ChattyProtocol protocol;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  if (chatty_chat_is_im (self->chat) &&
-      chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_SMS)
-    self->message_type = CHATTY_MSG_TYPE_SMS;
-  else if (chatty_chat_is_im (self->chat))
-    self->message_type = CHATTY_MSG_TYPE_IM;
-  else
-    self->message_type = CHATTY_MSG_TYPE_MUC;
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self->chat));
 
   gtk_widget_show (self->encrypt_icon);
 
   if (chatty_chat_is_im (self->chat) && CHATTY_IS_PP_CHAT (self->chat))
     chatty_pp_chat_load_encryption_status (CHATTY_PP_CHAT (self->chat));
 
-  if (chatty_manager_has_file_upload_plugin (chatty_manager_get_default ()) &&
-      chatty_item_get_protocols (CHATTY_ITEM (self->chat)) == CHATTY_PROTOCOL_XMPP)
-    chat_view_setup_file_upload (self);
+  gtk_widget_set_visible (self->send_file_button, chatty_chat_has_file_upload (self->chat));
 
-  if (CHATTY_IS_MA_CHAT (self->chat)) {
+  if (CHATTY_IS_MA_CHAT (self->chat))
     gtk_widget_show (self->send_file_button);
-    gtk_widget_hide (self->empty_label0);
-    gtk_widget_hide (self->empty_label1);
-    gtk_widget_hide (self->empty_label2);
-  } else {
-    gtk_widget_show (self->empty_label0);
-    gtk_widget_show (self->empty_label1);
-    gtk_widget_show (self->empty_label2);
-  }
 
-  if (self->message_type == CHATTY_MSG_TYPE_IM)
-    index = 0;
-  else if (self->message_type == CHATTY_MSG_TYPE_SMS)
-    index = 2;
-
-  /* XXX: This is temporary, strings put into different labels isn’t good for translation */
-  if (index >= 0) {
-    gtk_label_set_label (GTK_LABEL (self->empty_label0), disclaimer_strings[index][0]);
-    gtk_label_set_label (GTK_LABEL (self->empty_label1), disclaimer_strings[index][1]);
-    gtk_label_set_label (GTK_LABEL (self->empty_label2), disclaimer_strings[index][2]);
+  if (protocol == CHATTY_PROTOCOL_SMS) {
+    gtk_label_set_label (GTK_LABEL (self->empty_label0),
+                         _("This is an SMS conversation"));
+    gtk_label_set_label (GTK_LABEL (self->empty_label1),
+                         _("Your messages are not encrypted, "
+                           "and carrier rates may apply"));
+  } else if (chatty_chat_is_im (self->chat)) {
+    gtk_label_set_label (GTK_LABEL (self->empty_label0),
+                         _("This is an IM conversation"));
+    if (chatty_chat_get_encryption (self->chat) == CHATTY_ENCRYPTION_ENABLED)
+      gtk_label_set_label (GTK_LABEL (self->empty_label1),
+                           _("Your messages are encrypted"));
+    else
+      gtk_label_set_label (GTK_LABEL (self->empty_label1),
+                           _("Your messages are not encrypted"));
   }
 
   context = gtk_widget_get_style_context (self->send_message_button);
 
-  if (self->message_type == CHATTY_MSG_TYPE_SMS)
+  if (protocol == CHATTY_PROTOCOL_SMS)
     gtk_style_context_add_class (context, "button_send_green");
-  else if (self->message_type == CHATTY_MSG_TYPE_IM)
+  else if (chatty_chat_is_im (self->chat))
     gtk_style_context_add_class (context, "suggested-action");
 }
 
@@ -384,7 +318,7 @@ messages_items_changed_cb (ChattyChatView *self,
     return;
 
   /* Don't hide footers in group chats */
-  if (self->message_type == CHATTY_MSG_TYPE_MUC)
+  if (!chatty_chat_is_im (self->chat))
     return;
 
   list = GTK_LIST_BOX (self->message_list);
@@ -481,161 +415,26 @@ chat_view_input_focus_out_cb (ChattyChatView *self)
   return FALSE;
 }
 
-
-
-static gboolean
-chatty_conv_check_for_command (ChattyChatView *self)
-{
-  PurpleConversation *conv;
-  g_autofree char *cmd = NULL;
-  gboolean            retval = FALSE;
-  GtkTextIter         start, end;
-  PurpleMessageFlags  flags = 0;
-
-  flags |= PURPLE_MESSAGE_NO_LOG | PURPLE_MESSAGE_SYSTEM;
-  conv = self->conv;
-
-  gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
-
-  cmd = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
-
-  if (cmd && *cmd == '/') {
-    g_autofree char *error = NULL;
-    PurpleCmdStatus status;
-    char *cmdline;
-
-    cmdline = cmd + strlen ("/");
-
-    if (purple_strequal (cmdline, "xyzzy")) {
-      purple_conversation_write (conv,
-                                 "",
-                                 "Nothing happens",
-                                 flags,
-                                 time(NULL));
-      return TRUE;
-    }
-
-    purple_conversation_write (conv,
-                               "",
-                               cmdline,
-                               flags,
-                               time(NULL));
-
-    status = purple_cmd_do_command (conv, cmdline, cmdline, &error);
-
-    switch (status) {
-    case PURPLE_CMD_STATUS_OK:
-      retval = TRUE;
-      break;
-    case PURPLE_CMD_STATUS_NOT_FOUND:
-      {
-        PurplePluginProtocolInfo *prpl_info = NULL;
-        PurpleConnection *gc;
-
-        if ((gc = purple_conversation_get_gc (conv)))
-          prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl);
-
-        if ((prpl_info != NULL) &&
-            (prpl_info->options & OPT_PROTO_SLASH_COMMANDS_NATIVE)) {
-          gchar *spaceslash;
-
-          /* If the first word in the entered text has a '/' in it, then the user
-           * probably didn't mean it as a command. So send the text as message. */
-          spaceslash = cmdline;
-
-          while (*spaceslash && *spaceslash != ' ' && *spaceslash != '/') {
-            spaceslash++;
-          }
-
-          if (*spaceslash != '/') {
-            purple_conversation_write (conv,
-                                       "",
-                                       "Unknown command. Get a list of available commands with '/chatty help'",
-                                       flags,
-                                       time(NULL));
-            retval = TRUE;
-          }
-        }
-        break;
-      }
-    case PURPLE_CMD_STATUS_WRONG_ARGS:
-      purple_conversation_write (conv,
-                                 "",
-                                 "Wrong number of arguments for the command.",
-                                 flags,
-                                 time(NULL));
-      retval = TRUE;
-      break;
-    case PURPLE_CMD_STATUS_FAILED:
-      purple_conversation_write (conv,
-                                 "",
-                                 error ? error : "The command failed.",
-                                 flags,
-                                 time(NULL));
-      retval = TRUE;
-      break;
-    case PURPLE_CMD_STATUS_WRONG_TYPE:
-      if (purple_conversation_get_type (conv) == PURPLE_CONV_TYPE_IM)
-        purple_conversation_write (conv,
-                                   "",
-                                   "That command only works in chats, not IMs.",
-                                   flags,
-                                   time(NULL));
-      else
-        purple_conversation_write (conv,
-                                   "",
-                                   "That command only works in IMs, not chats.",
-                                   flags,
-                                   time(NULL));
-      retval = TRUE;
-      break;
-    case PURPLE_CMD_STATUS_WRONG_PRPL:
-      purple_conversation_write (conv,
-                                 "",
-                                 "That command doesn't work on this protocol.",
-                                 flags,
-                                 time(NULL));
-      retval = TRUE;
-      break;
-    default:
-      break;
-    }
-  }
-
-  return retval;
-}
-
-
 static void
 chat_view_send_file_button_clicked_cb (ChattyChatView *self,
                                        GtkButton      *button)
 {
-  PurpleBlistNode *node;
-  gpointer data;
-
-  void (*callback)(gpointer, gpointer);
-
   g_assert (CHATTY_IS_CHAT_VIEW (self));
   g_assert (GTK_IS_BUTTON (button));
+  g_return_if_fail (chatty_chat_has_file_upload (self->chat));
 
   if (CHATTY_IS_MA_CHAT (self->chat)) {
     /* TODO */
 
-    return;
+  } else if (CHATTY_IS_PP_CHAT (self->chat)) {
+    chatty_pp_chat_show_file_upload (CHATTY_PP_CHAT (self->chat));
   }
-
-  callback = g_object_get_data (G_OBJECT (button), "callback");
-  data = g_object_get_data (G_OBJECT (button), "callback-data");
-  node = chatty_utils_get_conv_blist_node (self->conv);
-
-  if (callback)
-    callback (node, data);
 }
 
 static void
 chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 {
-  PurpleConversation  *conv;
+  PurpleConversation *conv = NULL;
   ChattyAccount *account;
   g_autoptr(ChattyMessage) msg = NULL;
   g_autofree char *message = NULL;
@@ -645,11 +444,14 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
-  conv = self->conv;
+  if (CHATTY_IS_PP_CHAT (self->chat))
+    conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (self->chat));
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
+  message = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
-  if (conv && chatty_conv_check_for_command (self)) {
+  if (CHATTY_IS_PP_CHAT (self->chat) &&
+      chatty_pp_chat_run_command (CHATTY_PP_CHAT (self->chat), message)) {
     gtk_widget_hide (self->send_message_button);
     gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
 
@@ -664,8 +466,6 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 
   if (conv)
     purple_idle_touch ();
-
-  message = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
 
   if (gtk_text_buffer_get_char_count (self->message_input_buffer)) {
     g_autofree char *escaped = NULL;
@@ -915,7 +715,6 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, empty_view);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, empty_label0);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, empty_label1);
-  gtk_widget_class_bind_template_child (widget_class, ChattyChatView, empty_label2);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, message_input_buffer);
   gtk_widget_class_bind_template_child (widget_class, ChattyChatView, vadjustment);
 
@@ -984,9 +783,6 @@ chatty_chat_view_set_chat (ChattyChatView *self,
   if (!chat)
     return;
 
-  if (CHATTY_IS_PP_CHAT (chat))
-    self->conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (chat));
-
   gtk_list_box_bind_model (GTK_LIST_BOX (self->message_list),
                            chatty_chat_get_messages (self->chat),
                            (GtkListBoxCreateWidgetFunc)chat_view_message_row_new,
@@ -1006,9 +802,6 @@ chatty_chat_view_set_chat (ChattyChatView *self,
                            G_CONNECT_SWAPPED);
   g_object_bind_property (self->chat, "loading-history",
                           self->loading_spinner, "active",
-                          G_BINDING_SYNC_CREATE);
-  g_object_bind_property (self->chat, "loading-history",
-                          self->loading_spinner, "visible",
                           G_BINDING_SYNC_CREATE);
 
   chat_encrypt_changed_cb (self);

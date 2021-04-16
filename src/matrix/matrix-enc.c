@@ -69,13 +69,6 @@ struct _MatrixEnc
 
 G_DEFINE_TYPE (MatrixEnc, matrix_enc, G_TYPE_OBJECT)
 
-typedef struct _MaOlmOutSession {
-  OlmSession *session;
-  char *session_id;
-  char *sender_id;
-  char *device_id;
-} MaOlmOutSession;
-
 static void
 free_olm_session (gpointer data)
 {
@@ -320,7 +313,7 @@ matrix_enc_init (MatrixEnc *self)
   self->in_olm_sessions = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                  g_free, free_olm_session);
   self->out_olm_sessions = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                  free_olm_session, g_free);
+                                                  g_free, free_olm_session);
   self->in_group_sessions = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                    g_free, free_in_group_session);
   self->out_group_sessions = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -1141,7 +1134,6 @@ matrix_enc_create_out_group_keys (MatrixEnc  *self,
   g_autofree uint8_t *session_id = NULL;
   g_autofree uint8_t *random = NULL;
   JsonObject *root, *child;
-  MaOlmOutSession *out_session;
   BuddyDevice *device;
   size_t length;
   size_t error;
@@ -1273,9 +1265,6 @@ matrix_enc_create_out_group_keys (MatrixEnc  *self,
         json_object_set_int_member (content, "type", olm_encrypt_message_type (olm_session));
         json_object_set_string_member (content, "body", encrypted);
       }
-
-      out_session = g_new0 (MaOlmOutSession, 1);
-      out_session->session = g_steal_pointer (&olm_session);
     }
   }
 

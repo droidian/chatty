@@ -24,6 +24,7 @@
 #include "chatty-list-row.h"
 #include "chatty-utils.h"
 #include "chatty-icons.h"
+#include "chatty-phone-utils.h"
 #include "chatty-new-chat-dialog.h"
 
 
@@ -76,25 +77,6 @@ struct _ChattyNewChatDialog
 
 G_DEFINE_TYPE (ChattyNewChatDialog, chatty_new_chat_dialog, GTK_TYPE_DIALOG)
 
-
-static gboolean
-new_chat_str_is_phone (const char *str)
-{
-  guint length;
-
-  if (!str || !*str)
-    return FALSE;
-
-  if (*str == '+')
-    str++;
-
-  length = strlen (str);
-
-  if (length >= 3 && strspn (str, "0123456789") == length)
-    return TRUE;
-
-  return FALSE;
-}
 
 static void
 dialog_active_protocols_changed_cb (ChattyNewChatDialog *self)
@@ -244,6 +226,7 @@ contact_search_entry_changed_cb (ChattyNewChatDialog *self,
   g_autofree char *old_needle = NULL;
   const char *str;
   GtkFilterChange change;
+  ChattyProtocol protocol;
   gboolean valid;
 
   g_assert (CHATTY_IS_NEW_CHAT_DIALOG (self));
@@ -274,7 +257,8 @@ contact_search_entry_changed_cb (ChattyNewChatDialog *self,
   chatty_list_row_set_item (CHATTY_LIST_ROW (self->new_contact_row),
                             CHATTY_ITEM (self->dummy_contact));
 
-  valid = new_chat_str_is_phone (self->search_str);
+  protocol = CHATTY_PROTOCOL_SMS;
+  valid = protocol == chatty_utils_username_is_valid (self->search_str, protocol);
   account = purple_accounts_find ("SMS", "prpl-mm-sms");
   valid = valid && purple_account_is_connected (account);
   gtk_widget_set_visible (self->new_contact_row, valid);
@@ -300,26 +284,24 @@ contact_row_activated_cb (ChattyNewChatDialog *self,
 static void
 add_contact_button_clicked_cb (ChattyNewChatDialog *self)
 {
-  PurpleAccount     *account;
-  char              *who;
-  const char        *alias;
+  GPtrArray *buddies;
+  const char *who, *alias;
 
   g_assert (CHATTY_IS_NEW_CHAT_DIALOG (self));
 
   if (!gtk_widget_get_sensitive (self->add_contact_button))
     return;
 
-  account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (self->selected_account));
+  buddies = g_ptr_array_new_full (1, g_free);
 
-  who = g_strdup (gtk_entry_get_text (GTK_ENTRY (self->contact_name_entry)));
+  who = gtk_entry_get_text (GTK_ENTRY (self->contact_name_entry));
   alias = gtk_entry_get_text (GTK_ENTRY (self->contact_alias_entry));
-
   chatty_pp_account_add_buddy (CHATTY_PP_ACCOUNT (self->selected_account), who, alias);
-  chatty_conv_im_with_buddy (account, g_strdup (who));
+
+  g_ptr_array_add (buddies, g_strdup (who));
+  chatty_account_start_direct_chat_async (self->selected_account, buddies, NULL, NULL);
 
   gtk_widget_hide (GTK_WIDGET (self));
-
-  g_free (who);
 
   gtk_entry_set_text (GTK_ENTRY (self->contact_name_entry), "");
   gtk_entry_set_text (GTK_ENTRY (self->contact_alias_entry), "");
@@ -369,25 +351,22 @@ chatty_new_chat_name_check (ChattyNewChatDialog *self,
                             GtkEntry            *entry,
                             GtkWidget           *button)
 {
-  PurpleAccount *account;
-  PurpleBuddy   *buddy = NULL;
-  const char    *name;
+  const char *name;
+  ChattyProtocol protocol, valid_protocol;
+  gboolean valid = TRUE;
 
   g_return_if_fail (CHATTY_IS_NEW_CHAT_DIALOG (self));
 
   name = gtk_entry_get_text (entry);
 
-  account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (self->selected_account));
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self->selected_account));
+  valid_protocol = chatty_utils_username_is_valid (name, protocol);
+  valid = protocol == valid_protocol;
 
-  if ((*name != '\0') && account) {
-    buddy = purple_find_buddy (account, name);
-  }
+  if (valid)
+    valid &= !chatty_account_buddy_exists (CHATTY_ACCOUNT (self->selected_account), name);
 
-  if ((*name != '\0') && !buddy) {
-    gtk_widget_set_sensitive (button, TRUE);
-  } else {
-    gtk_widget_set_sensitive (button, FALSE);
-  }
+  gtk_widget_set_sensitive (button, valid);
 }
 
 

@@ -13,7 +13,7 @@
 
 #include <glib-object.h>
 
-#include "users/chatty-pp-buddy.h"
+#include "users/chatty-item.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS
@@ -46,16 +46,10 @@ ChattyMessage      *chatty_message_new             (ChattyItem         *user,
                                                     ChattyMsgType       type,
                                                     ChattyMsgDirection  direction,
                                                     ChattyMsgStatus     status);
-ChattyMessage      *chatty_message_new_purple      (ChattyPpBuddy      *buddy,
-                                                    PurpleConvMessage  *message);
 
 gboolean            chatty_message_get_encrypted   (ChattyMessage      *self);
 void                chatty_message_set_encrypted   (ChattyMessage      *self,
                                                     gboolean            is_encrypted);
-
-ChattyFileInfo     *chatty_message_get_file        (ChattyMessage      *self);
-void                chatty_message_set_file        (ChattyMessage      *self,
-                                                    ChattyFileInfo     *file);
 
 GList              *chatty_message_get_files       (ChattyMessage      *self);
 void                chatty_message_set_files       (ChattyMessage      *self,

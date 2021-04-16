@@ -221,7 +221,7 @@ manager_eds_is_ready (ChattyManager *self)
 
   /* TODO: Optimize */
   for (guint i = 0; i < n_accounts; i++) {
-    g_autoptr(ChattyPpAccount) account = NULL;
+    g_autoptr(ChattyAccount) account = NULL;
 
     account  = g_list_model_get_item (accounts, i);
     protocol = chatty_item_get_protocols (CHATTY_ITEM (account));
@@ -229,7 +229,7 @@ manager_eds_is_ready (ChattyManager *self)
     if (protocol != CHATTY_PROTOCOL_SMS)
       continue;
 
-    model = chatty_pp_account_get_buddy_list (account);
+    model = chatty_account_get_buddies (account);
     n_buddies = g_list_model_get_n_items (model);
     for (guint j = 0; j < n_buddies; j++) {
       g_autoptr(ChattyPpBuddy) buddy = NULL;
@@ -1025,7 +1025,7 @@ manager_buddy_added_cb (PurpleBuddy   *pp_buddy,
   account = chatty_pp_account_get_object (pp_account);
   g_return_if_fail (account);
 
-  model = chatty_pp_account_get_buddy_list (account);
+  model = chatty_account_get_buddies (CHATTY_ACCOUNT (account));
   buddy = manager_find_buddy (model, pp_buddy);
 
   if (!buddy)
@@ -1075,7 +1075,7 @@ manager_buddy_removed_cb (PurpleBuddy   *pp_buddy,
   if (!account)
     return;
 
-  model = chatty_pp_account_get_buddy_list (account);
+  model = chatty_account_get_buddies (CHATTY_ACCOUNT (account));
   buddy = manager_find_buddy (model, pp_buddy);
 
   g_return_if_fail (buddy);
@@ -1154,7 +1154,7 @@ manager_account_added_cb (PurpleAccount *pp_account,
   g_object_notify (G_OBJECT (account), "status");
   g_list_store_append (self->account_list, account);
   g_list_store_append (self->list_of_user_list,
-                       chatty_pp_account_get_buddy_list (account));
+                       chatty_account_get_buddies (CHATTY_ACCOUNT (account)));
 
   if (self->disable_auto_login)
     chatty_account_set_enabled (CHATTY_ACCOUNT (account), FALSE);
@@ -1176,7 +1176,7 @@ manager_account_removed_cb (PurpleAccount *pp_account,
   g_return_if_fail (account);
 
   chatty_utils_remove_list_item (self->list_of_user_list,
-                                 chatty_pp_account_get_buddy_list (account));
+                                 chatty_account_get_buddies (CHATTY_ACCOUNT (account)));
   g_object_notify (G_OBJECT (account), "status");
   g_signal_emit_by_name (account, "deleted");
   chatty_utils_remove_list_item (self->account_list, account);
@@ -1553,7 +1553,6 @@ manager_handle_chatty_cmd (PurpleConversation  *conv,
                     " - '/chatty return_sends [on; off]': Return = send message\n"
                     "\n"
                     "XMPP settings:\n"
-                    " - '/chatty grey_offline [on; off]': Greyout offline-contacts\n"
                     " - '/chatty blur_idle [on; off]': Blur idle-contacts icons\n"
                     " - '/chatty typing_info [on; off]': Send typing notifications\n"
                     " - '/chatty msg_receipts [on; off]': Send message receipts\n"
@@ -1562,9 +1561,6 @@ manager_handle_chatty_cmd (PurpleConversation  *conv,
     if (!g_strcmp0 (args[0], "return_sends")) {
       g_object_set (settings, "return-sends-message", TRUE, NULL);
       msg = g_strdup ("Return key sends messages");
-    } else if (!g_strcmp0 (args[0], "grey_offline")) {
-      g_object_set (settings, "greyout-offline-buddies", TRUE, NULL);
-      msg = g_strdup ("Offline user avatars will be greyed out");
     } else if (!g_strcmp0 (args[0], "blur_idle")) {
       g_object_set (settings, "blur-idle-buddies", TRUE, NULL);
       msg = g_strdup ("Offline user avatars will be blurred");
@@ -1588,9 +1584,6 @@ manager_handle_chatty_cmd (PurpleConversation  *conv,
     if (!g_strcmp0 (args[0], "return_sends")) {
       g_object_set (settings, "return-sends-message", FALSE, NULL);
       msg = g_strdup ("Return key doesn't send messages");
-    } else if (!g_strcmp0 (args[0], "grey_offline")) {
-      g_object_set (settings, "greyout-offline-buddies", FALSE, NULL);
-      msg = g_strdup ("Offline user avatars will not be greyed out");
     } else if (!g_strcmp0 (args[0], "blur_idle")) {
       g_object_set (settings, "blur-idle-buddies", FALSE, NULL);
       msg = g_strdup ("Offline user avatars will not be blurred");
@@ -1633,9 +1626,6 @@ chatty_manager_initialize_libpurple (ChattyManager *self)
 
   network_monitor = g_network_monitor_get_default ();
   self->network_available = g_network_monitor_get_network_available (network_monitor);
-
-  purple_prefs_add_none (CHATTY_PREFS_ROOT "/conversations");
-  purple_prefs_add_bool (CHATTY_PREFS_ROOT "/conversations/show_tabs", FALSE);
 
   purple_signal_register (self, "conversation-write",
                           purple_marshal_VOID__POINTER_POINTER_POINTER_UINT,
@@ -1998,6 +1988,9 @@ manager_secret_load_cb (GObject      *object,
   g_assert (CHATTY_IS_MANAGER (self));
 
   accounts = chatty_secret_load_finish (result, &error);
+
+  if (error)
+    g_warning ("Error loading secret accounts: %s", error->message);
 
   if (!accounts)
     return;
@@ -2538,86 +2531,66 @@ chatty_manager_add_chat (ChattyManager *self,
   return item ? item : chat;
 }
 
-/**
- * chatty_conv_im_with_buddy:
- * @account: a PurpleAccount
- * @name: the buddy name
- *
- * Starts a new conversation with a buddy.
- * If there is already an instance of the conversation
- * the GUI presents it to the user.
- *
- */
-void
-chatty_conv_im_with_buddy (PurpleAccount *account,
-                           const char    *name)
+gboolean
+chatty_manager_set_uri (ChattyManager *self,
+                        const char    *uri)
 {
-  PurpleConversation *conv;
+  g_autoptr(ChattyChat) chat = NULL;
+  g_autofree char *who = NULL;
+  ChattyContact *contact;
+  PurpleAccount *pp_account;
+  ChattyPpBuddy *buddy;
+  ChattyAccount *account;
+  PurpleBuddy *pp_buddy;
+  ChattyChat *item;
+  GPtrArray *buddies;
+  const char *alias, *country_code;
 
-  g_return_if_fail (purple_account_is_connected (account));
-  g_return_if_fail (name != NULL);
+  if (!uri || !*uri)
+    return FALSE;
 
-  conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_IM,
-                                                name,
-                                                account);
+  pp_account = purple_accounts_find ("SMS", "prpl-mm-sms");
+  account = (ChattyAccount *)chatty_pp_account_get_object (pp_account);
 
-  if (conv == NULL) {
-    conv = purple_conversation_new (PURPLE_CONV_TYPE_IM,
-                                    account,
-                                    name);
+  if (!purple_account_is_connected (pp_account))
+    return FALSE;
+
+  country_code = chatty_settings_get_country_iso_code (chatty_settings_get_default ());
+  who = chatty_utils_check_phonenumber (uri, country_code);
+  if (!who)
+    return FALSE;
+
+  contact = chatty_eds_find_by_number (self->chatty_eds, who);
+
+  if (contact)
+    alias = chatty_item_get_name (CHATTY_ITEM (contact));
+  else
+    alias = who;
+
+  pp_buddy = purple_find_buddy (pp_account, who);
+
+  if (!pp_buddy) {
+    pp_buddy = purple_buddy_new (pp_account, who, alias);
+
+    purple_blist_add_buddy (pp_buddy, NULL, NULL, NULL);
   }
 
-  purple_conversation_present (conv);
-}
+  buddy = chatty_pp_buddy_get_object (pp_buddy);
 
-/**
- * chatty_conv_join_chat:
- * @chat: a PurpleChat
- *
- * Joins a group chat
- * If there is already an instance of the chat
- * the GUI presents it to the user.
- *
- */
-void
-chatty_conv_join_chat (PurpleChat *chat)
-{
-  PurpleAccount            *account;
-  PurpleConversation       *conv;
-  PurplePluginProtocolInfo *prpl_info;
-  GHashTable               *components;
-  const char               *name;
-  char                     *chat_name;
+  if (buddy && contact)
+    chatty_pp_buddy_set_contact (buddy, contact);
 
-  account = purple_chat_get_account(chat);
-  prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(purple_find_prpl (purple_account_get_protocol_id (account)));
+  chat = (ChattyChat *)chatty_pp_chat_new_im_chat (pp_account, pp_buddy, FALSE);
+  item = chatty_manager_add_chat (self, chat);
 
-  components = purple_chat_get_components (chat);
+  purple_blist_node_set_bool (PURPLE_BLIST_NODE(pp_buddy), "chatty-autojoin", TRUE);
 
-  if (prpl_info && prpl_info->get_chat_name) {
-    chat_name = prpl_info->get_chat_name(components);
-  } else {
-    chat_name = NULL;
-  }
+  buddies = g_ptr_array_new_full (1, g_free);
+  g_ptr_array_add (buddies, g_strdup (who));
+  chatty_account_start_direct_chat_async (account, buddies, NULL, NULL);
+  g_signal_emit_by_name (item, "changed");
 
-  if (chat_name) {
-    name = chat_name;
-  } else {
-    name = purple_chat_get_name(chat);
-  }
-
-  conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_CHAT,
-                                                name,
-                                                account);
-
-  if (!conv || purple_conv_chat_has_left (PURPLE_CONV_CHAT(conv))) {
-    chatty_conv_add_history_since_component(components, account->username, name);
-    serv_join_chat (purple_account_get_connection (account), components);
-  } else if (conv) {
-    purple_conversation_present(conv);
-  }
-
-  g_free (chat_name);
+  return TRUE;
 }
 
 ChattyHistory *
