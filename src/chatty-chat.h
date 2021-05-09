@@ -56,6 +56,13 @@ struct _ChattyChatClass
   gboolean         (*send_message_finish) (ChattyChat    *chat,
                                            GAsyncResult  *result,
                                            GError       **error);
+  void              (*get_files_async)    (ChattyChat    *self,
+                                           ChattyMessage *message,
+                                           GAsyncReadyCallback callback,
+                                           gpointer       user_data);
+  gboolean          (*get_files_finish)   (ChattyChat    *self,
+                                           GAsyncResult  *result,
+                                           GError       **error);
   ChattyEncryption  (*get_encryption)     (ChattyChat *self);
   void              (*set_encryption)     (ChattyChat *self,
                                            gboolean    enable);
@@ -102,6 +109,13 @@ void                chatty_chat_send_message_async (ChattyChat    *chat,
                                                     GAsyncReadyCallback callback,
                                                     gpointer       user_data);
 gboolean           chatty_chat_send_message_finish (ChattyChat    *self,
+                                                    GAsyncResult  *result,
+                                                    GError       **error);
+void                chatty_chat_get_files_async    (ChattyChat    *self,
+                                                    ChattyMessage *message,
+                                                    GAsyncReadyCallback callback,
+                                                    gpointer       user_data);
+gboolean            chatty_chat_get_files_finish   (ChattyChat    *self,
                                                     GAsyncResult  *result,
                                                     GError       **error);
 ChattyEncryption    chatty_chat_get_encryption     (ChattyChat *self);

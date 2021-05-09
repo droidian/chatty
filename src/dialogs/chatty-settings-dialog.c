@@ -563,17 +563,16 @@ chatty_settings_cancel_clicked_cb (ChattySettingsDialog *self)
 }
 
 static char *
-settings_show_dialog_load_avatar (void)
+settings_show_dialog_load_avatar (ChattySettingsDialog *self)
 {
   GtkFileChooserNative *dialog;
-  GtkWindow *window;
   char *file_name = NULL;
   int response;
 
-  window = gtk_application_get_active_window (GTK_APPLICATION (g_application_get_default ()));
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
   dialog = gtk_file_chooser_native_new (_("Set Avatar"),
-                                        window,
+                                        GTK_WINDOW (self),
                                         GTK_FILE_CHOOSER_ACTION_OPEN,
                                         _("Open"),
                                         _("Cancel"));
@@ -597,7 +596,7 @@ settings_avatar_button_clicked_cb (ChattySettingsDialog *self)
 {
   g_autofree char *file_name = NULL;
 
-  file_name = settings_show_dialog_load_avatar ();
+  file_name = settings_show_dialog_load_avatar (self);
 
   if (file_name)
     chatty_item_set_avatar_async (CHATTY_ITEM (self->selected_account),

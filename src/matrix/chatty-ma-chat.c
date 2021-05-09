@@ -175,17 +175,21 @@ ma_chat_find_buddy (ChattyMaChat *self,
                     guint        *index)
 {
   guint n_items;
+  guint id_hash;
 
   g_assert (CHATTY_IS_MA_CHAT (self));
   g_assert (G_IS_LIST_MODEL (model));
   g_return_val_if_fail (matrix_id && *matrix_id, NULL);
 
   n_items = g_list_model_get_n_items (model);
+  id_hash = g_str_hash (matrix_id);
+
   for (guint i = 0; i < n_items; i++) {
     g_autoptr(ChattyMaBuddy) buddy = NULL;
 
     buddy = g_list_model_get_item (model, i);
-    if (g_str_equal (chatty_ma_buddy_get_id (buddy), matrix_id)) {
+    if (id_hash == chatty_ma_buddy_get_id_hash (buddy) &&
+        g_str_equal (chatty_ma_buddy_get_id (buddy), matrix_id)) {
       if (index)
         *index = i;
 
@@ -327,8 +331,11 @@ ma_chat_download_cb (GObject      *object,
 
   if (matrix_api_get_file_finish (self->matrix_api, result, &error))
     file->status = CHATTY_FILE_DOWNLOADED;
+  else
+    file->status = CHATTY_FILE_ERROR;
 
   chatty_history_add_message (self->history_db, CHATTY_CHAT (self), message);
+  chatty_message_emit_updated (message);
 }
 
 static void
@@ -447,8 +454,6 @@ chat_handle_m_media (ChattyMaChat  *self,
     return;
 
   g_object_set_data_full (G_OBJECT (message), "file-url", g_strdup (file->url), g_free);
-  matrix_api_get_file_async (self->matrix_api, message, file, NULL, NULL,
-                             ma_chat_download_cb, self);
   chatty_message_set_files (message, g_list_append (NULL, file));
   return;
 }
@@ -1420,6 +1425,23 @@ chatty_ma_chat_send_message_async (ChattyChat          *chat,
   CHATTY_EXIT;
 }
 
+static void
+chatty_ma_chat_get_files_async (ChattyChat          *chat,
+                                ChattyMessage       *message,
+                                GAsyncReadyCallback  callback,
+                                gpointer             user_data)
+{
+  ChattyMaChat *self = CHATTY_MA_CHAT (chat);
+  GList *files;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+  g_assert (CHATTY_IS_MESSAGE (message));
+
+  files = chatty_message_get_files (message);
+  matrix_api_get_file_async (self->matrix_api, message, files->data, NULL, NULL,
+                             ma_chat_download_cb, self);
+}
+
 static gboolean
 chatty_ma_chat_get_buddy_typing (ChattyChat *chat)
 {
@@ -1574,6 +1596,7 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
   chat_class->set_unread_count = chatty_ma_chat_set_unread_count;
   chat_class->get_last_msg_time = chatty_ma_chat_get_last_msg_time;
   chat_class->send_message_async = chatty_ma_chat_send_message_async;
+  chat_class->get_files_async = chatty_ma_chat_get_files_async;
   chat_class->get_buddy_typing = chatty_ma_chat_get_buddy_typing;
   chat_class->set_typing = chatty_ma_chat_set_typing;
 

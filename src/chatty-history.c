@@ -2049,7 +2049,7 @@ add_file_info (ChattyHistory  *self,
   sqlite3_prepare_v2 (self->db,
                       "INSERT INTO files(name,url,path,mime_type_id,size,status) "
                       "VALUES(?1,?2,?3,?4,?5,?6) "
-                      "ON CONFLICT(url) DO UPDATE SET size=?5, status=?6",
+                      "ON CONFLICT(url) DO UPDATE SET path=?3, size=?5, status=?6",
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, file->file_name, "binding when adding file");
   history_bind_text (stmt, 2, file->url, "binding when adding file");

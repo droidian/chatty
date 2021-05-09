@@ -81,6 +81,13 @@ const char *emoticons[][15] = {
   {"FROSTY", "⛄"},
 };
 
+enum {
+  FILE_REQUESTED,
+  N_SIGNALS
+};
+
+static guint signals[N_SIGNALS];
+
 static gboolean
 chat_view_time_is_same_day (time_t time_a,
                             time_t time_b)
@@ -218,9 +225,6 @@ chatty_chat_view_update (ChattyChatView *self)
     chatty_pp_chat_load_encryption_status (CHATTY_PP_CHAT (self->chat));
 
   gtk_widget_set_visible (self->send_file_button, chatty_chat_has_file_upload (self->chat));
-
-  if (CHATTY_IS_MA_CHAT (self->chat))
-    gtk_widget_show (self->send_file_button);
 
   if (protocol == CHATTY_PROTOCOL_SMS) {
     gtk_label_set_label (GTK_LABEL (self->empty_label0),
@@ -615,6 +619,23 @@ chat_view_adjustment_changed_cb (GtkAdjustment  *adjustment,
 }
 
 static void
+chat_view_get_files_cb (GObject      *object,
+                        GAsyncResult *result,
+                        gpointer      user_data)
+{
+  g_autoptr(ChattyChatView) self = user_data;
+}
+
+static void
+chat_view_file_requested_cb (ChattyChatView *self,
+                             ChattyMessage  *message)
+{
+  chatty_chat_get_files_async (self->chat, message,
+                               chat_view_get_files_cb,
+                               g_object_ref (self));
+}
+
+static void
 chat_view_sms_sent_cb (const char *sms_id,
                        int         status)
 {
@@ -697,6 +718,13 @@ chatty_chat_view_class_init (ChattyChatViewClass *klass)
 
   widget_class->map = chatty_chat_view_map;
 
+  signals [FILE_REQUESTED] =
+    g_signal_new ("file-requested",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  0, NULL, NULL, NULL,
+                  G_TYPE_NONE, 1, CHATTY_TYPE_MESSAGE);
+
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/Chatty/"
                                                "ui/chatty-chat-view.ui");
@@ -743,6 +771,8 @@ chatty_chat_view_init (ChattyChatView *self)
   g_signal_connect_after (G_OBJECT (vadjustment), "notify::upper",
                           G_CALLBACK (chat_view_adjustment_changed_cb),
                           self);
+  g_signal_connect_after (G_OBJECT (self), "file-requested",
+                          G_CALLBACK (chat_view_file_requested_cb), self);
 }
 
 GtkWidget *
