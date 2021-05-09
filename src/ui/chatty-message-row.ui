@@ -24,7 +24,6 @@
               <object class="ChattyAvatar" id="avatar_image">
                 <property name="visible">True</property>
                 <property name="valign">start</property>
-                <property name="pixel-size">36</property>
                 <property name="no-show-all">True</property>
               </object>
               <packing>
@@ -38,19 +37,9 @@
             <child>
               <object class="GtkEventBox" id="message_event_box">
                 <property name="visible">True</property>
-                <child>
-                  <object class="GtkLabel" id="message_label">
-                    <property name="visible">True</property>
-                    <property name="margin">3</property>
-                    <property name="wrap">True</property>
-                    <property name="wrap-mode">word-char</property>
-                    <property name="use-markup">True</property>
-                    <property name="xalign">0</property>
-                    <style>
-                      <class name="message_bubble"/>
-                    </style>
-                  </object>
-                </child>
+                <style>
+                  <class name="message_bubble"/>
+                </style>
               </object>
               <packing>
                 <property name="left-attach">1</property>

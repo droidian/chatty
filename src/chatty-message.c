@@ -409,6 +409,14 @@ chatty_message_get_msg_direction (ChattyMessage *self)
 }
 
 void
+chatty_message_emit_updated (ChattyMessage *self)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+
+  g_signal_emit (self, signals[UPDATED], 0);
+}
+
+void
 chatty_file_info_free (ChattyFileInfo *file_info)
 {
   if (!file_info)

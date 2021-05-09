@@ -9,7 +9,7 @@ Build-Depends:
  desktop-file-utils,
  libgtk-3-dev,
  libfeedback-dev,
- libhandy-1-dev (>= 1.0.0),
+ libhandy-1-dev (>= 1.1.90),
  libebook-contacts1.2-dev,
  libgcrypt20-dev,
  libjson-glib-dev,

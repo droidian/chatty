@@ -30,6 +30,7 @@ ChattyMaBuddy   *chatty_ma_buddy_new               (const char    *matrix_id,
                                                     MatrixApi     *api,
                                                     MatrixEnc     *enc);
 const char      *chatty_ma_buddy_get_id            (ChattyMaBuddy *self);
+guint            chatty_ma_buddy_get_id_hash       (ChattyMaBuddy *self);
 void             chatty_ma_buddy_add_devices       (ChattyMaBuddy *self,
                                                     JsonObject    *root);
 GList           *chatty_ma_buddy_get_devices       (ChattyMaBuddy *self);

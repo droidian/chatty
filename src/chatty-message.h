@@ -84,6 +84,7 @@ void                chatty_message_set_status      (ChattyMessage      *self,
                                                     time_t              mtime);
 ChattyMsgType       chatty_message_get_msg_type    (ChattyMessage      *self);
 ChattyMsgDirection  chatty_message_get_msg_direction (ChattyMessage    *self);
+void                chatty_message_emit_updated    (ChattyMessage      *self);
 void                chatty_file_info_free          (ChattyFileInfo *file_info);
 
 G_END_DECLS

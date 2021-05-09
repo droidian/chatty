@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyImageItem" parent="GtkBin">
+    <property name="visible">True</property>
+
+    <child>
+      <object class="GtkOverlay">
+        <property name="visible">True</property>
+
+        <child type="overlay">
+          <object class="GtkStack" id="overlay_stack">
+            <property name="visible">True</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+
+            <child>
+              <object class="GtkButton" id="download_button">
+                <property name="visible">True</property>
+                <property name="width-request">40</property>
+                <property name="height-request">40</property>
+                <signal name="clicked" handler="chatty_image_download_clicked_cb" swapped="yes"/>
+                <style>
+                  <class name="circular"/>
+                  <class name="osd"/>
+                </style>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="icon-name">folder-download-symbolic</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkSpinner" id="download_spinner">
+                <property name="visible">True</property>
+              </object>
+            </child>
+
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkImage" id="image">
+            <property name="visible">True</property>
+            <property name="pixel-size">96</property>
+            <property name="icon-name">image-x-generic-symbolic</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+        </child>
+
+      </object>
+    </child>
+
+  </template>
+</interface>

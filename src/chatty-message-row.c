@@ -14,6 +14,8 @@
 
 #include "chatty-avatar.h"
 #include "chatty-utils.h"
+#include "chatty-image-item.h"
+#include "chatty-text-item.h"
 #include "chatty-message-row.h"
 
 
@@ -27,12 +29,14 @@ struct _ChattyMessageRow
   GtkWidget  *content_grid;
   GtkWidget  *avatar_image;
   GtkWidget  *message_event_box;
-  GtkWidget  *message_label;
   GtkWidget  *footer_label;
+
+  GtkWidget  *content;
 
   GtkWidget  *popover;
   GtkGesture *multipress_gesture;
   GtkGesture *longpress_gesture;
+  GtkGesture *activate_gesture;
 
   ChattyMessage *message;
   ChattyProtocol protocol;
@@ -41,26 +45,6 @@ struct _ChattyMessageRow
 
 G_DEFINE_TYPE (ChattyMessageRow, chatty_message_row, GTK_TYPE_LIST_BOX_ROW)
 
-
-static gchar *
-chatty_msg_list_escape_message (ChattyMessageRow *self,
-                                const char       *message)
-{
-  g_autofree char *nl_2_br = NULL;
-  g_autofree char *striped = NULL;
-  g_autofree char *escaped = NULL;
-  g_autofree char *linkified = NULL;
-  char *result;
-
-  nl_2_br = purple_strdup_withhtml (message);
-  striped = purple_markup_strip_html (nl_2_br);
-  escaped = purple_markup_escape_text (striped, -1);
-  linkified = purple_markup_linkify (escaped);
-  // convert all tags to lowercase for GtkLabel markup parser
-  purple_markup_html_to_xhtml (linkified, &result, NULL);
-
-  return result;
-}
 
 static void
 copy_clicked_cb (ChattyMessageRow *self)
@@ -71,9 +55,9 @@ copy_clicked_cb (ChattyMessageRow *self)
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
 
   clipboard = gtk_clipboard_get (GDK_SELECTION_CLIPBOARD);
-  text = gtk_label_get_text (GTK_LABEL (self->message_label));
+  text = chatty_text_item_get_text (CHATTY_TEXT_ITEM (self->content));
 
-  if (text != NULL)
+  if (text && *text)
     gtk_clipboard_set_text (clipboard, text, -1);
 }
 
@@ -81,6 +65,9 @@ static void
 message_row_show_popover (ChattyMessageRow *self)
 {
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
+
+  if (chatty_message_get_msg_type (self->message) != CHATTY_MESSAGE_TEXT)
+    return;
 
   if (!self->popover) {
     GtkWidget *item;
@@ -110,41 +97,30 @@ message_row_hold_cb (ChattyMessageRow *self)
 }
 
 static void
-message_row_update_quotes (ChattyMessageRow *self)
+message_activate_gesture_cb (ChattyMessageRow *self)
 {
-  const char *text, *end;
-  char *quote;
+  g_autoptr(GFile) file = NULL;
+  g_autofree char *uri = NULL;
+  ChattyFileInfo *info = NULL;
+  GList *file_list;
 
-  text = gtk_label_get_text (GTK_LABEL (self->message_label));
-  end = text;
+  g_assert (CHATTY_IS_MESSAGE_ROW (self));
 
-  if (!text || !*text)
+  if (chatty_message_get_msg_type (self->message) != CHATTY_MESSAGE_IMAGE)
     return;
 
-  do {
-    quote = strchr (end, '>');
+  file_list = chatty_message_get_files (self->message);
 
-    if (quote &&
-        (quote == text ||
-         *(quote - 1) == '\n')) {
-      PangoAttrList *list;
-      PangoAttribute *attribute;
+  if (file_list)
+    info = file_list->data;
 
-      list = gtk_label_get_attributes (GTK_LABEL (self->message_label));
-      end = strchr (quote, '\n');
+  if (!info || !info->path)
+    return;
 
-      if (!end)
-        end = quote + strlen (quote);
+  file = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", info->path, NULL);
+  uri = g_file_get_uri (file);
 
-      attribute = pango_attr_foreground_new (30000, 30000, 30000);
-      attribute->start_index = quote - text;
-      attribute->end_index = end - text + 1;
-      pango_attr_list_insert (list, attribute);
-    } else if (quote && *quote) {
-      /* Move forward one character if '>' happend midst a line */
-      end = end + 1;
-    }
-  } while (quote && *quote);
+  gtk_show_uri_on_window (NULL, uri, GDK_CURRENT_TIME, NULL);
 }
 
 static void
@@ -154,7 +130,6 @@ message_row_update_message (ChattyMessageRow *self)
   g_autofree char *footer = NULL;
   const char *status_str = "";
   ChattyMsgStatus status;
-  ChattyMsgType type;
 
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
   g_assert (self->message);
@@ -192,41 +167,8 @@ message_row_update_message (ChattyMessageRow *self)
                             NULL);
   }
 
-  type = chatty_message_get_msg_type (self->message);
-
-  if (type == CHATTY_MESSAGE_IMAGE ||
-      type == CHATTY_MESSAGE_VIDEO ||
-      type == CHATTY_MESSAGE_AUDIO ||
-      type == CHATTY_MESSAGE_FILE) {
-    ChattyFileInfo *file;
-    const char *name = NULL;
-    GList *files = NULL;
-
-    files = chatty_message_get_files (self->message);
-    file = g_list_nth_data (files, 0);
-    if (file)
-      name = file->file_name ? file->file_name : chatty_message_get_text (self->message);
-    if (file && file->url) {
-      if (file->status == CHATTY_FILE_DOWNLOADED) {
-        const char *end = strrchr (file->url, '/');
-        if (end)
-          message = g_strconcat ("<a href='file://", g_get_user_cache_dir (), "/",
-                                 "chatty", "/", "files", end, "'>", name, "</a>", NULL);
-      }
-
-      if (!message)
-        message = g_strconcat ("<a href='", file->url, "'>", name, "</a>", NULL);
-    } else
-      message = g_strdup (name);
-  } else {
-    message = chatty_msg_list_escape_message (self, chatty_message_get_text (self->message));
-  }
-
-  gtk_label_set_markup (GTK_LABEL (self->message_label), message);
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
-
-  message_row_update_quotes (self);
 }
 
 static gboolean
@@ -266,20 +208,13 @@ chatty_message_row_class_init (ChattyMessageRowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, content_grid);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, avatar_image);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, message_event_box);
-  gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, message_label);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, footer_label);
 }
 
 static void
 chatty_message_row_init (ChattyMessageRow *self)
 {
-  PangoAttrList *list;
-
   gtk_widget_init_template (GTK_WIDGET (self));
-
-  list = pango_attr_list_new ();
-  gtk_label_set_attributes (GTK_LABEL (self->message_label), list);
-  pango_attr_list_unref (list);
 
   self->multipress_gesture = gtk_gesture_multi_press_new (self->message_event_box);
   gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (self->multipress_gesture), GDK_BUTTON_SECONDARY);
@@ -290,6 +225,11 @@ chatty_message_row_init (ChattyMessageRow *self)
   gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (self->longpress_gesture), TRUE);
   g_signal_connect_swapped (self->longpress_gesture, "pressed",
                             G_CALLBACK (message_row_hold_cb), self);
+
+  self->activate_gesture = gtk_gesture_multi_press_new (self->message_event_box);
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (self->activate_gesture), GDK_BUTTON_PRIMARY);
+  g_signal_connect_swapped (self->activate_gesture, "pressed",
+                            G_CALLBACK (message_activate_gesture_cb), self);
 }
 
 GtkWidget *
@@ -300,35 +240,44 @@ chatty_message_row_new (ChattyMessage  *message,
   ChattyMessageRow *self;
   GtkStyleContext *sc;
   ChattyMsgDirection direction;
+  ChattyMsgType type;
+
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (message), NULL);
 
   self = g_object_new (CHATTY_TYPE_MESSAGE_ROW, NULL);
-  sc = gtk_widget_get_style_context (self->message_label);
+  sc = gtk_widget_get_style_context (self->message_event_box);
   self->protocol = protocol;
-
-  if (!message)
-    return GTK_WIDGET (self);
 
   self->message = g_object_ref (message);
   self->is_im = !!is_im;
   direction = chatty_message_get_msg_direction (message);
+  type = chatty_message_get_msg_type (message);
+
+  if (type == CHATTY_MESSAGE_IMAGE)
+    self->content = chatty_image_item_new (message, protocol);
+  else
+    self->content = chatty_text_item_new (message, protocol);
+
+  gtk_container_add (GTK_CONTAINER (self->message_event_box), self->content);
+  gtk_widget_show (self->content);
 
   if (direction == CHATTY_DIRECTION_IN) {
     gtk_style_context_add_class (sc, "bubble_white");
     gtk_widget_set_halign (self->content_grid, GTK_ALIGN_START);
-    gtk_widget_set_halign (self->message_label, GTK_ALIGN_START);
+    gtk_widget_set_halign (self->message_event_box, GTK_ALIGN_START);
   } else if (direction == CHATTY_DIRECTION_OUT && protocol == CHATTY_PROTOCOL_SMS) {
     gtk_style_context_add_class (sc, "bubble_green");
   } else if (direction == CHATTY_DIRECTION_OUT) {
     gtk_style_context_add_class (sc, "bubble_blue");
   } else { /* System message */
     gtk_style_context_add_class (sc, "bubble_purple");
-    gtk_widget_set_hexpand (self->message_label, TRUE);
+    gtk_widget_set_hexpand (self->message_event_box, TRUE);
   }
 
   if (direction == CHATTY_DIRECTION_OUT) {
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 1);
     gtk_widget_set_halign (self->content_grid, GTK_ALIGN_END);
-    gtk_widget_set_halign (self->message_label, GTK_ALIGN_END);
+    gtk_widget_set_halign (self->message_event_box, GTK_ALIGN_END);
   } else {
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
   }
@@ -361,22 +310,6 @@ chatty_message_row_get_item (ChattyMessageRow *self)
   g_return_val_if_fail (CHATTY_IS_MESSAGE_ROW (self), NULL);
 
   return self->message;
-}
-
-
-void
-chatty_message_row_set_footer (ChattyMessageRow *self,
-                               GtkWidget        *footer)
-{
-  g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
-
-  if (!footer || footer == self->footer_label)
-    return;
-
-  gtk_container_remove (GTK_CONTAINER (self->content_grid), self->footer_label);
-  gtk_grid_attach (GTK_GRID (self->content_grid), footer, 1, 1, 1, 1);
-  gtk_widget_show (footer);
-  self->footer_label = footer;
 }
 
 void

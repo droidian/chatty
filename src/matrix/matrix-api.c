@@ -277,6 +277,20 @@ api_download_stream_cb (GObject      *obj,
   g_output_stream_write_all (out_stream, buffer, n_read, &n_written, NULL, NULL);
   if (n_read == 0 || n_read == -1) {
     g_output_stream_close (out_stream, cancellable, NULL);
+
+    if (n_read == 0) {
+      g_autoptr(GFile) parent = NULL;
+      GFile *out_file;
+      ChattyFileInfo *file;
+
+      file = g_object_get_data (user_data, "file");
+      out_file = g_object_get_data (user_data, "out-file");
+
+      /* We don't use absolute directory so that the path is user agnostic */
+      parent = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", NULL);
+      file->path = g_file_get_relative_path (parent, out_file);
+    }
+
     g_task_return_boolean (task, n_read == 0);
 
     return;
@@ -1728,10 +1742,10 @@ matrix_api_get_file_async (MatrixApi             *self,
   g_autoptr(SoupMessage) msg = NULL;
   GTask *task;
 
-  CHATTY_ENTRY;
-
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (CHATTY_IS_MESSAGE (message));
+
+  CHATTY_TRACE_MSG ("Downloading file");
 
   task = g_task_new (self, self->cancellable, callback, user_data);
   g_object_set_data (G_OBJECT (task), "progress", progress_callback);
@@ -1740,11 +1754,19 @@ matrix_api_get_file_async (MatrixApi             *self,
   g_object_set_data_full (G_OBJECT (task), "message",
                           g_object_ref (message), g_object_unref);
 
+  if (file->status != CHATTY_FILE_UNKNOWN) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Download not required");
+    return;
+  }
+
+  file->status = CHATTY_FILE_DOWNLOADING;
+  chatty_message_emit_updated (message);
+
   msg = soup_message_new (SOUP_METHOD_GET, file->url);
   soup_session_send_async (self->soup_session, msg, self->cancellable,
                            (GAsyncReadyCallback)api_get_file_stream_cb,
                            g_steal_pointer (&task));
-  CHATTY_EXIT;
 }
 
 gboolean

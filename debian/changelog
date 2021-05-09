@@ -1,3 +1,42 @@
+chatty (0.3.0) byzantium; urgency=medium
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+
+  [ Evangelos Ribeiro Tzaras ]
+  * d/control: Bump required libhandy version
+
+  [ Mohammed Sadiq ]
+  * settings-dialog: Fix avatar chooser dialog
+  * avatar: Port to use HandyAvatar
+  * chat-view: don't show file upload button for matrix
+  * window: Fix chat list row selection
+  * matrix: Speed up buddy search
+  * pp-chat: Initialize a variable with NULL
+  * window: Initialize chat with NULL
+  * message-row: Remove unused code
+  * message-row: Don't allow creating message row without message
+  * history: Update file path when saving file
+  * chat: Add API to download files
+  * chat-view: Add file-requested signal
+  * enums: Add more items to ChattyFileStatus
+  * matrix-api: Update file path after download
+  * message: Add an API to emit 'updated' signal
+  * ma-chat: Implement a way to download files
+  * Add chatty-text-item
+  * Add chatty-image-item
+  * message-row: Use the newly added widgets to show messages
+  * message-row: Don't show copy popover for images
+  * message-row: Open image with external app on single click
+
+  [ scootergrisen ]
+  * po: Update Danish translation
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Tue, 04 May 2021 15:11:22 +0530
+
 chatty (0.3.0~beta2) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

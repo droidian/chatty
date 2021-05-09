@@ -29,6 +29,8 @@ struct _ChattyMaBuddy
   MatrixApi      *matrix_api;
   MatrixEnc      *matrix_enc;
 
+  /* generated using g_str_hash for faster comparison */
+  guint           id_hash;
   gboolean        is_self;
 };
 
@@ -207,6 +209,17 @@ chatty_ma_buddy_get_id (ChattyMaBuddy *self)
     return self->matrix_id;
 
   return "";
+}
+
+guint
+chatty_ma_buddy_get_id_hash (ChattyMaBuddy *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MA_BUDDY (self), 0);
+
+  if (!self->id_hash && self->matrix_id)
+    self->id_hash = g_str_hash (self->matrix_id);
+
+  return self->id_hash;
 }
 
 void
