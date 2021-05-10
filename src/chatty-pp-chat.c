@@ -124,7 +124,7 @@ pp_chat_add_history_since_component (ChattyPpChat *self,
 static void
 pp_chat_setup_file_upload (ChattyPpChat *self)
 {
-  PurplePluginProtocolInfo *prpl_info;
+  PurplePluginProtocolInfo *prpl_info = NULL;
   PurpleConnection *gc;
   PurpleBlistNode *node = NULL;
   g_autoptr(GList) list = NULL;

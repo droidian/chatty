@@ -1,4 +1,11 @@
-chatty (0.3.0~beta2-1) UNRELEASED; urgency=medium
+chatty (0.3.0-1) experimental; urgency=medium
+
+  * d/gbp.conf: Use pristine tar by default
+  * New upstream version 0.3.0
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Sun, 09 May 2021 21:20:19 +0200
+
+chatty (0.3.0~beta2-1) experimental; urgency=medium
 
   [ Henry-Nicolas Tourneur ]
   * d/changelog: remove duplicate line

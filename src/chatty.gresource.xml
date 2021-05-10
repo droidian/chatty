@@ -5,6 +5,7 @@
     <file>ui/chatty-list-row.ui</file>
     <file>ui/chatty-chat-view.ui</file>
     <file>ui/chatty-contact-row.ui</file>
+    <file>ui/chatty-image-item.ui</file>
     <file>ui/chatty-message-row.ui</file>
     <file>ui/chatty-info-dialog.ui</file>
     <file>ui/chatty-settings-dialog.ui</file>
