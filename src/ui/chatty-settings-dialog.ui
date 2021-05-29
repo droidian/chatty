@@ -62,16 +62,6 @@
           </packing>
         </child>
 
-        <child>
-          <object class="GtkSpinner" id="matrix_spinner">
-            <property name="visible">1</property>
-            <property name="halign">start</property>
-          </object>
-          <packing>
-            <property name="pack-type">end</property>
-          </packing>
-        </child>
-
         <!-- Save button -->
         <child>
           <object class="GtkButton" id="save_button">
@@ -82,6 +72,16 @@
             <style>
               <class name="default" />
             </style>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkSpinner" id="matrix_spinner">
+            <property name="visible">1</property>
+            <property name="halign">start</property>
           </object>
           <packing>
             <property name="pack-type">end</property>
@@ -418,7 +418,6 @@
                           <object class="GtkEntry" id="password_entry">
                             <property name="hexpand">True</property>
                             <property name="input_purpose">password</property>
-                            <property name="sensitive">False</property>
                             <property name="visible">True</property>
                             <property name="visibility">False</property>
                             <property name="primary_icon_sensitive">False</property>
@@ -426,32 +425,13 @@
                             <property name="secondary_icon_name">eye-not-looking-symbolic</property>
                             <property name="secondary_icon_sensitive">True</property>
                             <signal name="icon-press" handler="settings_pw_entry_icon_clicked_cb" swapped="yes"/>
+                            <signal name="changed" handler="settings_pw_entry_changed_cb" swapped="yes"/>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
                             <property name="top_attach">3</property>
                             <property name="width">1</property>
                             <property name="height">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkButton" id="edit_password_button">
-                            <property name="can-focus">False</property>
-                            <property name="margin-right">12</property>
-                            <property name="valign">center</property>
-                            <property name="visible">True</property>
-                            <signal name="clicked" handler="settings_edit_password_clicked_cb" swapped="yes"/>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="icon-name">document-edit-symbolic</property>
-                                <property name="icon-size">1</property>
-                                <property name="visible">True</property>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="left_attach">2</property>
-                            <property name="top_attach">3</property>
                           </packing>
                         </child>
                         <child>

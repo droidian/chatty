@@ -137,7 +137,7 @@ chatty_text_item_init (ChattyTextItem *self)
 {
   self->content_label = g_object_new (GTK_TYPE_LABEL,
                                       "visible", TRUE,
-                                      "margin", 3,
+                                      "margin", 2,
                                       "wrap", TRUE,
                                       "wrap-mode", PANGO_WRAP_WORD_CHAR,
                                       "xalign", 0.0,
@@ -171,6 +171,15 @@ chatty_text_item_new (ChattyMessage  *message,
   text_item_update_message (self);
 
   return GTK_WIDGET (self);
+}
+
+GtkStyleContext *
+chatty_text_item_get_style (ChattyTextItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_TEXT_ITEM (self), NULL);
+
+  return gtk_widget_get_style_context (self->content_label);
+
 }
 
 ChattyMessage *

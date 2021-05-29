@@ -154,6 +154,15 @@ chatty_avatar_set_item (ChattyAvatar *self,
   g_return_if_fail (CHATTY_IS_AVATAR (self));
   g_return_if_fail (!item || CHATTY_IS_ITEM (item));
 
+  if (self->item) {
+    g_signal_handlers_disconnect_by_func (self->item,
+                                          g_clear_object,
+                                          &self->item);
+    g_signal_handlers_disconnect_by_func (self->item,
+                                          avatar_changed_cb,
+                                          self);
+  }
+
   if (!g_set_object (&self->item, item))
     return;
 

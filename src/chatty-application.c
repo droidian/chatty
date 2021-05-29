@@ -57,6 +57,9 @@ struct _ChattyApplication
   char *uri;
   guint open_uri_id;
 
+  gulong   delete_id;
+  gulong   open_chat_id;
+
   gboolean daemon;
   gboolean show_window;
   gboolean enable_debug;
@@ -239,6 +242,9 @@ chatty_application_finalize (GObject *object)
 {
   ChattyApplication *self = (ChattyApplication *)object;
 
+  g_clear_signal_handler (&self->open_chat_id, self->manager);
+  g_clear_signal_handler (&self->delete_id, self->main_window);
+
   g_clear_handle_id (&self->open_uri_id, g_source_remove);
   g_clear_object (&self->manager);
 
@@ -374,15 +380,15 @@ chatty_application_activate (GApplication *application)
     g_object_add_weak_pointer (G_OBJECT (self->main_window), (gpointer *)&self->main_window);
   }
 
-  if (self->daemon)
-    g_signal_connect (G_OBJECT (self->main_window),
-                      "delete-event",
-                      G_CALLBACK (gtk_widget_hide_on_delete),
-                      NULL);
+  if (self->daemon && !self->delete_id)
+    self->delete_id = g_signal_connect (self->main_window, "delete-event",
+                                        G_CALLBACK (gtk_widget_hide_on_delete),
+                                        NULL);
 
-  g_signal_connect_object (self->manager, "open-chat",
-                           G_CALLBACK (application_open_chat), self,
-                           G_CONNECT_SWAPPED);
+  if (!self->open_chat_id)
+    self->open_chat_id = g_signal_connect_swapped (self->manager, "open-chat",
+                                                   G_CALLBACK (application_open_chat),
+                                                   self);
 
   if (self->show_window)
     gtk_window_present (GTK_WINDOW (self->main_window));
