@@ -326,24 +326,6 @@
                     <property name="pack_type">end</property>
                   </packing>
                 </child>
-                <child>
-                  <object class="GtkButton" id="header_chat_info_button">
-                    <property name="visible">False</property>
-                    <property name="can_focus">False</property>
-                    <property name="receives_default">False</property>
-                    <signal name="clicked" handler="window_show_chat_info_clicked_cb" swapped="yes"/>
-                    <child>
-                      <object class="GtkImage">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="icon_name">user-info-symbolic</property>
-                      </object>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="pack_type">end</property>
-                  </packing>
-                </child>
               </object>
               <packing>
                 <property name="name">content</property>

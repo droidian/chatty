@@ -7,68 +7,92 @@
     <property name="activatable">False</property>
 
     <child>
-      <object class="GtkRevealer" id="revealer">
+      <object class="GtkGrid" id="content_grid">
         <property name="visible">True</property>
-        <property name="hexpand">True</property>
-        <property name="transition-type">slide-up</property>
-        <property name="transition-duration">300</property>
+        <property name="column-spacing">12</property>
+        <property name="row-spacing">3</property>
+
+        <!-- Avatar -->
         <child>
-          <object class="GtkGrid" id="content_grid">
+          <object class="ChattyAvatar" id="avatar_image">
             <property name="visible">True</property>
-            <property name="column-spacing">12</property>
-            <property name="row-spacing">6</property>
-            <property name="margin-bottom">3</property>
-
-            <!-- Avatar -->
-            <child>
-              <object class="ChattyAvatar" id="avatar_image">
-                <property name="visible">True</property>
-                <property name="valign">start</property>
-                <property name="no-show-all">True</property>
-              </object>
-              <packing>
-                <property name="left-attach">0</property>
-                <property name="top-attach">0</property>
-                <property name="height">2</property>
-              </packing>
-            </child>
-
-            <!-- Message text -->
-            <child>
-              <object class="GtkEventBox" id="message_event_box">
-                <property name="visible">True</property>
-                <style>
-                  <class name="message_bubble"/>
-                </style>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">0</property>
-              </packing>
-            </child>
-
-            <!-- Message footer -->
-            <child>
-              <object class="GtkLabel" id="footer_label">
-                <property name="visible">False</property>
-                <property name="sensitive">False</property>
-                <property name="margin-bottom">6</property>
-                <property name="no-show-all">True</property>
-                <property name="ellipsize">end</property>
-                <property name="single-line-mode">True</property>
-                <attributes>
-                  <attribute name="scale" value="0.8333"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">1</property>
-              </packing>
-            </child>
-
+            <property name="valign">start</property>
+            <property name="no-show-all">True</property>
           </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">0</property>
+            <property name="height">2</property>
+          </packing>
         </child>
+
+        <!-- Avatar placeholder -->
+        <!-- HACK to keep the width of avatar when hidden -->
+        <child>
+          <object class="GtkBox" id="hidden_box">
+            <property name="visible">False</property>
+            <property name="no-show-all">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+
+        <!-- Author label -->
+        <child>
+          <object class="GtkLabel" id="author_label">
+            <property name="visible">False</property>
+            <property name="valign">start</property>
+            <property name="no-show-all">True</property>
+            <property name="margin-top">3</property>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">0</property>
+          </packing>
+        </child>
+
+        <!-- Message text -->
+        <child>
+          <object class="GtkEventBox" id="message_event_box">
+            <property name="visible">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">1</property>
+          </packing>
+        </child>
+
+        <!-- Message footer -->
+        <child>
+          <object class="GtkLabel" id="footer_label">
+            <property name="visible">False</property>
+            <property name="sensitive">False</property>
+            <property name="no-show-all">True</property>
+            <property name="ellipsize">end</property>
+            <property name="single-line-mode">True</property>
+            <attributes>
+              <attribute name="scale" value="0.8333"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">2</property>
+          </packing>
+        </child>
+
       </object>
     </child>
   </template>
+
+  <object class="GtkSizeGroup" id="avatar_size_group">
+    <property name="mode">horizontal</property>
+    <widgets>
+      <widget name="avatar_image"/>
+      <widget name="hidden_box"/>
+    </widgets>
+  </object>
+
 </interface>

@@ -4,7 +4,7 @@
     <property name="visible">True</property>
 
     <child>
-      <object class="GtkOverlay">
+      <object class="GtkOverlay" id="image_overlay">
         <property name="visible">True</property>
 
         <child type="overlay">

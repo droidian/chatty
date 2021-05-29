@@ -25,6 +25,7 @@ struct _ChattyImageItem
 {
   GtkBin         parent_instance;
 
+  GtkWidget     *image_overlay;
   GtkWidget     *overlay_stack;
   GtkWidget     *download_spinner;
   GtkWidget     *download_button;
@@ -147,6 +148,7 @@ chatty_image_item_class_init (ChattyImageItemClass *klass)
                                                "/sm/puri/Chatty/"
                                                "ui/chatty-image-item.ui");
 
+  gtk_widget_class_bind_template_child (widget_class, ChattyImageItem, image_overlay);
   gtk_widget_class_bind_template_child (widget_class, ChattyImageItem, overlay_stack);
   gtk_widget_class_bind_template_child (widget_class, ChattyImageItem, download_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyImageItem, download_spinner);
@@ -186,6 +188,15 @@ chatty_image_item_new (ChattyMessage  *message,
   image_item_update_message (self);
 
   return GTK_WIDGET (self);
+}
+
+GtkStyleContext *
+chatty_image_item_get_style (ChattyImageItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_IMAGE_ITEM (self), NULL);
+
+  return gtk_widget_get_style_context (self->image_overlay);
+
 }
 
 ChattyMessage *

@@ -47,6 +47,9 @@ struct _ChattyChatView
   GtkTextBuffer *message_input_buffer;
   GtkAdjustment *vadjustment;
 
+  /* Signal ids */
+  GBinding   *history_binding;
+
   ChattyChat *chat;
   char       *last_message_id;  /* id of last sent message, currently used only for SMS */
   guint       refresh_typing_id;
@@ -87,28 +90,6 @@ enum {
 };
 
 static guint signals[N_SIGNALS];
-
-static gboolean
-chat_view_time_is_same_day (time_t time_a,
-                            time_t time_b)
-{
-  struct tm *tm;
-  int day_a, day_b;
-
-  if (difftime (time_a, time_b) > SECONDS_PER_DAY)
-    return FALSE;
-
-  tm = localtime (&time_a);
-  day_a = tm->tm_yday;
-
-  tm = localtime (&time_b);
-  day_b = tm->tm_yday;
-
-  if (day_a == day_b)
-    return TRUE;
-
-  return FALSE;
-}
 
 static gboolean
 chat_view_hash_table_match_item (gpointer key,
@@ -321,11 +302,25 @@ messages_items_changed_cb (ChattyChatView *self,
   if (added == 0)
     return;
 
-  /* Don't hide footers in group chats */
-  if (!chatty_chat_is_im (self->chat))
-    return;
-
   list = GTK_LIST_BOX (self->message_list);
+
+  /* Hide duplicate author labels in group chats */
+  if (!chatty_chat_is_im (self->chat) ||
+      CHATTY_IS_MA_CHAT (self->chat)) {
+    for (gint i = position; i < position + added; i++) {
+      next_row = gtk_list_box_get_row_at_index (list, i + 1);
+
+      if (!next_row)
+        break;
+
+      row = gtk_list_box_get_row_at_index (list, i);
+      msg = chatty_message_row_get_item (CHATTY_MESSAGE_ROW (row));
+      next_msg = chatty_message_row_get_item (CHATTY_MESSAGE_ROW (next_row));
+
+      if (chatty_message_user_matches (msg, next_msg))
+        chatty_message_row_hide_user_detail (CHATTY_MESSAGE_ROW (next_row));
+    }
+  }
 
   for (gint i = position; i < position + added; i++) {
     next_row = gtk_list_box_get_row_at_index (list, i + 1);
@@ -340,11 +335,8 @@ messages_items_changed_cb (ChattyChatView *self,
     next_msg = chatty_message_row_get_item (CHATTY_MESSAGE_ROW (next_row));
     next_time = chatty_message_get_time (next_msg);
 
-    /*
-     * Hide time if the message following the current one belong to the same
-     * day
-     */
-    if (chat_view_time_is_same_day (time, next_time))
+    /* Hide footer of the previous message if both have same time (in minutes) */
+    if (time / 60 == next_time / 60)
       chatty_message_row_hide_footer (CHATTY_MESSAGE_ROW (row));
   }
 }
@@ -807,6 +799,20 @@ chatty_chat_view_set_chat (ChattyChatView *self,
   g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
   g_return_if_fail (CHATTY_IS_CHAT (chat));
 
+  if (self->chat && chat != self->chat) {
+    g_signal_handlers_disconnect_by_func (chatty_chat_get_messages (self->chat),
+                                          messages_items_changed_cb,
+                                          self);
+    g_signal_handlers_disconnect_by_func (self->chat,
+                                          chat_encrypt_changed_cb,
+                                          self);
+    g_signal_handlers_disconnect_by_func (self->chat,
+                                          chat_buddy_typing_changed_cb,
+                                          self);
+
+    g_clear_object (&self->history_binding);
+  }
+
   if (!g_set_object (&self->chat, chat))
     return;
 
@@ -817,22 +823,19 @@ chatty_chat_view_set_chat (ChattyChatView *self,
                            chatty_chat_get_messages (self->chat),
                            (GtkListBoxCreateWidgetFunc)chat_view_message_row_new,
                            self, NULL);
-  g_signal_connect_object (chatty_chat_get_messages (self->chat),
-                           "items-changed",
-                           G_CALLBACK (messages_items_changed_cb),
-                           self,
-                           G_CONNECT_SWAPPED | G_CONNECT_AFTER);
-  g_signal_connect_object (self->chat, "notify::encrypt",
-                           G_CALLBACK (chat_encrypt_changed_cb),
-                           self,
-                           G_CONNECT_SWAPPED);
-  g_signal_connect_object (self->chat, "notify::buddy-typing",
-                           G_CALLBACK (chat_buddy_typing_changed_cb),
-                           self,
-                           G_CONNECT_SWAPPED);
-  g_object_bind_property (self->chat, "loading-history",
-                          self->loading_spinner, "active",
-                          G_BINDING_SYNC_CREATE);
+  g_signal_connect_swapped (chatty_chat_get_messages (self->chat),
+                            "items-changed",
+                            G_CALLBACK (messages_items_changed_cb),
+                            self);
+  g_signal_connect_swapped (self->chat, "notify::encrypt",
+                            G_CALLBACK (chat_encrypt_changed_cb),
+                            self);
+  g_signal_connect_swapped (self->chat, "notify::buddy-typing",
+                            G_CALLBACK (chat_buddy_typing_changed_cb),
+                            self);
+  self->history_binding = g_object_bind_property (self->chat, "loading-history",
+                                                  self->loading_spinner, "active",
+                                                  G_BINDING_SYNC_CREATE);
 
   chat_encrypt_changed_cb (self);
   chat_buddy_typing_changed_cb (self);
