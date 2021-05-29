@@ -20,6 +20,7 @@
 #include "contrib/gtk.h"
 #include "chatty-config.h"
 #include "chatty-history.h"
+#include "chatty-notification.h"
 #include "chatty-utils.h"
 #include "matrix-api.h"
 #include "matrix-db.h"
@@ -55,6 +56,7 @@ struct _ChattyMaChat
   GListStore          *buddy_list;
   GListStore          *message_list;
   GtkSortListModel    *sorted_message_list;
+  ChattyNotification  *notification;
 
   /* Pending messages to be sent.  Queue messages here when
      @self is busy (eg: claiming keys for encrypted chat) */
@@ -74,6 +76,7 @@ struct _ChattyMaChat
 
   int            message_timeout_id;
   guint          is_sending_message : 1;
+  guint          notification_shown : 1;
 
   guint          state_is_sync    : 1;
   guint          state_is_syncing : 1;
@@ -1023,8 +1026,15 @@ matrix_chat_set_json_data (ChattyMaChat *self,
 
   object = matrix_utils_json_object_get_object (self->json_data, "unread_notifications");
   if (object) {
+    guint old_count;
+
+    old_count = self->unread_count;
     self->unread_count = matrix_utils_json_object_get_int (object, "notification_count");
     g_signal_emit_by_name (self, "changed", 0);
+
+    /* Reset notification state on new messages */
+    if (self->unread_count > old_count)
+      self->notification_shown = FALSE;
   }
 }
 
@@ -1555,6 +1565,7 @@ chatty_ma_chat_finalize (GObject *object)
   g_clear_object (&self->message_list);
   g_clear_object (&self->matrix_api);
   g_clear_object (&self->matrix_enc);
+  g_clear_object (&self->notification);
   g_queue_free_full (self->message_queue, g_object_unref);
 
   g_free (self->room_name);
@@ -1628,6 +1639,7 @@ chatty_ma_chat_init (ChattyMaChat *self)
   self->sorted_message_list = gtk_sort_list_model_new (G_LIST_MODEL (self->message_list), sorter);
   self->buddy_list = g_list_store_new (CHATTY_TYPE_MA_BUDDY);
   self->message_queue = g_queue_new ();
+  self->notification  = chatty_notification_new ();
 }
 
 ChattyMaChat *
@@ -1764,4 +1776,32 @@ chatty_ma_chat_add_messages (ChattyMaChat *self,
   if (messages && messages->len)
     g_list_store_splice (self->message_list, 0, 0,
                          messages->pdata, messages->len);
+}
+
+/**
+ * chatty_ma_chat_show_notification:
+ * @self: A #ChattyMaChat
+ *
+ * Show notification for the last unread #ChattyMessage,
+ * if any.
+ *
+ */
+void
+chatty_ma_chat_show_notification (ChattyMaChat *self)
+{
+  g_autoptr(ChattyMessage) message = NULL;
+  ChattyChat *chat;
+  guint n_items;
+
+  g_return_if_fail (CHATTY_IS_MA_CHAT (self));
+
+  if (!self->unread_count || self->notification_shown)
+    return;
+
+  chat = CHATTY_CHAT (self);
+  self->notification_shown = TRUE;
+
+  n_items = g_list_model_get_n_items (chatty_chat_get_messages (chat));
+  message = g_list_model_get_item (chatty_chat_get_messages (chat), n_items - 1);
+  chatty_notification_show_message (self->notification, chat, message, NULL);
 }

@@ -21,9 +21,10 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (ChattyTextItem, chatty_text_item, CHATTY, TEXT_ITEM, GtkBin)
 
-GtkWidget     *chatty_text_item_new        (ChattyMessage  *message,
-                                            ChattyProtocol  protocol);
-ChattyMessage *chatty_text_item_get_item   (ChattyTextItem *self);
-const char    *chatty_text_item_get_text   (ChattyTextItem *self);
+GtkWidget       *chatty_text_item_new        (ChattyMessage  *message,
+                                              ChattyProtocol  protocol);
+GtkStyleContext *chatty_text_item_get_style  (ChattyTextItem *self);
+ChattyMessage   *chatty_text_item_get_item   (ChattyTextItem *self);
+const char      *chatty_text_item_get_text   (ChattyTextItem *self);
 
 G_END_DECLS

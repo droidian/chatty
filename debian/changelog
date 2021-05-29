@@ -1,3 +1,49 @@
+chatty (0.3.1) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * ma-chat: Add API to get next notification message
+  * manager: Show notification for new matrix messages
+  * notification: Simplify setting icon
+  * icons: Remove unused code
+  * icons: Avoid creating circular or fallback icons
+  * icons: Remove unused code
+  * text-item: Improve message row margin
+  * message-row: Reduce margin after message row
+  * image-item: Add API to get style context
+  * text-item: Add API to get style context
+  * message-row: Fix message row style
+  * message-row: Remove commented code
+  * message-row: reduce size and spacing between rows
+  * message-row: Reduce spacing between content items
+  * message-row: Show message author before the content
+  * chat-view: Show message time of they differ by a minute or more
+  * message: Add API to check if messages have same user
+  * message-row: Add a way to hide author and avatar
+  * chat-view: Hide author details if two adjacent messages have same detail
+  * message-row: align author label based on message direction
+  * chat-view: Hide duplicate time footer for non-IMs too
+  * message-row: Always show message time
+  * chat-view: Hide duplicate author labels for matrix chat messages
+  * settings-dialog: Remove password edit button
+  * settings-dialog: Avoid spacing after save button
+  * window: Remove unused code
+  * notification: Add open-chat signal
+  * notification: Fix tests
+  * ma-chat: Handle chat notifications
+  * window: Remove chat info button
+  * application: Bind signal callback only once
+  * avatar: Reset signal handlers when item changes
+  * chat-view: Reset signal handlers when item changes
+  * pp-chat: Remove past set signal handlers when reset
+  * debian/control: Recommend purple-xmpp-carbons
+  * message-row: Avoid animating when messages are shown
+
+  [ AsciiWolf ]
+  * po: Update Czech translation
+  * po: Update Czech translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Thu, 27 May 2021 15:31:28 +0530
+
 chatty (0.3.0) byzantium; urgency=medium
 
   [ Anders Jonsson ]

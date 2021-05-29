@@ -31,7 +31,7 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:
- purple-carbons,
+ purple-xmpp-carbons,
  purple-lurch,
  purple-mm-sms,
  purple-xmpp-http-upload,

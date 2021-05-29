@@ -66,7 +66,6 @@ struct _ChattySettingsDialog
   GtkWidget      *account_protocol_label;
   GtkWidget      *status_label;
   GtkWidget      *password_entry;
-  GtkWidget      *edit_password_button;
 
   GtkWidget      *protocol_list_group;
   GtkWidget      *protocol_list;
@@ -503,7 +502,6 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
 
   gtk_widget_set_sensitive (self->add_button, FALSE);
   gtk_widget_set_sensitive (self->save_button, FALSE);
-  gtk_widget_set_sensitive (self->password_entry, FALSE);
 
   if (GTK_WIDGET (row) == self->add_account_row)
     {
@@ -632,13 +630,11 @@ settings_new_detail_changed_cb (ChattySettingsDialog *self)
 }
 
 static void
-settings_edit_password_clicked_cb (ChattySettingsDialog *self)
+settings_pw_entry_changed_cb (ChattySettingsDialog *self)
 {
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
   gtk_widget_set_sensitive (self->save_button, TRUE);
-  gtk_widget_set_sensitive (self->password_entry, TRUE);
-  gtk_widget_grab_focus (self->password_entry);
 }
 
 static void chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self);
@@ -868,7 +864,6 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, account_protocol_label);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, status_label);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, password_entry);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, edit_password_button);
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list_group);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list);
@@ -909,7 +904,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_cancel_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_avatar_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_new_detail_changed_cb);
-  gtk_widget_class_bind_template_callback (widget_class, settings_edit_password_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, settings_pw_entry_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_delete_account_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_protocol_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_pw_entry_icon_clicked_cb);

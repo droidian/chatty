@@ -62,7 +62,6 @@ struct _ChattyWindow
   GtkWidget *menu_add_contact_button;
   GtkWidget *menu_new_message_button;
   GtkWidget *menu_new_group_message_button;
-  GtkWidget *header_chat_info_button;
   GtkWidget *header_add_chat_button;
   GtkWidget *header_sub_menu_button;
   GtkWidget *leave_button;
@@ -212,8 +211,6 @@ window_stack_child_changed_cb (ChattyWindow *self)
   g_debug ("%s: Chat name: %s", G_STRFUNC, chatty_chat_get_chat_name (chat));
 
   chatty_chat_set_unread_count (chat, 0);
-  gtk_widget_set_visible (self->header_chat_info_button,
-                          !chatty_chat_is_im (chat));
 }
 
 
@@ -848,7 +845,6 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, menu_add_contact_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, menu_new_message_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, menu_new_group_message_button);
-  gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_chat_info_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_add_chat_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_sub_menu_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, leave_button);

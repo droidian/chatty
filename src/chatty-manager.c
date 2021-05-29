@@ -1883,13 +1883,26 @@ chatty_manager_class_init (ChattyManagerClass *klass)
 }
 
 static void
+notification_open_chat_cb (ChattyManager *self,
+                           ChattyChat    *chat)
+{
+  g_assert (CHATTY_IS_MANAGER (self));
+  g_assert (CHATTY_IS_CHAT (chat));
+
+  g_signal_emit (self,  signals[OPEN_CHAT], 0, chat);
+}
+
+static void
 chatty_manager_init (ChattyManager *self)
 {
   g_autoptr(GtkFlattenListModel) flatten_list = NULL;
 
   self->notification = chatty_notification_new ();
-  self->chatty_eds = chatty_eds_new (CHATTY_PROTOCOL_SMS);
+  g_signal_connect_object (self->notification, "open-chat",
+                           G_CALLBACK (notification_open_chat_cb),
+                           self, G_CONNECT_SWAPPED);
 
+  self->chatty_eds = chatty_eds_new (CHATTY_PROTOCOL_SMS);
   self->account_list = g_list_store_new (CHATTY_TYPE_ACCOUNT);
 
   self->chat_list = g_list_store_new (CHATTY_TYPE_CHAT);
@@ -1957,23 +1970,52 @@ chatty_manager_purple_init (ChattyManager *self)
 
 }
 
+/* Currently only handles ChattyMaChat */
+static void
+chat_changed_cb (ChattyManager *self,
+                 ChattyChat    *chat)
+{
+  g_assert (CHATTY_IS_MANAGER (self));
+  g_assert (CHATTY_IS_MA_CHAT (chat));
+
+  if (CHATTY_IS_MA_CHAT (chat))
+    chatty_ma_chat_show_notification (CHATTY_MA_CHAT (chat));
+}
+
 static void
 manager_ma_account_changed_cb (ChattyMaAccount *account)
 {
   ChattyManager *self;
   GListModel *chat_list;
   ChattyStatus status;
+  guint n_items;
 
   g_assert (CHATTY_IS_MA_ACCOUNT (account));
 
   self = chatty_manager_get_default ();
   status = chatty_account_get_status (CHATTY_ACCOUNT (account));
   chat_list = chatty_ma_account_get_chat_list (account);
+  n_items = g_list_model_get_n_items (chat_list);
 
   if (status == CHATTY_CONNECTED)
     g_list_store_append (self->list_of_chat_list, chat_list);
   else
     chatty_utils_remove_list_item (self->list_of_chat_list, chat_list);
+
+  for (guint i = 0; i < n_items; i++) {
+    g_autoptr(ChattyChat) chat = NULL;
+    gulong signal_id;
+
+    chat = g_list_model_get_item (chat_list, i);
+
+    if (g_object_get_data (G_OBJECT (chat), "changed-id"))
+      continue;
+
+    signal_id = g_signal_connect_object (chat, "changed",
+                                         G_CALLBACK (chat_changed_cb),
+                                         self, G_CONNECT_SWAPPED);
+    g_object_set_data (G_OBJECT (chat), "changed-id", GUINT_TO_POINTER (signal_id));
+  }
 }
 
 static void

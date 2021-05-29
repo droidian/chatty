@@ -362,6 +362,32 @@ chatty_message_get_user_alias (ChattyMessage *self)
   return NULL;
 }
 
+gboolean
+chatty_message_user_matches (ChattyMessage *a,
+                             ChattyMessage *b)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (a), FALSE);
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (b), FALSE);
+
+  if (a == b)
+    return TRUE;
+
+  if (a->user && a->user == b->user)
+    return TRUE;
+  else if (a->user && b->user)
+    return FALSE;
+
+  if (a->user_name && g_strcmp0 (a->user_name, b->user_name) == 0)
+    return TRUE;
+  else if (a->user_name && b->user_name)
+    return FALSE;
+
+  if (a->user_alias && g_strcmp0 (a->user_alias, b->user_alias) == 0)
+    return TRUE;
+
+  return FALSE;
+}
+
 time_t
 chatty_message_get_time (ChattyMessage *self)
 {

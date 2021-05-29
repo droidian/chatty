@@ -25,9 +25,10 @@ struct _ChattyMessageRow
 {
   GtkListBoxRow  parent_instance;
 
-  GtkWidget  *revealer;
   GtkWidget  *content_grid;
   GtkWidget  *avatar_image;
+  GtkWidget  *hidden_box;
+  GtkWidget  *author_label;
   GtkWidget  *message_event_box;
   GtkWidget  *footer_label;
 
@@ -127,9 +128,11 @@ static void
 message_row_update_message (ChattyMessageRow *self)
 {
   g_autofree char *message = NULL;
+  g_autofree char *time_str = NULL;
   g_autofree char *footer = NULL;
   const char *status_str = "";
   ChattyMsgStatus status;
+  time_t time_stamp;
 
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
   g_assert (self->message);
@@ -143,42 +146,30 @@ message_row_update_message (ChattyMessageRow *self)
   else if (status == CHATTY_STATUS_DELIVERED)
     status_str = "<span color='#6cba3d'> ✓</span>";
 
-  if (self->is_im && self->protocol != CHATTY_PROTOCOL_MATRIX) {
-    g_autofree char *time_str = NULL;
-    time_t time_stamp;
+  time_stamp = chatty_message_get_time (self->message);
+  time_str = chatty_utils_get_human_time (time_stamp);
 
-    time_stamp = chatty_message_get_time (self->message);
-    time_str = chatty_utils_get_human_time (time_stamp);
+  footer = g_strconcat ("<span color='grey'>", time_str, "</span>",
+                        status_str, NULL);
+  gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
+  gtk_widget_set_visible (self->footer_label, footer && *footer);
 
-    footer = g_strconcat ("<span color='grey'>",
-                          time_str,
-                          "</span>",
-                          status_str,
-                          NULL);
-  } else {
+  if (!self->is_im || self->protocol == CHATTY_PROTOCOL_MATRIX) {
+    g_autofree char *author = NULL;
     const char *alias;
 
     alias = chatty_message_get_user_alias (self->message);
 
+
     if (alias)
-      footer = g_strconcat ("<span color='grey'>",
+      author = g_strconcat ("<span color='grey'>",
                             alias,
                             "</span>",
                             NULL);
+    if (author)
+      gtk_label_set_markup (GTK_LABEL (self->author_label), author);
+    gtk_widget_set_visible (self->author_label, author && *author);
   }
-
-  gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
-  gtk_widget_set_visible (self->footer_label, footer && *footer);
-}
-
-static gboolean
-message_row_show_revealer (ChattyMessageRow *self)
-{
-  g_assert (CHATTY_IS_MESSAGE_ROW (self));
-
-  gtk_revealer_set_reveal_child (GTK_REVEALER (self->revealer), TRUE);
-
-  return G_SOURCE_REMOVE;
 }
 
 static void
@@ -204,9 +195,10 @@ chatty_message_row_class_init (ChattyMessageRowClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/Chatty/"
                                                "ui/chatty-message-row.ui");
-  gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, revealer);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, content_grid);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, avatar_image);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, hidden_box);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, author_label);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, message_event_box);
   gtk_widget_class_bind_template_child (widget_class, ChattyMessageRow, footer_label);
 }
@@ -245,7 +237,6 @@ chatty_message_row_new (ChattyMessage  *message,
   g_return_val_if_fail (CHATTY_IS_MESSAGE (message), NULL);
 
   self = g_object_new (CHATTY_TYPE_MESSAGE_ROW, NULL);
-  sc = gtk_widget_get_style_context (self->message_event_box);
   self->protocol = protocol;
 
   self->message = g_object_ref (message);
@@ -253,11 +244,15 @@ chatty_message_row_new (ChattyMessage  *message,
   direction = chatty_message_get_msg_direction (message);
   type = chatty_message_get_msg_type (message);
 
-  if (type == CHATTY_MESSAGE_IMAGE)
+  if (type == CHATTY_MESSAGE_IMAGE) {
     self->content = chatty_image_item_new (message, protocol);
-  else
+    sc = chatty_image_item_get_style (CHATTY_IMAGE_ITEM (self->content));
+  } else {
     self->content = chatty_text_item_new (message, protocol);
+    sc = chatty_text_item_get_style (CHATTY_TEXT_ITEM (self->content));
+  }
 
+  gtk_style_context_add_class (sc, "message_bubble");
   gtk_container_add (GTK_CONTAINER (self->message_event_box), self->content);
   gtk_widget_show (self->content);
 
@@ -265,6 +260,7 @@ chatty_message_row_new (ChattyMessage  *message,
     gtk_style_context_add_class (sc, "bubble_white");
     gtk_widget_set_halign (self->content_grid, GTK_ALIGN_START);
     gtk_widget_set_halign (self->message_event_box, GTK_ALIGN_START);
+    gtk_widget_set_halign (self->author_label, GTK_ALIGN_START);
   } else if (direction == CHATTY_DIRECTION_OUT && protocol == CHATTY_PROTOCOL_SMS) {
     gtk_style_context_add_class (sc, "bubble_green");
   } else if (direction == CHATTY_DIRECTION_OUT) {
@@ -278,6 +274,7 @@ chatty_message_row_new (ChattyMessage  *message,
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 1);
     gtk_widget_set_halign (self->content_grid, GTK_ALIGN_END);
     gtk_widget_set_halign (self->message_event_box, GTK_ALIGN_END);
+    gtk_widget_set_halign (self->author_label, GTK_ALIGN_END);
   } else {
     gtk_label_set_xalign (GTK_LABEL (self->footer_label), 0);
   }
@@ -293,13 +290,6 @@ chatty_message_row_new (ChattyMessage  *message,
                            G_CALLBACK (message_row_update_message),
                            self, G_CONNECT_SWAPPED);
   message_row_update_message (self);
-
-  /*
-   * HACK: This is to delay showing the revealer child, so that it
-   * is revealed after @self is added to some container.  Otherwise,
-   * the child revealing won’t be animated.
-   */
-  g_idle_add (G_SOURCE_FUNC (message_row_show_revealer), self);
 
   return GTK_WIDGET (self);
 }
@@ -327,4 +317,14 @@ chatty_message_row_set_alias (ChattyMessageRow *self,
   g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
 
   chatty_avatar_set_title (CHATTY_AVATAR (self->avatar_image), alias);
+}
+
+void
+chatty_message_row_hide_user_detail (ChattyMessageRow *self)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
+
+  gtk_widget_hide (self->author_label);
+  gtk_widget_hide (self->avatar_image);
+  gtk_widget_show (self->hidden_box);
 }
