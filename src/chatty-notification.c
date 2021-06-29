@@ -16,7 +16,6 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 
-#include "chatty-icons.h"
 #include "chatty-notification.h"
 
 

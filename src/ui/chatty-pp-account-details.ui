@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyPpAccountDetails" parent="HdyPreferencesPage">
+    <property name="visible">1</property>
+    <child>
+      <object class="HdyPreferencesGroup">
+        <property name="visible">1</property>
+        <child>
+          <object class="GtkBox">
+            <property name="visible">1</property>
+            <property name="orientation">vertical</property>
+
+            <child>
+              <object class="GtkButton" id="avatar_button">
+                <property name="visible">1</property>
+                <property name="hexpand">1</property>
+                <property name="halign">center</property>
+                <property name="can-focus">0</property>
+                <property name="focus-on-click">0</property>
+                <property name="receives_default">0</property>
+                <property name="margin-bottom">24</property>
+                <signal name="clicked" handler="pp_details_avatar_button_clicked_cb" swapped="yes"/>
+                <child>
+                  <object class="ChattyAvatar" id="avatar_image">
+                    <property name="visible">1</property>
+                    <property name="size">96</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkGrid">
+                <property name="visible">1</property>
+                 <property name="halign">start</property>
+                <property name="margin-bottom">24</property>
+                <property name="row-spacing">12</property>
+                <property name="column-spacing">6</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">1</property>
+                    <property name="xalign">1</property>
+                    <property name="label" translatable="yes">Account ID</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="account_id_label">
+                    <property name="visible">1</property>
+                    <property name="halign">start</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">1</property>
+                    <property name="xalign">1</property>
+                    <property name="label" translatable="yes">Protocol</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="account_protocol_label">
+                    <property name="visible">1</property>
+                    <property name="xalign">0</property>
+                    <property name="ellipsize">end</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">1</property>
+                    <property name="width">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">1</property>
+                    <property name="xalign">1</property>
+                    <property name="label" translatable="yes">Status</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="status_label">
+                    <property name="visible">1</property>
+                    <property name="xalign">0</property>
+                    <property name="ellipsize">end</property>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">2</property>
+                    <property name="width">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">1</property>
+                    <property name="xalign">1</property>
+                    <property name="label" translatable="yes">Password</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left-attach">0</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="password_entry">
+                    <property name="visible">1</property>
+                    <property name="hexpand">1</property>
+                    <property name="input-purpose">password</property>
+                    <property name="visibility">0</property>
+                    <property name="primary-icon-sensitive">0</property>
+                    <property name="secondary-icon-name">eye-not-looking-symbolic</property>
+                    <signal name="icon-press" handler="pa_details_pw_entry_icon_clicked_cb" swapped="yes"/>
+                    <signal name="changed" handler="pa_details_pw_entry_changed_cb" swapped="yes"/>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="delete_account_button">
+                    <property name="visible">1</property>
+                    <property name="halign">start</property>
+                    <property name="margin-top">12</property>
+                    <property name="label" translatable="yes">Delete Account</property>
+                    <signal name="clicked" handler="pa_details_delete_account_clicked_cb" swapped="yes"/>
+                  </object>
+                  <packing>
+                    <property name="left-attach">1</property>
+                    <property name="top-attach">4</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+
+            <child>
+              <object class="HdyPreferencesGroup">
+                <property name="visible" bind-source="device_fp" bind-property="visible" bind-flags="sync-create"/>
+                <property name="title" translatable="yes">Own Fingerprint</property>
+                <child>
+                  <object class="GtkListBox">
+                    <property name="visible">1</property>
+                    <property name="can-focus">0</property>
+                    <property name="expand">1</property>
+                    <property name="selection-mode">none</property>
+                    <style>
+                      <class name="content"/>
+                    </style>
+                    <child>
+                      <object class="ChattyFpRow" id="device_fp">
+                        <property name="visible">1</property>
+                      </object>
+                    </child>
+                  </object>
+                </child> <!-- ./GtkListBox -->
+              </object>
+            </child>
+
+            <child>
+              <object class="HdyPreferencesGroup">
+                <property name="visible" bind-source="device_fp_list" bind-property="visible" bind-flags="sync-create"/>
+                <property name="margin-top">18</property>
+                <child>
+                  <object class="GtkListBox" id="device_fp_list">
+                    <property name="visible">0</property>
+                    <property name="can-focus">0</property>
+                    <property name="expand">1</property>
+                    <property name="selection-mode">none</property>
+                    <style>
+                      <class name="content"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+
+          </object>
+        </child>
+      </object> <!-- ./HdyPreferencesGroup -->
+    </child>
+  </template>
+</interface>

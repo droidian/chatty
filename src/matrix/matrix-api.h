@@ -70,6 +70,13 @@ void          matrix_api_get_room_state_async    (MatrixApi      *self,
 JsonArray    *matrix_api_get_room_state_finish   (MatrixApi      *self,
                                                   GAsyncResult   *result,
                                                   GError        **error);
+void          matrix_api_get_room_name_async     (MatrixApi      *self,
+                                                  const char     *room_id,
+                                                  GAsyncReadyCallback callback,
+                                                  gpointer        user_data);
+JsonObject   *matrix_api_get_room_name_finish    (MatrixApi      *self,
+                                                  GAsyncResult   *result,
+                                                  GError        **error);
 void          matrix_api_get_members_async       (MatrixApi      *self,
                                                   const char *room_id,
                                                   GAsyncReadyCallback callback,

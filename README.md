@@ -49,13 +49,6 @@ Please go to the git page where you'll find information on how to build and use 
 This can be skipped if encrypted messaging is not needed.
 
 
-### Build and install the 'purple-matrix' plugin
-Please go to the git page where you'll find information on how to build and install the
-[Matrix messenger plugin](https://github.com/matrix-org/purple-matrix)
-
-This can be skipped if Matrix messaging is not needed.
-
-
 ### Build and install the 'purple-telegram' plugin
 Please go to the git page where you'll find information on how to build and install the
 [Telegram messenger plugin](https://github.com/majn/telegram-purple)
@@ -72,6 +65,12 @@ Please go to the git page where you'll find information on how to build and use
 ``` bash
 meson build
 ninja -C build
+```
+
+### Enabling Matrix support (optional)
+To enable matrix support, run the following:
+```bash
+gsettings set sm.puri.Chatty experimental-features true
 ```
 
 ## Running from the source tree
@@ -115,6 +114,13 @@ If you don't have an XMPP account yet and want to subscribe to a service then pl
 - XEP-0313: Message Archive Management
 - XEP-0363: HTTP File Upload
 
+## Known issues
+
+- chatty crashes in OMEMO encrypted chats.  This is due to a symbol conflict between
+  libolm3 and libaxc. A work around is done in [PureOS][3].  A proper fix would
+  be to not export those symbols from libolm at all.
+
 [0]: http://software.pureos.net/search_pkg?term=libhandy-1-dev
 [1]: https://packages.debian.org/search?keywords=libhandy-1-dev
 [2]: https://source.puri.sm/Librem5/libhandy
+[3]: https://source.puri.sm/Librem5/debs/olm/-/merge_requests/2

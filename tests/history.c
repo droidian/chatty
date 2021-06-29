@@ -259,7 +259,7 @@ new_message (const char         *account,
                           "protocols", CHATTY_PROTOCOL_XMPP,
                           NULL);
   chatty_contact_set_value (contact, buddy);
-  message->message = chatty_message_new (CHATTY_ITEM (contact), NULL, msg_text,
+  message->message = chatty_message_new (CHATTY_ITEM (contact), msg_text,
                                          uuid, time_stamp, type, direction, 0);
   if (type == CHATTY_MESSAGE_FILE ||
       type == CHATTY_MESSAGE_IMAGE ||
@@ -565,20 +565,20 @@ add_chatty_message (ChattyHistory      *history,
                     ChattyMsgDirection  direction,
                     ChattyMsgStatus     status)
 {
+  g_autoptr(ChattyContact) contact = NULL;
   GPtrArray *old_msg_array;
   ChattyMessage *message;
   GTask *task;
   char *uuid;
   gboolean success;
 
-
   uuid = g_uuid_string_random ();
-  message = chatty_message_new (NULL, NULL, what, uuid, when, type, direction, status);
+  contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+  chatty_contact_set_name (contact, chatty_chat_get_chat_name (chat));
+  chatty_contact_set_value (contact, chatty_chat_get_chat_name (chat));
+  message = chatty_message_new (CHATTY_ITEM (contact), what, uuid, when, type, direction, status);
   g_assert (CHATTY_IS_MESSAGE (message));
   g_ptr_array_add (msg_array, message);
-
-  if (chatty_chat_is_im (chat))
-    chatty_message_set_user_name (message, chatty_chat_get_chat_name (chat));
 
   task = g_task_new (NULL, NULL, NULL, NULL);
   chatty_history_add_message_async (history, chat, message, finish_bool_cb, task);
@@ -634,7 +634,7 @@ add_chat_and_test (ChattyHistory   *history,
   if (room_id) {
     g_autoptr(ChattyMaChat) chat = NULL;
 
-    chat = chatty_ma_chat_new (room_id, room_name);
+    chat = chatty_ma_chat_new (room_id, room_name, NULL);
     g_assert (CHATTY_IS_MA_CHAT (chat));
     if (hidden)
       chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
@@ -916,6 +916,7 @@ test_value (ChattyHistory *history,
   flags = flag_for_direction (direction);
   if (statement_status == SQLITE_ROW) {
     g_autoptr(ChattyChat) chat = NULL;
+    g_autoptr(ChattyContact) contact = NULL;
     g_autoptr(ChattyMessage) chat_message = NULL;
     ChattyMsgDirection chat_direction;
     gboolean success;
@@ -927,10 +928,11 @@ test_value (ChattyHistory *history,
       uuid = g_uuid_string_random ();
 
     chat_direction = chatty_utils_direction_from_flag (flags);
-    chat_message = chatty_message_new (NULL, NULL, message, uuid, time_stamp,
+    contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+    chatty_contact_set_name (contact, who);
+    chatty_contact_set_value (contact, who);
+    chat_message = chatty_message_new (CHATTY_ITEM (contact), message, uuid, time_stamp,
                                        CHATTY_MESSAGE_TEXT, chat_direction, 0);
-    if (chat_direction != CHATTY_DIRECTION_OUT)
-      chatty_message_set_user_name (chat_message, who);
     success = chatty_history_add_message (history, chat, chat_message);
     g_assert_true (success);
   }

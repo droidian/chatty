@@ -800,11 +800,16 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     if (!stanza_id)
       stanza_id = g_uuid_string_random ();
 
-    chat_message = chatty_message_new (NULL, NULL, pcm->what, stanza_id,
-                                       pcm->when, CHATTY_MESSAGE_HTML_ESCAPED,
-                                       chatty_utils_direction_from_flag (pcm->flags), 0);
-    if (chat_message && pcm->who && !(flags & PURPLE_MESSAGE_SEND))
-      chatty_message_set_user_name (chat_message, who ? who : pcm->who);
+    {
+      g_autoptr(ChattyContact) contact = NULL;
+
+      contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+      chatty_contact_set_name (contact, who);
+      chatty_contact_set_value (contact, who);
+      chat_message = chatty_message_new (CHATTY_ITEM (contact), pcm->what, stanza_id,
+                                         pcm->when, CHATTY_MESSAGE_HTML_ESCAPED,
+                                         chatty_utils_direction_from_flag (pcm->flags), 0);
+    }
 
     if (conv)
       chatty_history_add_message (chatty_manager_get_history (manager),

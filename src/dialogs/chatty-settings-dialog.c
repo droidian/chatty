@@ -25,19 +25,22 @@
 
 #define G_LOG_DOMAIN "chatty-settings-dialog"
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <glib/gi18n.h>
 
-#include "chatty-config.h"
 #include "chatty-utils.h"
 #include "users/chatty-pp-account.h"
 #include "matrix/matrix-utils.h"
 #include "matrix/chatty-ma-account.h"
 #include "chatty-manager.h"
-#include "chatty-icons.h"
 #include "chatty-fp-row.h"
 #include "chatty-avatar.h"
 #include "chatty-settings.h"
 #include "chatty-secret-store.h"
+#include "chatty-pp-account-details.h"
 #include "chatty-settings-dialog.h"
 
 /**
@@ -60,12 +63,8 @@ struct _ChattySettingsDialog
   GtkWidget      *accounts_list_box;
   GtkWidget      *add_account_row;
 
-  GtkWidget      *avatar_button;
-  GtkWidget      *avatar_image;
-  GtkWidget      *account_id_label;
-  GtkWidget      *account_protocol_label;
-  GtkWidget      *status_label;
-  GtkWidget      *password_entry;
+  GtkWidget      *account_details_stack;
+  GtkWidget      *pp_account_details;
 
   GtkWidget      *protocol_list_group;
   GtkWidget      *protocol_list;
@@ -77,10 +76,6 @@ struct _ChattySettingsDialog
   GtkWidget      *new_account_settings_list;
   GtkWidget      *new_account_id_entry;
   GtkWidget      *new_password_entry;
-
-  GtkWidget      *fingerprint_list;
-  GtkWidget      *device_fp;
-  GtkWidget      *fingerprint_device_list;
 
   GtkWidget      *send_receipts_switch;
   GtkWidget      *message_archive_switch;
@@ -124,24 +119,6 @@ chatty_account_list_clear (ChattySettingsDialog *self,
   for (iter = children; iter != NULL; iter = iter->next)
     if ((GtkWidget *)iter->data != self->add_account_row)
       gtk_container_remove (GTK_CONTAINER (list), GTK_WIDGET(iter->data));
-}
-
-static void
-settings_update_account_details (ChattySettingsDialog *self)
-{
-  ChattyAccount *account;
-  const char *account_name, *protocol_name;
-
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-
-  account = self->selected_account;
-  account_name = chatty_account_get_username (CHATTY_ACCOUNT (account));
-  protocol_name = chatty_account_get_protocol_name (CHATTY_ACCOUNT (account));
-
-  gtk_label_set_text (GTK_LABEL (self->account_id_label), account_name);
-  /* gtk_entry_set_text (GTK_ENTRY (self->account_id_entry), account_name); */
-  gtk_label_set_text (GTK_LABEL (self->account_protocol_label), protocol_name);
-  chatty_avatar_set_item (CHATTY_AVATAR (self->avatar_image), CHATTY_ITEM (account));
 }
 
 static void
@@ -266,7 +243,7 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
 {
   ChattyManager *manager;
   g_autoptr (ChattyAccount) account = NULL;
-  const char *user_id, *password, *server_url;
+  const char *user_id, *password;
   gboolean is_matrix, is_telegram;
 
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
@@ -285,6 +262,7 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
 
   if (is_matrix) {
     GtkEntry *entry;
+    const char *server_url;
     int response;
 
     entry = GTK_ENTRY (self->matrix_homeserver_entry);
@@ -302,13 +280,11 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
       server_url = gtk_entry_get_text (GTK_ENTRY (self->matrix_homeserver_entry));
     else
       return;
-  }
 
-  if (is_matrix)
     account = (ChattyAccount *)chatty_pp_account_new (CHATTY_PROTOCOL_MATRIX, user_id, server_url, FALSE);
-  else if (is_telegram)
+  } else if (is_telegram) {
     account = (ChattyAccount *)chatty_pp_account_new (CHATTY_PROTOCOL_TELEGRAM, user_id, NULL, FALSE);
-  else {/* XMPP */
+  } else {/* XMPP */
     gboolean has_encryption;
 
     has_encryption = chatty_manager_lurch_plugin_is_loaded (chatty_manager_get_default ());
@@ -336,19 +312,74 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
 static void
 chatty_settings_save_clicked_cb (ChattySettingsDialog *self)
 {
-  GtkEntry *password_entry;
+  GtkStack *stack;
 
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
-  password_entry = (GtkEntry *)self->password_entry;
-  chatty_account_set_password (CHATTY_ACCOUNT (self->selected_account),
-                               gtk_entry_get_text (password_entry));
+  stack = GTK_STACK (self->account_details_stack);
 
-  chatty_account_set_remember_password (CHATTY_ACCOUNT (self->selected_account), TRUE);
-  chatty_account_set_enabled (CHATTY_ACCOUNT (self->selected_account), TRUE);
+  if (gtk_stack_get_visible_child (stack) == self->pp_account_details)
+    chatty_pp_account_save (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details));
 
   gtk_widget_hide (self->save_button);
   gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
+}
+
+static void
+settings_pp_details_changed_cb (ChattySettingsDialog *self)
+{
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  gtk_widget_set_sensitive (self->save_button, TRUE);
+}
+
+static void chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self);
+
+static void
+settings_delete_account_clicked_cb (ChattySettingsDialog *self)
+{
+  GtkWidget *dialog;
+  int response;
+
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  dialog = gtk_message_dialog_new ((GtkWindow*)self,
+                                   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                   GTK_MESSAGE_WARNING,
+                                   GTK_BUTTONS_OK_CANCEL,
+                                   _("Delete Account"));
+
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
+                                            _("Delete account %s?"),
+                                            chatty_account_get_username (CHATTY_ACCOUNT (self->selected_account)));
+
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
+  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+
+  response = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  if (response == GTK_RESPONSE_OK)
+    {
+      ChattyAccount *account;
+
+      account = g_steal_pointer (&self->selected_account);
+      chatty_account_delete (account);
+      chatty_manager_delete_account_async (chatty_manager_get_default (), account, NULL, NULL, NULL);
+
+      chatty_settings_dialog_populate_account_list (self);
+      gtk_widget_hide (self->save_button);
+      gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
+    }
+
+  gtk_widget_destroy (dialog);
+}
+
+static void
+settings_pp_details_delete_cb (ChattySettingsDialog *self)
+{
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  settings_delete_account_clicked_cb (self);
 }
 
 static void
@@ -370,7 +401,7 @@ settings_pw_entry_icon_clicked_cb (ChattySettingsDialog *self,
   if (self->visible)
     icon_name = "eye-open-negative-filled-symbolic";
 
-  gtk_entry_set_icon_from_icon_name (entry, 
+  gtk_entry_set_icon_from_icon_name (entry,
                                      GTK_ENTRY_ICON_SECONDARY,
                                      icon_name);
 }
@@ -429,17 +460,11 @@ settings_update_new_account_view (ChattySettingsDialog *self)
 static void
 chatty_settings_dialog_update_status (GtkListBoxRow *row)
 {
-  ChattySettingsDialog *self;
   ChattyAccount *account;
-  GtkWidget *dialog;
   GtkSpinner *spinner;
   ChattyStatus status;
-  const gchar *status_text;
 
   g_assert (GTK_IS_LIST_BOX_ROW (row));
-
-  dialog = gtk_widget_get_toplevel (GTK_WIDGET (row));
-  self = CHATTY_SETTINGS_DIALOG (dialog);
 
   spinner = g_object_get_data (G_OBJECT(row), "row-prefix");
   account = g_object_get_data (G_OBJECT (row), "row-account");
@@ -448,47 +473,6 @@ chatty_settings_dialog_update_status (GtkListBoxRow *row)
   g_object_set (spinner,
                 "active", status == CHATTY_CONNECTING,
                 NULL);
-
-  if (status == CHATTY_CONNECTED)
-    status_text = _("connected");
-  else if (status == CHATTY_CONNECTING)
-    status_text = _("connecting…");
-  else
-    status_text = _("disconnected");
-
-  if (self->selected_account == account)
-    gtk_label_set_text (GTK_LABEL (self->status_label), status_text);
-}
-
-static void
-get_fingerprints_cb (GObject      *object,
-                     GAsyncResult *result,
-                     gpointer      user_data)
-{
-  g_autoptr(ChattySettingsDialog) self = user_data;
-  ChattyAccount *account = CHATTY_ACCOUNT (object);
-  GListModel *fp_list;
-  HdyValueObject *device_fp;
-
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-
-  chatty_account_load_fp_finish (account, result, NULL);
-
-  device_fp = chatty_account_get_device_fp (account);
-  fp_list = chatty_account_get_fp_list (account);
-
-  gtk_widget_set_visible (self->fingerprint_device_list, !!device_fp);
-  gtk_widget_set_visible (self->device_fp, !!device_fp);
-
-  gtk_widget_set_visible (self->fingerprint_device_list,
-                          fp_list && g_list_model_get_n_items (fp_list));
-
-  gtk_list_box_bind_model (GTK_LIST_BOX (self->fingerprint_device_list),
-                           fp_list,
-                           (GtkListBoxCreateWidgetFunc) chatty_fp_row_new,
-                           NULL, NULL);
-  if (device_fp)
-    chatty_fp_row_set_item (CHATTY_FP_ROW (self->device_fp), device_fp);
 }
 
 static void
@@ -513,16 +497,11 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
       self->selected_account = g_object_get_data (G_OBJECT (row), "row-account");
       g_assert (self->selected_account != NULL);
 
+      chatty_pp_account_details_set_item (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details),
+                                          self->selected_account);
       chatty_settings_dialog_update_status (row);
       gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack),
                                         "edit-account-view");
-
-      if (chatty_item_get_protocols (CHATTY_ITEM (self->selected_account)) == CHATTY_PROTOCOL_XMPP ||
-          CHATTY_IS_MA_ACCOUNT (self->selected_account))
-        chatty_account_load_fp_async (CHATTY_ACCOUNT (self->selected_account),
-                                      get_fingerprints_cb, g_object_ref (self));
-
-      settings_update_account_details (self);
     }
 }
 
@@ -560,47 +539,6 @@ chatty_settings_cancel_clicked_cb (ChattySettingsDialog *self)
   gtk_widget_show (self->back_button);
 }
 
-static char *
-settings_show_dialog_load_avatar (ChattySettingsDialog *self)
-{
-  GtkFileChooserNative *dialog;
-  char *file_name = NULL;
-  int response;
-
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-
-  dialog = gtk_file_chooser_native_new (_("Set Avatar"),
-                                        GTK_WINDOW (self),
-                                        GTK_FILE_CHOOSER_ACTION_OPEN,
-                                        _("Open"),
-                                        _("Cancel"));
-
-  gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER(dialog), getenv ("HOME"));
-
-  // TODO: add preview widget when available in portrait mode
-
-  response = gtk_native_dialog_run (GTK_NATIVE_DIALOG(dialog));
-
-  if (response == GTK_RESPONSE_ACCEPT)
-    file_name = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER(dialog));
-
-  g_object_unref (dialog);
-
-  return file_name;
-}
-
-static void
-settings_avatar_button_clicked_cb (ChattySettingsDialog *self)
-{
-  g_autofree char *file_name = NULL;
-
-  file_name = settings_show_dialog_load_avatar (self);
-
-  if (file_name)
-    chatty_item_set_avatar_async (CHATTY_ITEM (self->selected_account),
-                                  file_name, NULL, NULL, NULL);
-}
-
 static void
 settings_new_detail_changed_cb (ChattySettingsDialog *self)
 {
@@ -627,55 +565,6 @@ settings_new_detail_changed_cb (ChattySettingsDialog *self)
   valid = valid && chatty_utils_username_is_valid (id, protocol);
 
   gtk_widget_set_sensitive (self->add_button, valid);
-}
-
-static void
-settings_pw_entry_changed_cb (ChattySettingsDialog *self)
-{
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-
-  gtk_widget_set_sensitive (self->save_button, TRUE);
-}
-
-static void chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self);
-
-static void
-settings_delete_account_clicked_cb (ChattySettingsDialog *self)
-{
-  GtkWidget *dialog;
-  int response;
-
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
-
-  dialog = gtk_message_dialog_new ((GtkWindow*)self,
-                                   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                   GTK_MESSAGE_WARNING,
-                                   GTK_BUTTONS_OK_CANCEL,
-                                   _("Delete Account"));
-
-  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                            _("Delete account %s?"),
-                                            chatty_account_get_username (CHATTY_ACCOUNT (self->selected_account)));
-
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-
-  response = gtk_dialog_run (GTK_DIALOG(dialog));
-
-  if (response == GTK_RESPONSE_OK)
-    {
-      ChattyAccount *account;
-
-      account = g_steal_pointer (&self->selected_account);
-      chatty_account_delete (account);
-      chatty_manager_delete_account_async (chatty_manager_get_default (), account, NULL, NULL, NULL);
-
-      chatty_settings_dialog_populate_account_list (self);
-      gtk_widget_hide (self->save_button);
-      gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
-    }
-
-  gtk_widget_destroy (dialog);
 }
 
 static void
@@ -858,12 +747,8 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, accounts_list_box);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, add_account_row);
 
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, avatar_button);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, avatar_image);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, account_id_label);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, account_protocol_label);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, status_label);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, password_entry);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, account_details_stack);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, pp_account_details);
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list_group);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list);
@@ -875,10 +760,6 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, new_account_settings_list);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, new_account_id_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, new_password_entry);
-
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, fingerprint_list);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, device_fp);
-  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, fingerprint_device_list);
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, send_receipts_switch);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, message_archive_switch);
@@ -899,13 +780,12 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
 
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_add_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_save_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, settings_pp_details_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, settings_pp_details_delete_cb);
   gtk_widget_class_bind_template_callback (widget_class, account_list_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_back_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_cancel_clicked_cb);
-  gtk_widget_class_bind_template_callback (widget_class, settings_avatar_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_new_detail_changed_cb);
-  gtk_widget_class_bind_template_callback (widget_class, settings_pw_entry_changed_cb);
-  gtk_widget_class_bind_template_callback (widget_class, settings_delete_account_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_protocol_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_pw_entry_icon_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_homeserver_entry_changed);

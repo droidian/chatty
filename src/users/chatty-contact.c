@@ -19,8 +19,8 @@
 #include <gtk/gtk.h>
 #include <libebook-contacts/libebook-contacts.h>
 
-#include "chatty-icons.h"
 #include "chatty-settings.h"
+#include "chatty-utils.h"
 #include "chatty-contact.h"
 #include "chatty-contact-private.h"
 
@@ -158,7 +158,7 @@ chatty_contact_get_avatar (ChattyItem *item)
     data = e_contact_photo_get_inlined (photo, &len);
 
     if (data)
-      self->avatar = chatty_icon_pixbuf_from_data (data, len);
+      self->avatar = chatty_utils_get_pixbuf_from_data (data, len);
   }
 
   e_contact_photo_free (photo);
@@ -365,5 +365,5 @@ chatty_contact_is_dummy (ChattyContact *self)
 {
   g_return_val_if_fail (CHATTY_IS_CONTACT (self), TRUE);
 
-  return self->e_contact == NULL;
+  return !!g_object_get_data (G_OBJECT (self), "dummy");
 }

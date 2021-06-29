@@ -23,10 +23,13 @@
 
 #define G_LOG_DOMAIN "chatty-application"
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <glib/gi18n.h>
 #include <handy.h>
 
-#include "chatty-config.h"
 #include "chatty-window.h"
 #include "chatty-utils.h"
 #include "users/chatty-pp-account.h"
@@ -209,6 +212,7 @@ application_open_chat (ChattyApplication *self,
   }
 
   chatty_window_open_chat (CHATTY_WINDOW (self->main_window), chat);
+  gtk_window_present (GTK_WINDOW (self->main_window));
 }
 
 static gboolean
@@ -445,17 +449,6 @@ chatty_application_new (void)
                        NULL);
 }
 
-ChattyWindow *
-chatty_application_get_main_window (ChattyApplication *self)
-{
-  g_return_val_if_fail (CHATTY_IS_APPLICATION (self), NULL);
-
-  if (self->main_window)
-    return CHATTY_WINDOW (self->main_window);
-
-  return NULL;
-}
-
 /**
  * chatty_application_get_active_chat:
  * @self: A #ChattyApplication
@@ -470,14 +463,9 @@ chatty_application_get_main_window (ChattyApplication *self)
 ChattyChat *
 chatty_application_get_active_chat (ChattyApplication *self)
 {
-  GtkWidget *widget = NULL;
-
   g_return_val_if_fail (CHATTY_IS_APPLICATION (self), NULL);
 
   if (self->main_window)
-    widget = gtk_window_get_focus (GTK_WINDOW (self->main_window));
-
-  if (self->main_window && widget && gtk_widget_has_focus (widget))
     return chatty_window_get_active_chat (CHATTY_WINDOW (self->main_window));
 
   return NULL;

@@ -15,11 +15,13 @@
 #undef G_DISABLE_CAST_CHECKS
 #undef G_LOG_DOMAIN
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <glib.h>
 #include <olm/olm.h>
 #include <sys/random.h>
-
-#include "chatty-config.h"
 
 #include "matrix/matrix-utils.h"
 #include "matrix/matrix-enc.h"

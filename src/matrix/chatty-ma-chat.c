@@ -18,7 +18,6 @@
 #include <glib/gi18n.h>
 
 #include "contrib/gtk.h"
-#include "chatty-config.h"
 #include "chatty-history.h"
 #include "chatty-notification.h"
 #include "chatty-utils.h"
@@ -52,6 +51,9 @@ struct _ChattyMaChat
   char                *encryption;
   char                *prev_batch;
   char                *last_batch;
+  GdkPixbuf           *avatar;
+  ChattyFileInfo      *avatar_file;
+  GCancellable        *avatar_cancellable;
   ChattyMaBuddy       *self_buddy;
   GListStore          *buddy_list;
   GListStore          *message_list;
@@ -85,6 +87,7 @@ struct _ChattyMaChat
   guint          keys_claimed : 1;
   guint          prev_batch_loading : 1;
   guint          history_is_loading : 1;
+  guint          avatar_is_loading : 1;
   guint          saving_room_to_db  : 1;
   guint          room_db_loaded : 1;
 
@@ -224,6 +227,76 @@ ma_chat_add_buddy (ChattyMaChat *self,
 }
 
 static void
+ma_chat_get_avatar_pixbuf_cb (GObject      *object,
+                              GAsyncResult *result,
+                              gpointer      user_data)
+{
+  g_autoptr(ChattyMaChat) self = user_data;
+  GdkPixbuf *pixbuf;
+  g_autoptr(GError) error = NULL;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  pixbuf = matrix_utils_get_pixbuf_finish (result, &error);
+
+  if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    g_warning ("Error loading avatar file: %s", error->message);
+
+  if (!error) {
+    g_set_object (&self->avatar, pixbuf);
+    g_signal_emit_by_name (self, "avatar-changed");
+  }
+
+  self->avatar_is_loading = FALSE;
+}
+
+#if 0
+static void
+chat_got_room_avatar_cb (GObject      *object,
+                         GAsyncResult *result,
+                         gpointer      user_data)
+{
+  g_autoptr(ChattyMaChat) self = user_data;
+
+  if (matrix_api_get_file_finish (self->matrix_api, result, NULL)) {
+    g_clear_object (&self->avatar);
+    g_signal_emit_by_name (self, "avatar-changed");
+    chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
+  }
+}
+#endif
+
+static ChattyFileInfo *
+ma_chat_new_file (ChattyMaChat *self,
+                  JsonObject   *object,
+                  JsonObject   *content)
+{
+  ChattyFileInfo *file = NULL;
+  const char *url;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  url = matrix_utils_json_object_get_string (object, "url");
+
+  if (url && g_str_has_prefix (url, "mxc://")) {
+    file = g_new0 (ChattyFileInfo, 1);
+
+    url = url + strlen ("mxc://");
+    file->url = g_strconcat (matrix_api_get_homeserver (self->matrix_api),
+                             "/_matrix/media/r0/download/", url, NULL);
+    file->file_name = g_strdup (matrix_utils_json_object_get_string (object, "body"));
+    object = matrix_utils_json_object_get_object (content, "info");
+    file->mime_type = g_strdup (matrix_utils_json_object_get_string (object, "mimetype"));
+    file->height = matrix_utils_json_object_get_int (object, "h");
+    file->width = matrix_utils_json_object_get_int (object, "w");
+    file->size = matrix_utils_json_object_get_int (object, "size");
+  }
+
+  return file;
+}
+
+#if 0
+static void
 handle_m_room_member (ChattyMaChat *self,
                       JsonObject   *object,
                       GListStore   *members_list)
@@ -275,6 +348,7 @@ handle_m_room_member (ChattyMaChat *self,
     g_clear_pointer (&self->generated_name, g_free);
   }
 }
+#endif
 
 static void
 handle_m_room_name (ChattyMaChat *self,
@@ -313,6 +387,30 @@ handle_m_room_encryption (ChattyMaChat *self,
   if (self->encryption)
     g_object_notify (G_OBJECT (self), "encrypt");
 }
+
+#if 0
+static void
+handle_m_room_avatar (ChattyMaChat *self,
+                      JsonObject   *root)
+{
+  JsonObject *content;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  g_clear_pointer (&self->avatar_file, chatty_file_info_free);
+  content = matrix_utils_json_object_get_object (root, "content");
+  self->avatar_file = ma_chat_new_file (self, content, content);
+
+  g_cancellable_cancel (self->avatar_cancellable);
+  g_clear_object (&self->avatar_cancellable);
+  self->avatar_cancellable = g_cancellable_new ();
+
+  matrix_api_get_file_async (self->matrix_api, NULL, self->avatar_file,
+                             NULL, NULL,
+                             chat_got_room_avatar_cb,
+                             g_object_ref (self));
+}
+#endif
 
 static void
 ma_chat_download_cb (GObject      *object,
@@ -378,7 +476,6 @@ chat_handle_m_media (ChattyMaChat  *self,
 {
   ChattyFileInfo *file = NULL;
   JsonObject *object;
-  const char *url;
 
   g_assert (CHATTY_IS_MA_CHAT (self));
   g_assert (CHATTY_IS_MESSAGE (message));
@@ -401,21 +498,7 @@ chat_handle_m_media (ChattyMaChat  *self,
       !g_str_equal (type, "m.audio"))
     return;
 
-  url = matrix_utils_json_object_get_string (object, "url");
-
-  if (url && g_str_has_prefix (url, "mxc://")) {
-    file = g_new0 (ChattyFileInfo, 1);
-
-    url = url + strlen ("mxc://");
-    file->url = g_strconcat (matrix_api_get_homeserver (self->matrix_api),
-                             "/_matrix/media/r0/download/", url, NULL);
-    file->file_name = g_strdup (matrix_utils_json_object_get_string (object, "body"));
-    object = matrix_utils_json_object_get_object (content, "info");
-    file->mime_type = g_strdup (matrix_utils_json_object_get_string (object, "mimetype"));
-    file->height = matrix_utils_json_object_get_int (object, "h");
-    file->width = matrix_utils_json_object_get_int (object, "w");
-    file->size = matrix_utils_json_object_get_int (object, "size");
-  }
+  file = ma_chat_new_file (self, object, content);
 
   if (encrypted && file) {
     g_autoptr(MatrixFileEncInfo) info = NULL;
@@ -550,8 +633,7 @@ matrix_add_message_from_data (ChattyMaChat  *self,
   }
 
   /* We should move to more precise time (ie, time in ms) as it is already provided */
-  message = chatty_message_new (CHATTY_ITEM (buddy), NULL, body, uuid, ts, msg_type, direction, 0);
-  chatty_message_set_user_name (message, chatty_ma_buddy_get_id (CHATTY_MA_BUDDY (buddy)));
+  message = chatty_message_new (CHATTY_ITEM (buddy), body, uuid, ts, msg_type, direction, 0);
   chatty_message_set_encrypted (message, encrypted);
 
   if (msg_type != CHATTY_MESSAGE_TEXT)
@@ -861,6 +943,7 @@ query_key_cb (GObject      *obj,
   CHATTY_EXIT;
 }
 
+#if 0
 static void
 get_room_state_cb (GObject      *obj,
                    GAsyncResult *result,
@@ -903,6 +986,8 @@ get_room_state_cb (GObject      *obj,
       handle_m_room_name (self, object);
     else if (g_str_equal (type, "m.room.encryption"))
       handle_m_room_encryption (self, object);
+    else if (g_str_equal (type, "m.room.avatar"))
+      handle_m_room_avatar (self, object);
     /* TODO */
     /* else if (g_str_equal (type, "m.room.power_levels")) */
     /*   handle_m_room_power_levels (self, object); */
@@ -935,6 +1020,39 @@ get_room_state_cb (GObject      *obj,
   g_signal_emit_by_name (self, "avatar-changed");
 
   chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
+}
+#endif
+
+static void
+get_room_name_cb (GObject      *obj,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+  ChattyMaChat *self = user_data;
+  g_autoptr(GError) error = NULL;
+  JsonObject *object;
+  const char *name;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+  self->state_is_sync = TRUE;
+  self->state_is_syncing = FALSE;
+
+  object = matrix_api_get_room_name_finish (self->matrix_api, result, &error);
+
+  if (error) {
+    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+      g_warning ("error getting room name: %s", error->message);
+    return;
+  }
+
+  name = matrix_utils_json_object_get_string (object, "name");
+  g_free (self->room_name);
+  self->room_name = g_strdup (name);
+
+  CHATTY_TRACE_MSG ("Got room name, room: %s (%s)",
+                    self->room_id, chatty_item_get_name (CHATTY_ITEM (self)));
+
+  g_object_notify (G_OBJECT (self), "name");
 }
 
 static void
@@ -1004,10 +1122,11 @@ matrix_chat_set_json_data (ChattyMaChat *self,
     self->state_is_syncing = TRUE;
     CHATTY_TRACE_MSG ("Getting room state of '%s(%s)'", self->room_id,
                       chatty_item_get_name (CHATTY_ITEM (self)));
-    matrix_api_get_room_state_async (self->matrix_api,
-                                     self->room_id,
-                                     get_room_state_cb,
-                                     self);
+
+    matrix_api_get_room_name_async (self->matrix_api,
+                                    self->room_id,
+                                    get_room_name_cb,
+                                    self);
   }
 
   object = matrix_utils_json_object_get_object (self->json_data, "ephemeral");
@@ -1531,6 +1650,41 @@ chatty_ma_chat_get_protocols (ChattyItem *item)
   return CHATTY_PROTOCOL_MATRIX;
 }
 
+static ChattyFileInfo *
+chatty_ma_chat_get_avatar_file (ChattyItem *item)
+{
+  ChattyMaChat *self = (ChattyMaChat *)item;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  return self->avatar_file;
+}
+
+static GdkPixbuf *
+chatty_ma_chat_get_avatar (ChattyItem *item)
+{
+  ChattyMaChat *self = (ChattyMaChat *)item;
+  g_autofree char *path = NULL;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  /* If avatar is loading return the past avatar (which may be NULL) */
+  if (self->avatar_is_loading || self->avatar)
+    return self->avatar;
+
+  if (!self->avatar_file || !self->avatar_file->path)
+    return NULL;
+
+  self->avatar_is_loading = TRUE;
+  path = g_build_filename (g_get_user_cache_dir (), "chatty",
+                           self->avatar_file->path, NULL);
+  matrix_utils_get_pixbuf_async (path, self->avatar_cancellable,
+                                 ma_chat_get_avatar_pixbuf_cb,
+                                 g_object_ref (self));
+
+  return NULL;
+}
+
 static void
 chatty_ma_chat_set_property (GObject      *object,
                              guint         prop_id,
@@ -1560,6 +1714,10 @@ chatty_ma_chat_finalize (GObject *object)
   ChattyMaChat *self = (ChattyMaChat *)object;
 
   g_clear_handle_id (&self->message_timeout_id, g_source_remove);
+
+  if (self->avatar_cancellable)
+    g_cancellable_cancel (self->avatar_cancellable);
+  g_clear_object (&self->avatar_cancellable);
 
   g_list_store_remove_all (self->message_list);
   g_clear_object (&self->message_list);
@@ -1592,6 +1750,8 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
   item_class->get_state = chatty_ma_chat_get_state;
   item_class->set_state = chatty_ma_chat_set_state;
   item_class->get_protocols = chatty_ma_chat_get_protocols;
+  item_class->get_avatar_file = chatty_ma_chat_get_avatar_file;
+  item_class->get_avatar = chatty_ma_chat_get_avatar;
 
   chat_class->is_im = chatty_ma_chat_is_im;
   chat_class->get_chat_name = chatty_ma_chat_get_chat_name;
@@ -1640,11 +1800,13 @@ chatty_ma_chat_init (ChattyMaChat *self)
   self->buddy_list = g_list_store_new (CHATTY_TYPE_MA_BUDDY);
   self->message_queue = g_queue_new ();
   self->notification  = chatty_notification_new ();
+  self->avatar_cancellable = g_cancellable_new ();
 }
 
 ChattyMaChat *
-chatty_ma_chat_new (const char *room_id,
-                    const char *name)
+chatty_ma_chat_new (const char     *room_id,
+                    const char     *name,
+                    ChattyFileInfo *avatar)
 {
   ChattyMaChat *self;
 
@@ -1653,6 +1815,7 @@ chatty_ma_chat_new (const char *room_id,
   self = g_object_new (CHATTY_TYPE_MA_CHAT,
                        "room-id", room_id, NULL);
   self->room_name = g_strdup (name);
+  self->avatar_file = avatar;
 
   return self;
 }

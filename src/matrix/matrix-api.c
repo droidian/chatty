@@ -330,13 +330,16 @@ api_get_file_stream_cb  (GObject      *obj,
     gboolean is_thumbnail = FALSE;
     char *name, *file_name;
 
-    if (chatty_message_get_preview (message) == file)
+    if (message &&
+        chatty_message_get_preview (message) == file)
       is_thumbnail = TRUE;
 
     name = g_path_get_basename (file->url);
     file_name = g_strdup (name);
 
-    out_file = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", "matrix", "files",
+    /* If @message is NULL, @file is an avatar image */
+    out_file = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", "matrix",
+                                          message ? "files" : "avatars",
                                           is_thumbnail ? "thumbnail" : "", file_name,
                                           NULL);
     out_stream = g_file_append_to (out_file, 0, cancellable, &error);
@@ -355,7 +358,8 @@ api_get_file_stream_cb  (GObject      *obj,
   buffer = g_malloc (1024 * 8);
   g_task_set_task_data (task, buffer, g_free);
 
-  if (chatty_message_get_encrypted (message) && file->user_data) {
+  if (message &&
+      chatty_message_get_encrypted (message) && file->user_data) {
     gcry_cipher_hd_t cipher_hd;
     MatrixFileEncInfo *key;
     gcry_error_t err;
@@ -458,6 +462,25 @@ matrix_get_room_state_cb (GObject      *obj,
     g_task_return_error (task, error);
   } else {
     g_task_return_pointer (task, array, (GDestroyNotify)json_array_unref);
+  }
+}
+
+static void
+matrix_get_room_name_cb (GObject      *obj,
+                         GAsyncResult *result,
+                         gpointer      user_data)
+{
+  g_autoptr(GTask) task = user_data;
+  JsonObject *object = NULL;
+  GError *error = NULL;
+
+  object = g_task_propagate_pointer (G_TASK (result), &error);
+
+  if (error) {
+    g_debug ("Error getting room state: %s", error->message);
+    g_task_return_error (task, error);
+  } else {
+    g_task_return_pointer (task, object, (GDestroyNotify)json_object_unref);
   }
 }
 
@@ -1511,6 +1534,35 @@ matrix_api_get_room_state_finish (MatrixApi     *self,
   return g_task_propagate_pointer (G_TASK (result), error);
 }
 
+void
+matrix_api_get_room_name_async (MatrixApi           *self,
+                                const char          *room_id,
+                                GAsyncReadyCallback  callback,
+                                gpointer             user_data)
+{
+  g_autofree char *uri = NULL;
+  GTask *task;
+
+  g_return_if_fail (MATRIX_IS_API (self));
+  g_return_if_fail (room_id && *room_id);
+
+  task = g_task_new (self, self->cancellable, callback, user_data);
+  uri = g_strconcat ("/_matrix/client/r0/rooms/", room_id, "/state/m.room.name", NULL);
+  queue_data (self, NULL, 0, uri, SOUP_METHOD_GET,
+              NULL, matrix_get_room_name_cb, task);
+}
+
+JsonObject *
+matrix_api_get_room_name_finish (MatrixApi     *self,
+                                 GAsyncResult  *result,
+                                 GError       **error)
+{
+  g_return_val_if_fail (MATRIX_IS_API (self), NULL);
+  g_return_val_if_fail (G_IS_TASK (result), NULL);
+  g_return_val_if_fail (!error || !*error, NULL);
+
+  return g_task_propagate_pointer (G_TASK (result), error);
+}
 
 void
 matrix_api_get_members_async (MatrixApi           *self,
@@ -1743,16 +1795,18 @@ matrix_api_get_file_async (MatrixApi             *self,
   GTask *task;
 
   g_return_if_fail (MATRIX_IS_API (self));
-  g_return_if_fail (CHATTY_IS_MESSAGE (message));
+  g_return_if_fail (!message || CHATTY_IS_MESSAGE (message));
 
   CHATTY_TRACE_MSG ("Downloading file");
+
+  if (message)
+    g_object_ref (message);
 
   task = g_task_new (self, self->cancellable, callback, user_data);
   g_object_set_data (G_OBJECT (task), "progress", progress_callback);
   g_object_set_data (G_OBJECT (task), "file", file);
   g_object_set_data_full (G_OBJECT (task), "msg", msg, g_object_unref);
-  g_object_set_data_full (G_OBJECT (task), "message",
-                          g_object_ref (message), g_object_unref);
+  g_object_set_data_full (G_OBJECT (task), "message", message, g_object_unref);
 
   if (file->status != CHATTY_FILE_UNKNOWN) {
     g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
@@ -1761,7 +1815,8 @@ matrix_api_get_file_async (MatrixApi             *self,
   }
 
   file->status = CHATTY_FILE_DOWNLOADING;
-  chatty_message_emit_updated (message);
+  if (message)
+    chatty_message_emit_updated (message);
 
   msg = soup_message_new (SOUP_METHOD_GET, file->url);
   soup_session_send_async (self->soup_session, msg, self->cancellable,

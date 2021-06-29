@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#define G_LOG_DOMAIN "chatty-utils"
 
 #include <glib.h>
 #include <glib/gi18n.h>
@@ -14,6 +15,7 @@
 #include <libebook-contacts/libebook-contacts.h>
 #include <gdesktop-enums.h>
 
+#include "chatty-log.h"
 
 #define DIGITS      "0123456789"
 #define ASCII_CAPS  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -415,6 +417,39 @@ chatty_utils_get_conv_blist_node (PurpleConversation *conv)
   return node;
 }
 
+GdkPixbuf *
+chatty_utils_get_pixbuf_from_data (const guchar *buf,
+                                   gsize         count)
+{
+  g_autoptr(GdkPixbufLoader) loader = NULL;
+  g_autoptr(GError) error = NULL;
+  GdkPixbuf *pixbuf;
+
+  if (!buf || !count)
+    return NULL;
+
+  loader = gdk_pixbuf_loader_new ();
+  gdk_pixbuf_loader_write (loader, buf, count, &error);
+
+  if (!error)
+    gdk_pixbuf_loader_close (loader, &error);
+
+  if (error) {
+    CHATTY_TRACE_MSG ("%s", error->message);
+    return NULL;
+  }
+
+  pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+
+  if (!pixbuf) {
+    CHATTY_TRACE_MSG ("pixbuf creation failed");
+    return NULL;
+  }
+
+  return g_object_ref (pixbuf);
+}
+
+
 ChattyMsgDirection
 chatty_utils_direction_from_flag (PurpleMessageFlags flag)
 {
@@ -428,4 +463,17 @@ chatty_utils_direction_from_flag (PurpleMessageFlags flag)
     return CHATTY_DIRECTION_IN;
 
   g_return_val_if_reached (CHATTY_DIRECTION_UNKNOWN);
+}
+
+void
+chatty_file_info_free (ChattyFileInfo *file_info)
+{
+  if (!file_info)
+    return;
+
+  g_free (file_info->file_name);
+  g_free (file_info->url);
+  g_free (file_info->path);
+  g_free (file_info->mime_type);
+  g_free (file_info);
 }

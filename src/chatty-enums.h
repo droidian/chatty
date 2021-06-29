@@ -148,3 +148,10 @@ typedef enum
   CHATTY_ITEM_ARCHIVED,
   CHATTY_ITEM_BLOCKED,
 } ChattyItemState;
+
+typedef enum
+{
+  CHATTY_SMS_RECEIPT_NONE      = -1,
+  CHATTY_SMS_RECEIPT_MM_ACKN   =  0,
+  CHATTY_SMS_RECEIPT_SMSC_ACKN,
+} e_sms_receipt_states;

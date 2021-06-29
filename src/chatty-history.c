@@ -105,6 +105,8 @@ struct _ChattyHistory
 
 typedef void (*ChattyCallback) (ChattyHistory *self,
                                 GTask *task);
+static int     add_file_info   (ChattyHistory  *self,
+                                ChattyFileInfo *file);
 
 G_DEFINE_TYPE (ChattyHistory, chatty_history, G_TYPE_OBJECT)
 
@@ -626,6 +628,7 @@ static int
 insert_or_ignore_user (ChattyHistory  *self,
                        ChattyProtocol  protocol,
                        const char     *who,
+                       const char     *alias,
                        GTask          *task)
 {
   g_autofree char *phone = NULL;
@@ -643,11 +646,15 @@ insert_or_ignore_user (ChattyHistory  *self,
   }
 
   sqlite3_prepare_v2 (self->db,
-                      "INSERT OR IGNORE INTO users(username,type) "
-                      "VALUES(?,?);",
+                      "INSERT OR IGNORE INTO users(username,type,alias) "
+                      "VALUES(?1,?2,?3) "
+                      "ON CONFLICT(username,type) "
+                      "DO UPDATE SET alias=coalesce(?3,alias)",
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, phone ? phone : who, "binding when adding phone number");
   history_bind_int (stmt, 2, history_protocol_to_type_value (protocol), "binding when adding phone number");
+  if (alias && who && !g_str_equal (who, alias))
+    history_bind_text (stmt, 3, alias, "binding when adding phone number");
 
   sqlite3_step (stmt);
   sqlite3_finalize (stmt);
@@ -752,7 +759,8 @@ insert_or_ignore_thread (ChattyHistory *self,
 {
   sqlite3_stmt *stmt;
   int user_id, account_id;
-  int status, id = 0;
+  int status, file_id, id = 0;
+  ChattyFileInfo *file;
 
   g_assert (CHATTY_IS_HISTORY (self));
   g_assert (G_IS_TASK (task));
@@ -762,6 +770,7 @@ insert_or_ignore_thread (ChattyHistory *self,
   user_id = insert_or_ignore_user (self,
                                    chatty_item_get_protocols (CHATTY_ITEM (chat)),
                                    chatty_chat_get_username (chat),
+                                   NULL,
                                    task);
   if (!user_id) {
     const char *who;
@@ -784,11 +793,14 @@ insert_or_ignore_thread (ChattyHistory *self,
   if (!account_id)
     return 0;
 
+  file = chatty_item_get_avatar_file (CHATTY_ITEM (chat));
+  file_id = add_file_info (self, file);
+
   sqlite3_prepare_v2 (self->db,
-                      "INSERT INTO threads(name,alias,account_id,type,visibility,encrypted) "
-                      "VALUES(?1,?2,?3,?4,?5,?6) "
+                      "INSERT INTO threads(name,alias,account_id,type,visibility,encrypted,avatar_id) "
+                      "VALUES(?1,?2,?3,?4,?5,?6,?7) "
                       "ON CONFLICT(name,account_id,type) "
-                      "DO UPDATE SET alias=?2, visibility=?5, encrypted=?6",
+                      "DO UPDATE SET alias=?2, visibility=?5, encrypted=?6, avatar_id=?7",
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, chatty_chat_get_chat_name (chat), "binding when adding thread");
   history_bind_text (stmt, 2, chatty_item_get_name (CHATTY_ITEM (chat)), "binding when adding thread");
@@ -799,6 +811,9 @@ insert_or_ignore_thread (ChattyHistory *self,
                     "binding when adding thread");
   history_bind_int (stmt, 6, chatty_chat_get_encryption (chat) == CHATTY_ENCRYPTION_ENABLED,
                     "binding when adding thread");
+  if (file_id)
+    history_bind_int (stmt, 7, file_id, "binding when adding thread");
+
   sqlite3_step (stmt);
   sqlite3_finalize (stmt);
 
@@ -1844,8 +1859,8 @@ get_messages_before_time (ChattyHistory *self,
     skip = FALSE;
 
   status = sqlite3_prepare_v2 (self->db,
-                                               /* 0      1      2    3         4           5 */
-                               "SELECT DISTINCT time,direction,body,uid,users.username,body_type,"
+                                               /* 0      1      2    3                 4                         5 */
+                               "SELECT DISTINCT time,direction,body,uid,coalesce(users.alias,users.username),body_type,"
                                /*    6         7          8           9            10          11 */
                                "files.name,files.url,files.path,mime_type.name,files.size,files.status,"
                                "coalesce(video.width,image.width)," /* 12 */
@@ -1864,6 +1879,7 @@ get_messages_before_time (ChattyHistory *self,
                                "LEFT JOIN image ON body_type=9 AND files.id=image.file_id "
                                "LEFT JOIN video ON body_type=10 AND files.id=video.file_id "
                                "LEFT JOIN audio ON body_type=11 AND files.id=audio.file_id "
+
                                "LEFT JOIN files AS p_files ON messages.preview_id=p_files.id "
                                "LEFT JOIN mime_type AS p_mime_type ON p_files.mime_type_id=p_mime_type.id "
                                "LEFT JOIN image AS p_image ON p_files.id=p_image.file_id "
@@ -1942,9 +1958,18 @@ get_messages_before_time (ChattyHistory *self,
       who = (const char *)sqlite3_column_text (stmt, 4);
 
     status = sqlite3_column_int (stmt, 24);
-    message = chatty_message_new (NULL, who, msg, uid, time_stamp, type,
-                                  history_direction_from_value (direction),
-                                  history_msg_status_from_value (status));
+
+    {
+      g_autoptr(ChattyContact) contact = NULL;
+
+      contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+      chatty_contact_set_name (contact, who);
+      chatty_contact_set_value (contact, who);
+      message = chatty_message_new (CHATTY_ITEM (contact), msg, uid, time_stamp, type,
+                                    history_direction_from_value (direction),
+                                    history_msg_status_from_value (status));
+    }
+
     chatty_message_set_files (message, g_list_append (NULL, file));
     chatty_message_set_preview (message, preview);
     g_ptr_array_insert (messages, 0, message);
@@ -2109,7 +2134,7 @@ history_add_message (ChattyHistory *self,
   ChattyMessage *message;
   ChattyChat *chat;
   sqlite3_stmt *stmt;
-  const char *who, *uid, *msg;
+  const char *who, *uid, *msg, *alias;
   ChattyMsgDirection direction;
   ChattyMsgType type;
   int thread_id = 0, sender_id = 0, file_id = 0, preview_id = 0;
@@ -2139,20 +2164,19 @@ history_add_message (ChattyHistory *self,
   direction = chatty_message_get_msg_direction (message);
   dir = history_direction_to_value (direction);
   type = chatty_message_get_msg_type (message);
+  alias = chatty_message_get_user_alias (message);
 
-  /* TODO: check if this is good */
-  if (!who || !*who) {
-    if (direction == CHATTY_DIRECTION_OUT)
-      who = chatty_chat_get_username (chat);
-    else if (direction == CHATTY_DIRECTION_IN && chatty_chat_is_im (chat))
-      who = chatty_chat_get_chat_name (chat);
-  }
+  if (direction == CHATTY_DIRECTION_OUT)
+    who = chatty_chat_get_username (chat);
+
+  if ((!who || !*who) && direction == CHATTY_DIRECTION_IN && chatty_chat_is_im (chat))
+    who = chatty_chat_get_chat_name (chat);
 
   thread_id = insert_or_ignore_thread (self, chat, task);
   if (!thread_id)
     return;
 
-  sender_id = insert_or_ignore_user (self, chatty_item_get_protocols (CHATTY_ITEM (chat)), who, task);
+  sender_id = insert_or_ignore_user (self, chatty_item_get_protocols (CHATTY_ITEM (chat)), who, alias, task);
 
   if (sender_id && direction == CHATTY_DIRECTION_IN) {
     sqlite3_prepare_v2 (self->db,
@@ -2249,10 +2273,13 @@ history_get_chats (ChattyHistory *self,
   protocol = PROTOCOL_MATRIX;
 
   sqlite3_prepare_v2 (self->db,
-                      "SELECT threads.id,threads.name,threads.alias,threads.encrypted FROM threads "
+                      "SELECT threads.id,threads.name,threads.alias,threads.encrypted,"
+                      "files.url,files.path "
+                      "FROM threads "
                       "INNER JOIN accounts ON accounts.id=threads.account_id "
                       "INNER JOIN users ON users.id=accounts.user_id "
                       "AND users.username=? AND accounts.protocol=? "
+                      "LEFT JOIN files ON threads.avatar_id=files.id "
                       "WHERE visibility=" STRING(THREAD_VISIBILITY_VISIBLE),
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, user_id, "binding when getting threads");
@@ -2260,6 +2287,7 @@ history_get_chats (ChattyHistory *self,
 
   while (sqlite3_step (stmt) == SQLITE_ROW) {
     g_autoptr(GPtrArray) messages = NULL;
+    ChattyFileInfo *file = NULL;
     const char *name, *alias;
     ChattyChat *chat;
     int thread_id;
@@ -2272,7 +2300,13 @@ history_get_chats (ChattyHistory *self,
     alias = (const char *)sqlite3_column_text (stmt, 2);
     encrypted = sqlite3_column_int (stmt, 3);
 
-    chat = (gpointer)chatty_ma_chat_new (name, alias);
+    if (sqlite3_column_text (stmt, 4)) {
+      file = g_new0 (ChattyFileInfo, 1);
+      file->url = g_strdup ((const char *)sqlite3_column_text (stmt, 4));
+      file->path = g_strdup ((const char *)sqlite3_column_text (stmt, 5));
+    }
+
+    chat = (gpointer)chatty_ma_chat_new (name, alias, file);
     chatty_chat_set_encryption (CHATTY_CHAT (chat), encrypted);
     messages = get_messages_before_time (self, chat, NULL, thread_id, INT_MAX, 1);
     chatty_ma_chat_add_messages (CHATTY_MA_CHAT (chat), messages);

@@ -15,6 +15,9 @@
 # include "config.h"
 #endif
 
+#include "matrix/chatty-ma-buddy.h"
+#include "users/chatty-contact.h"
+#include "users/chatty-pp-buddy.h"
 #include "chatty-message.h"
 #include "chatty-utils.h"
 
@@ -31,7 +34,6 @@ struct _ChattyMessage
 
   ChattyItem      *user;
   char            *user_name;
-  char            *user_alias;
   char            *message;
   char            *uid;
   char            *id;
@@ -67,7 +69,6 @@ chatty_message_finalize (GObject *object)
   g_clear_object (&self->user);
   g_free (self->message);
   g_free (self->uid);
-  g_free (self->user_alias);
   g_free (self->user_name);
   g_free (self->id);
 
@@ -107,7 +108,6 @@ chatty_message_init (ChattyMessage *self)
 
 ChattyMessage *
 chatty_message_new (ChattyItem         *user,
-                    const char         *user_alias,
                     const char         *message,
                     const char         *uid,
                     time_t              timestamp,
@@ -122,7 +122,6 @@ chatty_message_new (ChattyItem         *user,
 
   self = g_object_new (CHATTY_TYPE_MESSAGE, NULL);
   g_set_object (&self->user, user);
-  self->user_alias = g_strdup (user_alias);
   self->message = g_strdup (message);
   self->uid = g_strdup (uid);
   self->status = status;
@@ -321,8 +320,16 @@ chatty_message_get_user_name (ChattyMessage *self)
 
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), "");
 
-  if (!self->user_name && self->user)
-    user_name = chatty_item_get_name (self->user);
+  if (!self->user_name && self->user) {
+    if (CHATTY_IS_CONTACT (self->user))
+      user_name = chatty_contact_get_value (CHATTY_CONTACT (self->user));
+    else if (CHATTY_IS_PP_BUDDY (self->user))
+      user_name = chatty_pp_buddy_get_id (CHATTY_PP_BUDDY (self->user));
+    else if (CHATTY_IS_MA_BUDDY (self->user))
+      user_name = chatty_ma_buddy_get_id (CHATTY_MA_BUDDY (self->user));
+    else
+      user_name = chatty_item_get_name (self->user);
+  }
 
   if (user_name)
     self->user_name = chatty_utils_jabber_id_strip (user_name);
@@ -333,25 +340,12 @@ chatty_message_get_user_name (ChattyMessage *self)
   return "";
 }
 
-void
-chatty_message_set_user_name (ChattyMessage *self,
-                              const char    *user_name)
-{
-  g_return_if_fail (CHATTY_IS_MESSAGE (self));
-
-  g_free (self->user_name);
-  self->user_name = g_strdup (user_name);
-}
-
 const char *
 chatty_message_get_user_alias (ChattyMessage *self)
 {
   const char *name = NULL;
 
   g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
-
-  if (self->user_alias)
-    return self->user_alias;
 
   if (self->user)
     name = chatty_item_get_name (self->user);
@@ -374,16 +368,12 @@ chatty_message_user_matches (ChattyMessage *a,
 
   if (a->user && a->user == b->user)
     return TRUE;
-  else if (a->user && b->user)
-    return FALSE;
 
-  if (a->user_name && g_strcmp0 (a->user_name, b->user_name) == 0)
+  if (g_strcmp0 (chatty_message_get_user_name (a),
+                 chatty_message_get_user_name (a)) == 0)
     return TRUE;
   else if (a->user_name && b->user_name)
     return FALSE;
-
-  if (a->user_alias && g_strcmp0 (a->user_alias, b->user_alias) == 0)
-    return TRUE;
 
   return FALSE;
 }
@@ -440,17 +430,4 @@ chatty_message_emit_updated (ChattyMessage *self)
   g_return_if_fail (CHATTY_IS_MESSAGE (self));
 
   g_signal_emit (self, signals[UPDATED], 0);
-}
-
-void
-chatty_file_info_free (ChattyFileInfo *file_info)
-{
-  if (!file_info)
-    return;
-
-  g_free (file_info->file_name);
-  g_free (file_info->url);
-  g_free (file_info->path);
-  g_free (file_info->mime_type);
-  g_free (file_info);
 }
