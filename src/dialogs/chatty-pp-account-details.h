@@ -1,6 +1,7 @@
-/* chatty-application.h
+/* -*- mode: c; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* chatty-pp-account-details.h
  *
- * Copyright 2019 Purism SPC
+ * Copyright 2021 Purism SPC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Authors:
+ * Author(s):
  *   Mohammed Sadiq <sadiq@sadiqpk.org>
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -25,16 +26,18 @@
 
 #include <gtk/gtk.h>
 
-#include "chatty-window.h"
+#include "users/chatty-account.h"
 
 G_BEGIN_DECLS
 
-#define CHATTY_APPLICATION_DEFAULT() ((ChattyApplication *)g_application_get_default ())
-#define CHATTY_TYPE_APPLICATION (chatty_application_get_type ())
+#define CHATTY_TYPE_PP_ACCOUNT_DETAILS (chatty_pp_account_details_get_type ())
 
-G_DECLARE_FINAL_TYPE (ChattyApplication, chatty_application, CHATTY, APPLICATION, GtkApplication)
+G_DECLARE_FINAL_TYPE (ChattyPpAccountDetails, chatty_pp_account_details, CHATTY, PP_ACCOUNT_DETAILS, HdyPreferencesPage)
 
-ChattyApplication *chatty_application_new (void);
-ChattyChat        *chatty_application_get_active_chat (ChattyApplication *self);
+GtkWidget       *chatty_pp_account_details_new      (void);
+void             chatty_pp_account_save             (ChattyPpAccountDetails *self);
+ChattyAccount   *chatty_pp_account_details_get_item (ChattyPpAccountDetails *self);
+void             chatty_pp_account_details_set_item (ChattyPpAccountDetails *self,
+                                                     ChattyAccount          *account);
 
 G_END_DECLS

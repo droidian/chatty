@@ -27,7 +27,8 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyMaChat, chatty_ma_chat, CHATTY, MA_CHAT, ChattyChat)
 
 ChattyMaChat *chatty_ma_chat_new                (const char    *room_id,
-                                                 const char    *name);
+                                                 const char    *name,
+                                                 ChattyFileInfo *avatar);
 void          chatty_ma_chat_set_history_db     (ChattyMaChat  *self,
                                                  gpointer       history_db);
 void          chatty_ma_chat_set_matrix_db      (ChattyMaChat  *self,

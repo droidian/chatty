@@ -20,7 +20,6 @@
 #include "contrib/gtk.h"
 #include "chatty-history.h"
 #include "chatty-settings.h"
-#include "chatty-icons.h"
 #include "chatty-utils.h"
 #include "users/chatty-pp-buddy.h"
 #include "users/chatty-pp-account.h"
@@ -56,6 +55,7 @@ struct _ChattyPpChat
 
   PurpleAccount      *account;
   PurpleBuddy        *buddy;
+  char               *username;
 
   PurpleChat         *pp_chat;
   PurpleConversation *conv;
@@ -99,6 +99,28 @@ emit_avatar_changed (ChattyPpChat *self)
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   g_signal_emit_by_name (self, "avatar-changed");
+}
+
+static GdkPixbuf *
+chatty_pp_chat_get_buddy_icon (PurpleBlistNode *node)
+{
+  PurpleStoredImage *custom_img;
+  const guchar *data = NULL;
+  gsize len;
+
+  custom_img = purple_buddy_icons_node_find_custom_icon (node);
+
+  if (custom_img) {
+    data = purple_imgstore_get_data (custom_img);
+    len = purple_imgstore_get_size (custom_img);
+  }
+
+  purple_imgstore_unref (custom_img);
+
+  if (data != NULL)
+    return chatty_utils_get_pixbuf_from_data (data, len);
+
+  return NULL;
 }
 
 static void
@@ -474,17 +496,24 @@ static const char *
 chatty_pp_chat_get_username (ChattyChat *chat)
 {
   ChattyPpChat *self = (ChattyPpChat *)chat;
+  const char *username = NULL;
 
   g_assert (CHATTY_IS_PP_CHAT (self));
 
   if (self->pp_chat)
-    return purple_account_get_username (self->pp_chat->account);
+    username = purple_account_get_username (self->pp_chat->account);
 
   if (self->buddy)
-    return purple_account_get_username (self->buddy->account);
+    username = purple_account_get_username (self->buddy->account);
 
   if (self->conv)
-    return purple_account_get_username (self->conv->account);
+    username = purple_account_get_username (self->conv->account);
+
+  if (username && *username && !self->username)
+    self->username = chatty_utils_jabber_id_strip (username);
+
+  if (self->username && *self->username)
+    return self->username;
 
   return "";
 }
@@ -918,7 +947,7 @@ chatty_pp_chat_get_avatar (ChattyItem *item)
   }
 
   if (self->pp_chat)
-    return chatty_icon_get_buddy_icon ((PurpleBlistNode *)self->pp_chat);
+    return chatty_pp_chat_get_buddy_icon ((PurpleBlistNode *)self->pp_chat);
 
   return NULL;
 }

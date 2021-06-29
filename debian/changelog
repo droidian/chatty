@@ -1,3 +1,78 @@
+chatty (0.3.2) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * window: Remove unused code
+  * config.h: Rename from chatty-config.h
+  * README: Remove reference to purple-matrix
+  * README: mention the OMEMO crash issue
+  * Apply 2 suggestion(s) to 1 file(s)
+  * chat-view: Load past messages when setting chat
+  * meson: Move chat-view to libsrc
+  * window: Use one chat-view for every chat
+  * chat-view: Improve updating message row details
+  * README: Mention how to enable matrix support
+  * history: Save user alias to db and use it
+  * contact: Use object data to track dummy contact
+  * message: Don't allow passing user alias as string
+  * message: Return the right user_name
+  * manager: Don't set username manually
+  * ma-chat: Don't set username manually
+  * xep-0313: use ChattyContact to set message user
+  * tests/history: use ChattyContact to set message user
+  * pp-chat: Strip jabber suffix from username
+  * history: Prefer chat username for outgoing messages
+  * message: Remove unused method
+  * message: Fix matching users
+  * window: Set selection mode as none by default
+  * window: Simplify showing contact button
+  * chat-view: Allow chat to be NULL
+  * window: Simplify setting sidebar view
+  * window: Swap notify callback arguments
+  * application: Show window only with open-chat signal callback
+  * window: Move window specific code from application
+  * window: Reset unread count only if chat is active
+  * window: Let a function be static
+  * window: Align function declarations
+  * utils: Add API to load pixbuf from data
+  * contact: Use the new API to load pixbuf
+  * pp-chat: Use the new API to load pixbuf
+  * message-row: Use 'dim-label' class for labels
+  * Remove chatty-icons
+  * ma-chat: Move file creation to a new method
+  * api: Allow message to be NULL on loading file
+  * matrix-db: Include required headers
+  * utils: Move ChattyFileInfo from chatty-item
+  * item: Add API to get avatar file
+  * ma-chat: Implement get_avatar_file()
+  * ma-chat: Handle room avatar
+  * history: Save room avatar file to db
+  * ma-chat: Implement room avatar support
+  * history: Load room avatar when creating matrix chat
+  * ma-chat: Set avatar details when creating chat
+  * gresource.xml: strip blanks from xml files on build
+  * utils: Add a way to load avatars from files
+  * ma-chat: Load avatars async
+  * log: Improve GdkPixbuf log
+  * application: Remove unused code
+  * chat-view: Remove unused code
+  * manager: Remove unused code
+  * pp-account: Clear past fingerprints before adding new
+  * Add ChattyPpAccountDetails
+  * settings-dialog: Use ChattyPpAccount details
+  * matrix-api: Add API to get room name
+  * ma-chat: Load room name only when room is created
+
+  [ Vittorio Monti ]
+  * po: Update Italian translation (by Vittorio Monti)
+
+  [ ZenWalker ]
+  * settings-dialog: Avoid a duplicate condition
+
+  [ ArenM ]
+  * list-row: Keep last modified time up to date
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Tue, 29 Jun 2021 11:26:24 +0530
+
 chatty (0.3.1) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]
