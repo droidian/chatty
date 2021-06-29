@@ -17,6 +17,8 @@
 # include "config.h"
 #endif
 
+#include <glib.h>
+#include <fcntl.h>
 #include <sqlite3.h>
 
 #include "chatty-utils.h"

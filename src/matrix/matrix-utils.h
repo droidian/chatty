@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib-object.h>
 #include <json-glib/json-glib.h>
 #include <libsoup/soup.h>
@@ -56,4 +57,10 @@ void          matrix_utils_get_homeserver_async     (const char    *username,
                                                      GAsyncReadyCallback callback,
                                                      gpointer       user_data);
 char         *matrix_utils_get_homeserver_finish    (GAsyncResult  *result,
+                                                     GError       **error);
+void          matrix_utils_get_pixbuf_async         (const char    *file,
+                                                     GCancellable  *cancellable,
+                                                     GAsyncReadyCallback callback,
+                                                     gpointer       user_data);
+GdkPixbuf    *matrix_utils_get_pixbuf_finish        (GAsyncResult  *result,
                                                      GError       **error);

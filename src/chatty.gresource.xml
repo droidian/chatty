@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/sm/puri/Chatty">
-    <file>ui/chatty-fp-row.ui</file>
-    <file>ui/chatty-list-row.ui</file>
-    <file>ui/chatty-chat-view.ui</file>
-    <file>ui/chatty-contact-row.ui</file>
-    <file>ui/chatty-image-item.ui</file>
-    <file>ui/chatty-message-row.ui</file>
-    <file>ui/chatty-info-dialog.ui</file>
-    <file>ui/chatty-settings-dialog.ui</file>
-    <file>ui/chatty-dialog-new-chat.ui</file>
-    <file>ui/chatty-dialog-join-muc.ui</file>
-    <file>ui/chatty-window.ui</file>
-    <file>icons/eye-not-looking-symbolic.svg</file>
-    <file>icons/eye-open-negative-filled-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">ui/chatty-fp-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-list-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-chat-view.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-contact-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-image-item.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-message-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-info-dialog.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-pp-account-details.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-settings-dialog.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-dialog-new-chat.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-dialog-join-muc.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-window.ui</file>
+    <file preprocess="xml-stripblanks">icons/eye-not-looking-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/eye-open-negative-filled-symbolic.svg</file>
     <file>css/style.css</file>
   </gresource>
 </gresources>

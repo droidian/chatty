@@ -12,6 +12,7 @@
 #include <glib-object.h>
 #include <gdk/gdk.h>
 
+#include "chatty-utils.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS
@@ -35,6 +36,7 @@ struct _ChattyItemClass
   ChattyItemState  (*get_state)           (ChattyItem           *self);
   void             (*set_state)           (ChattyItem           *self,
                                            ChattyItemState       state);
+  ChattyFileInfo  *(*get_avatar_file)     (ChattyItem           *self);
   GdkPixbuf       *(*get_avatar)          (ChattyItem           *self);
   void             (*get_avatar_async)    (ChattyItem           *self,
                                            GCancellable         *cancellable,
@@ -67,6 +69,7 @@ void             chatty_item_set_name            (ChattyItem           *self,
 ChattyItemState  chatty_item_get_state           (ChattyItem           *self);
 void             chatty_item_set_state           (ChattyItem           *self,
                                                   ChattyItemState       state);
+ChattyFileInfo  *chatty_item_get_avatar_file     (ChattyItem           *self);
 GdkPixbuf       *chatty_item_get_avatar          (ChattyItem           *self);
 void             chatty_item_get_avatar_async    (ChattyItem           *self,
                                                   GCancellable         *cancellable,

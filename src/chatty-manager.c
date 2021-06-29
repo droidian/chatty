@@ -11,7 +11,9 @@
 
 #define G_LOG_DOMAIN "chatty-manager"
 
-#include "chatty-config.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #define LIBFEEDBACK_USE_UNSTABLE_API
 #include <libfeedback.h>
@@ -33,7 +35,6 @@
 #include "chatty-secret-store.h"
 #include "chatty-chat.h"
 #include "chatty-pp-chat.h"
-#include "chatty-icons.h"
 #include "chatty-notification.h"
 #include "chatty-purple-request.h"
 #include "chatty-purple-notify.h"
@@ -808,14 +809,18 @@ chatty_conv_write_conversation (PurpleConversation *conv,
 
     if (pcm.flags & (PURPLE_MESSAGE_SYSTEM | PURPLE_MESSAGE_ERROR)) {
       // System is usually also RECV so should be first to catch
-      chat_message = chatty_message_new (NULL, NULL, message, uuid, 0, msg_type, CHATTY_DIRECTION_SYSTEM, 0);
+      chat_message = chatty_message_new (NULL, message, uuid, 0, msg_type, CHATTY_DIRECTION_SYSTEM, 0);
       chatty_pp_chat_append_message (CHATTY_PP_CHAT (chat), chat_message);
     } else if (pcm.flags & PURPLE_MESSAGE_RECV) {
+      g_autoptr(ChattyContact) contact = NULL;
       ChattyChat *active_chat;
 
       active_chat = chatty_application_get_active_chat (CHATTY_APPLICATION_DEFAULT ());
+      contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+      chatty_contact_set_name (contact, pcm.who);
+      chatty_contact_set_value (contact, pcm.who);
 
-      chat_message = chatty_message_new (NULL, who, message, uuid, mtime, msg_type, CHATTY_DIRECTION_IN, 0);
+      chat_message = chatty_message_new (CHATTY_ITEM (contact), message, uuid, mtime, msg_type, CHATTY_DIRECTION_IN, 0);
       chatty_pp_chat_append_message (CHATTY_PP_CHAT (chat), chat_message);
 
       if (buddy && purple_blist_node_get_bool (node, "chatty-notifications") &&
@@ -826,7 +831,7 @@ chatty_conv_write_conversation (PurpleConversation *conv,
       }
     } else if (flags & PURPLE_MESSAGE_SEND && pcm.flags & PURPLE_MESSAGE_SEND) {
       // normal send
-      chat_message = chatty_message_new (NULL, NULL, message, uuid, 0, msg_type, CHATTY_DIRECTION_OUT, 0);
+      chat_message = chatty_message_new (NULL, message, uuid, 0, msg_type, CHATTY_DIRECTION_OUT, 0);
       chatty_message_set_status (chat_message, CHATTY_STATUS_SENT, 0);
       chatty_pp_chat_append_message (CHATTY_PP_CHAT (chat), chat_message);
     } else if (pcm.flags & PURPLE_MESSAGE_SEND) {
@@ -834,13 +839,10 @@ chatty_conv_write_conversation (PurpleConversation *conv,
       // FIXME: current list_box does not allow ordering rows by timestamp
       // TODO: Needs proper sort function and timestamp as user_data for rows
       // FIXME: Alternatively may need to reload history to re-populate rows
-      chat_message = chatty_message_new (NULL, NULL, message, uuid, mtime, msg_type, CHATTY_DIRECTION_OUT, 0);
+      chat_message = chatty_message_new (NULL, message, uuid, mtime, msg_type, CHATTY_DIRECTION_OUT, 0);
       chatty_message_set_status (chat_message, CHATTY_STATUS_SENT, 0);
       chatty_pp_chat_append_message (CHATTY_PP_CHAT (chat), chat_message);
     }
-
-    if (chat_message && pcm.who && !(flags & PURPLE_MESSAGE_SEND))
-      chatty_message_set_user_name (chat_message, pcm.who);
 
     /*
      * This is default fallback history handler.  Other plugins may

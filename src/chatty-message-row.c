@@ -142,33 +142,25 @@ message_row_update_message (ChattyMessageRow *self)
   if (status == CHATTY_STATUS_SENDING_FAILED)
     status_str = "<span color='red'> x</span>";
   else if (status == CHATTY_STATUS_SENT)
-    status_str = "<span color='grey'> ✓</span>";
+    status_str = " ✓";
   else if (status == CHATTY_STATUS_DELIVERED)
     status_str = "<span color='#6cba3d'> ✓</span>";
 
   time_stamp = chatty_message_get_time (self->message);
   time_str = chatty_utils_get_human_time (time_stamp);
 
-  footer = g_strconcat ("<span color='grey'>", time_str, "</span>",
-                        status_str, NULL);
+  footer = g_strconcat (time_str, status_str, NULL);
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
 
   if (!self->is_im || self->protocol == CHATTY_PROTOCOL_MATRIX) {
-    g_autofree char *author = NULL;
     const char *alias;
 
     alias = chatty_message_get_user_alias (self->message);
 
-
     if (alias)
-      author = g_strconcat ("<span color='grey'>",
-                            alias,
-                            "</span>",
-                            NULL);
-    if (author)
-      gtk_label_set_markup (GTK_LABEL (self->author_label), author);
-    gtk_widget_set_visible (self->author_label, author && *author);
+      gtk_label_set_label (GTK_LABEL (self->author_label), alias);
+    gtk_widget_set_visible (self->author_label, alias && *alias);
   }
 }
 

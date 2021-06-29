@@ -106,6 +106,14 @@ chatty_item_real_set_state (ChattyItem      *self,
   /* Do Nothing */
 }
 
+static ChattyFileInfo *
+chatty_item_real_get_avatar_file (ChattyItem *self)
+{
+  g_assert (CHATTY_IS_ITEM (self));
+
+  return NULL;
+}
+
 static GdkPixbuf *
 chatty_item_real_get_avatar (ChattyItem *self)
 {
@@ -233,6 +241,7 @@ chatty_item_class_init (ChattyItemClass *klass)
   klass->set_name = chatty_item_real_set_name;
   klass->get_state = chatty_item_real_get_state;
   klass->set_state = chatty_item_real_set_state;
+  klass->get_avatar_file = chatty_item_real_get_avatar_file;
   klass->get_avatar = chatty_item_real_get_avatar;
   klass->get_avatar_async  = chatty_item_real_get_avatar_async;
   klass->get_avatar_finish = chatty_item_real_get_avatar_finish;
@@ -463,6 +472,14 @@ chatty_item_set_state (ChattyItem      *self,
   g_return_if_fail (CHATTY_IS_ITEM (self));
 
   return CHATTY_ITEM_GET_CLASS (self)->set_state (self, state);
+}
+
+ChattyFileInfo *
+chatty_item_get_avatar_file (ChattyItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ITEM (self), NULL);
+
+  return CHATTY_ITEM_GET_CLASS (self)->get_avatar_file (self);
 }
 
 /**

@@ -17,12 +17,6 @@
 
 G_BEGIN_DECLS
 
-typedef enum {
-  ADD_MESSAGE_ON_BOTTOM,
-  ADD_MESSAGE_ON_TOP,
-} e_msg_pos;
-
-
 #define CHATTY_TYPE_CHAT_VIEW (chatty_chat_view_get_type ())
 
 G_DECLARE_FINAL_TYPE (ChattyChatView, chatty_chat_view, CHATTY, CHAT_VIEW, GtkBox)

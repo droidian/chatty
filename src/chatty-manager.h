@@ -23,13 +23,6 @@ G_BEGIN_DECLS
 #define CHATTY_APP_ID       "sm.puri.Chatty"
 #define CHATTY_PREFS_ROOT   "/chatty"
 
-typedef enum
-{
-  CHATTY_SMS_RECEIPT_NONE      = -1,
-  CHATTY_SMS_RECEIPT_MM_ACKN   =  0,
-  CHATTY_SMS_RECEIPT_SMSC_ACKN,
-} e_sms_receipt_states;
-
 #define CHATTY_TYPE_MANAGER (chatty_manager_get_type ())
 
 G_DECLARE_FINAL_TYPE (ChattyManager, chatty_manager, CHATTY, MANAGER, GObject)
@@ -43,8 +36,6 @@ GListModel     *chatty_manager_get_chat_list         (ChattyManager *self);
 void            chatty_manager_disable_auto_login    (ChattyManager *self,
                                                       gboolean       disable);
 gboolean        chatty_manager_get_disable_auto_login (ChattyManager *self);
-gboolean        chatty_manager_is_account_supported (ChattyManager   *self,
-                                                     ChattyPpAccount *account);
 
 void            chatty_manager_load_plugins           (ChattyManager   *self);
 void            chatty_manager_load_buddies           (ChattyManager   *self);

@@ -18,28 +18,11 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ChattyFileInfo ChattyFileInfo;
-
-struct _ChattyFileInfo {
-  char *file_name;
-  char *url;
-  char *path;
-  char *mime_type;
-  gpointer user_data;
-  gsize width;
-  gsize height;
-  gsize size;
-  /* For audio files */
-  gsize duration;
-  int status;
-};
-
 #define CHATTY_TYPE_MESSAGE (chatty_message_get_type ())
 
 G_DECLARE_FINAL_TYPE (ChattyMessage, chatty_message, CHATTY, MESSAGE, GObject)
 
 ChattyMessage      *chatty_message_new             (ChattyItem         *user,
-                                                    const char         *user_alias,
                                                     const char         *message,
                                                     const char         *uid,
                                                     time_t              time,
@@ -74,8 +57,6 @@ void                chatty_message_set_user        (ChattyMessage      *self,
                                                     ChattyItem         *sender);
 ChattyItem         *chatty_message_get_user        (ChattyMessage      *self);
 const char         *chatty_message_get_user_name   (ChattyMessage      *self);
-void                chatty_message_set_user_name   (ChattyMessage      *self,
-                                                    const char         *user_name);
 const char         *chatty_message_get_user_alias  (ChattyMessage      *self);
 gboolean            chatty_message_user_matches    (ChattyMessage      *a_message,
                                                     ChattyMessage      *b_message);
@@ -87,6 +68,5 @@ void                chatty_message_set_status      (ChattyMessage      *self,
 ChattyMsgType       chatty_message_get_msg_type    (ChattyMessage      *self);
 ChattyMsgDirection  chatty_message_get_msg_direction (ChattyMessage    *self);
 void                chatty_message_emit_updated    (ChattyMessage      *self);
-void                chatty_file_info_free          (ChattyFileInfo *file_info);
 
 G_END_DECLS

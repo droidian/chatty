@@ -37,6 +37,7 @@ struct _ChattyListRow
 
   ChattyItem    *item;
   gboolean       hide_chat_details;
+  int            last_modified_timeout;
 };
 
 G_DEFINE_TYPE (ChattyListRow, chatty_list_row, GTK_TYPE_LIST_BOX_ROW)
@@ -92,7 +93,7 @@ chatty_time_ago_in_words (time_t time_stamp)
   /* Translators: Timestamp years suffix */
   str_years     = C_("timestamp-suffix-years", "y");
 
-  time (&time_now);
+  time_now = time (NULL);
 
   timeinfo = localtime (&time_stamp);
 
@@ -206,6 +207,41 @@ chatty_time_ago_in_words (time_t time_stamp)
     g_strdup_printf ("%s%d%s", prefix, number, unit);
 }
 
+static gboolean
+chatty_list_row_update_last_modified (ChattyListRow *self)
+{
+  ChattyChat *item;
+  g_autofree char *str = NULL;
+  double delta_secs;
+  time_t last_message_time;
+  time_t time_now;
+
+  self->last_modified_timeout = 0;
+
+  item = CHATTY_CHAT (self->item);
+  last_message_time = chatty_chat_get_last_msg_time (item);
+  if (!last_message_time)
+    return G_SOURCE_REMOVE;
+
+  str = chatty_time_ago_in_words (last_message_time);
+  if (str)
+    gtk_label_set_label (GTK_LABEL (self->last_modified), str);
+
+  time_now = time (NULL);
+  delta_secs = difftime (time_now, last_message_time);
+
+  if (delta_secs < SECONDS_PER_HOUR * 24) {
+    /* Update the time when it's 20% older and at least 30 seconds have passed */
+    int update_delay = MAX (delta_secs * 0.2, 30);
+
+    self->last_modified_timeout =
+      g_timeout_add_seconds (update_delay,
+                             G_SOURCE_FUNC (chatty_list_row_update_last_modified),
+                             self);
+  }
+
+  return G_SOURCE_REMOVE;
+}
 
 static char *
 list_row_user_flag_to_str (ChattyUserFlag flags)
@@ -237,6 +273,8 @@ chatty_list_row_update (ChattyListRow *self)
 
   g_assert (CHATTY_IS_LIST_ROW (self));
   g_assert (CHATTY_IS_ITEM (self->item));
+
+  g_clear_handle_id (&self->last_modified_timeout, g_source_remove);
 
   if (CHATTY_IS_PP_BUDDY (self->item)) {
     if (chatty_pp_buddy_get_buddy (CHATTY_PP_BUDDY (self->item))) { /* Buddy in contact list */
@@ -296,14 +334,7 @@ chatty_list_row_update (ChattyListRow *self)
     last_message_time = chatty_chat_get_last_msg_time (item);
     gtk_widget_set_visible (self->last_modified, last_message_time > 0);
 
-    if (last_message_time) {
-      g_autofree char *str = NULL;
-
-      str = chatty_time_ago_in_words (last_message_time);
-
-      if (str)
-        gtk_label_set_label (GTK_LABEL (self->last_modified), str);
-    }
+    chatty_list_row_update_last_modified (self);
   }
 
   if (subtitle)
@@ -315,6 +346,7 @@ chatty_list_row_finalize (GObject *object)
 {
   ChattyListRow *self = (ChattyListRow *)object;
 
+  g_clear_handle_id (&self->last_modified_timeout, g_source_remove);
   g_clear_object (&self->item);
 
   G_OBJECT_CLASS (chatty_list_row_parent_class)->finalize (object);
