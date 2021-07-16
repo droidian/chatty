@@ -1048,6 +1048,7 @@ get_room_name_cb (GObject      *obj,
   name = matrix_utils_json_object_get_string (object, "name");
   g_free (self->room_name);
   self->room_name = g_strdup (name);
+  chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
 
   CHATTY_TRACE_MSG ("Got room name, room: %s (%s)",
                     self->room_id, chatty_item_get_name (CHATTY_ITEM (self)));
@@ -1117,17 +1118,6 @@ matrix_chat_set_json_data (ChattyMaChat *self,
 
   if (!object)
     return;
-
-  if (!self->state_is_sync && !self->state_is_syncing) {
-    self->state_is_syncing = TRUE;
-    CHATTY_TRACE_MSG ("Getting room state of '%s(%s)'", self->room_id,
-                      chatty_item_get_name (CHATTY_ITEM (self)));
-
-    matrix_api_get_room_name_async (self->matrix_api,
-                                    self->room_id,
-                                    get_room_name_cb,
-                                    self);
-  }
 
   object = matrix_utils_json_object_get_object (self->json_data, "ephemeral");
   if (object)
@@ -1720,10 +1710,22 @@ chatty_ma_chat_finalize (GObject *object)
   g_clear_object (&self->avatar_cancellable);
 
   g_list_store_remove_all (self->message_list);
+  g_list_store_remove_all (self->buddy_list);
   g_clear_object (&self->message_list);
+  g_clear_object (&self->sorted_message_list);
+  g_clear_object (&self->buddy_list);
   g_clear_object (&self->matrix_api);
   g_clear_object (&self->matrix_enc);
+  g_clear_object (&self->account);
   g_clear_object (&self->notification);
+  g_clear_object (&self->self_buddy);
+  g_clear_pointer (&self->avatar_file, chatty_file_info_free);
+  g_clear_object (&self->avatar);
+
+  g_clear_object (&self->matrix_db);
+  g_clear_object (&self->history_db);
+
+  g_clear_pointer (&self->json_data, json_object_unref);
   g_queue_free_full (self->message_queue, g_object_unref);
 
   g_free (self->room_name);
@@ -1864,6 +1866,18 @@ chatty_ma_chat_set_data (ChattyMaChat  *self,
   g_set_object (&self->account, account);
   g_set_object (&self->matrix_api, api);
   g_set_object (&self->matrix_enc, enc);
+
+  if (!self->state_is_sync && !self->state_is_syncing &&
+      self->matrix_api && self->matrix_enc) {
+    self->state_is_syncing = TRUE;
+    CHATTY_TRACE_MSG ("Getting room name for '%s(%s)'", self->room_id,
+                      chatty_item_get_name (CHATTY_ITEM (self)));
+
+    matrix_api_get_room_name_async (self->matrix_api,
+                                    self->room_id,
+                                    get_room_name_cb,
+                                    self);
+  }
 }
 
 gboolean

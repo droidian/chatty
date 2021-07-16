@@ -52,15 +52,22 @@ struct _ChattyPpAccountDetails
   GtkWidget     *device_fp;
   GtkWidget     *device_fp_list;
 
+  guint          modified : 1;
   gulong         status_id;
 };
 
 enum {
-  CHANGED,
   DELETE_CLICKED,
   N_SIGNALS
 };
 
+enum {
+  PROP_0,
+  PROP_MODIFIED,
+  N_PROPS
+};
+
+static GParamSpec *properties[N_PROPS];
 static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (ChattyPpAccountDetails, chatty_pp_account_details, HDY_TYPE_PREFERENCES_PAGE)
@@ -125,7 +132,8 @@ pa_details_pw_entry_changed_cb (ChattyPpAccountDetails *self)
 {
   g_assert (CHATTY_IS_PP_ACCOUNT_DETAILS (self));
 
-  g_signal_emit (self, signals[CHANGED], 0);
+  self->modified = TRUE;
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_MODIFIED]);
 }
 
 static void
@@ -192,6 +200,25 @@ pp_details_get_fingerprints_cb (GObject      *object,
 }
 
 static void
+chatty_pp_account_details_get_property (GObject    *object,
+                                        guint       prop_id,
+                                        GValue     *value,
+                                        GParamSpec *pspec)
+{
+  ChattyPpAccountDetails *self = (ChattyPpAccountDetails *)object;
+
+  switch (prop_id)
+    {
+    case PROP_MODIFIED:
+      g_value_set_boolean (value, self->modified);
+      break;
+
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
 chatty_pp_account_details_finalize (GObject *object)
 {
   ChattyPpAccountDetails *self = (ChattyPpAccountDetails *)object;
@@ -207,6 +234,7 @@ chatty_pp_account_details_class_init (ChattyPpAccountDetailsClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
   GObjectClass   *object_class = G_OBJECT_CLASS (klass);
 
+  object_class->get_property = chatty_pp_account_details_get_property;
   object_class->finalize = chatty_pp_account_details_finalize;
 
   signals [DELETE_CLICKED] =
@@ -216,12 +244,14 @@ chatty_pp_account_details_class_init (ChattyPpAccountDetailsClass *klass)
                   0, NULL, NULL, NULL,
                   G_TYPE_NONE, 0);
 
-  signals [CHANGED] =
-    g_signal_new ("changed",
-                  G_TYPE_FROM_CLASS (klass),
-                  G_SIGNAL_RUN_LAST,
-                  0, NULL, NULL, NULL,
-                  G_TYPE_NONE, 0);
+  properties[PROP_MODIFIED] =
+    g_param_spec_boolean ("modified",
+                          "Modified",
+                          "If Settings is modified",
+                          FALSE,
+                          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+
+  g_object_class_install_properties (object_class, N_PROPS, properties);
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/Chatty/"
@@ -256,11 +286,15 @@ chatty_pp_account_details_new (void)
 }
 
 void
-chatty_pp_account_save (ChattyPpAccountDetails *self)
+chatty_pp_account_save_async (ChattyPpAccountDetails *self,
+                              GAsyncReadyCallback     callback,
+                              gpointer                user_data)
 {
+  g_autoptr(GTask) task = NULL;
   GtkEntry *entry;
 
   g_return_if_fail (CHATTY_IS_PP_ACCOUNT_DETAILS (self));
+  g_return_if_fail (callback);
 
   entry = (GtkEntry *)self->password_entry;
   chatty_account_set_password (self->account, gtk_entry_get_text (entry));
@@ -269,6 +303,22 @@ chatty_pp_account_save (ChattyPpAccountDetails *self)
   chatty_account_set_enabled (self->account, TRUE);
 
   gtk_entry_set_text (entry, "");
+
+  self->modified = FALSE;
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_MODIFIED]);
+
+  task = g_task_new (self, NULL, callback, user_data);
+  g_task_return_boolean (task, TRUE);
+}
+
+gboolean
+chatty_pp_account_save_finish (ChattyPpAccountDetails  *self,
+                               GAsyncResult            *result,
+                               GError                 **error)
+{
+  g_return_val_if_fail (CHATTY_IS_PP_ACCOUNT_DETAILS (self), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 ChattyAccount *

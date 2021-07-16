@@ -8,3 +8,5 @@ src/matrix/matrix-db.c
 src/matrix/matrix-db.h
 src/matrix/matrix-api.c
 src/matrix/matrix-api.h
+src/matrix/matrix-net.c
+src/matrix/matrix-net.h
