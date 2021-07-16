@@ -1,5 +1,5 @@
 /* -*- mode: c; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* chatty-pp-account-details.h
+/* chatty-ma-account-details.h
  *
  * Copyright 2021 Purism SPC
  *
@@ -30,19 +30,19 @@
 
 G_BEGIN_DECLS
 
-#define CHATTY_TYPE_PP_ACCOUNT_DETAILS (chatty_pp_account_details_get_type ())
+#define CHATTY_TYPE_MA_ACCOUNT_DETAILS (chatty_ma_account_details_get_type ())
 
-G_DECLARE_FINAL_TYPE (ChattyPpAccountDetails, chatty_pp_account_details, CHATTY, PP_ACCOUNT_DETAILS, HdyPreferencesPage)
+G_DECLARE_FINAL_TYPE (ChattyMaAccountDetails, chatty_ma_account_details, CHATTY, MA_ACCOUNT_DETAILS, HdyPreferencesPage)
 
-GtkWidget       *chatty_pp_account_details_new      (void);
-void             chatty_pp_account_save_async       (ChattyPpAccountDetails *self,
-                                                     GAsyncReadyCallback     callback,
-                                                     gpointer                user_data);
-gboolean         chatty_pp_account_save_finish      (ChattyPpAccountDetails *self,
-                                                     GAsyncResult           *result,
-                                                     GError                **error);
-ChattyAccount   *chatty_pp_account_details_get_item (ChattyPpAccountDetails *self);
-void             chatty_pp_account_details_set_item (ChattyPpAccountDetails *self,
+GtkWidget       *chatty_ma_account_details_new      (void);
+void             chatty_ma_account_details_save_async  (ChattyMaAccountDetails *self,
+                                                        GAsyncReadyCallback     callback,
+                                                        gpointer                user_data);
+gboolean         chatty_ma_account_details_save_finish (ChattyMaAccountDetails *self,
+                                                        GAsyncResult           *result,
+                                                        GError                **error);
+ChattyAccount   *chatty_ma_account_details_get_item (ChattyMaAccountDetails *self);
+void             chatty_ma_account_details_set_item (ChattyMaAccountDetails *self,
                                                      ChattyAccount          *account);
 
 G_END_DECLS

@@ -37,10 +37,14 @@ src/chatty-window.c
 src/chatty-window.h
 src/dialogs/chatty-info-dialog.c
 src/dialogs/chatty-info-dialog.h
+src/dialogs/chatty-pp-chat-info.c
+src/dialogs/chatty-pp-chat-info.h
 src/dialogs/chatty-new-chat-dialog.c
 src/dialogs/chatty-new-chat-dialog.h
 src/dialogs/chatty-new-muc-dialog.c
 src/dialogs/chatty-new-muc-dialog.h
+src/dialogs/chatty-ma-account-details.c
+src/dialogs/chatty-ma-account-details.h
 src/dialogs/chatty-pp-account-details.c
 src/dialogs/chatty-pp-account-details.h
 src/dialogs/chatty-settings-dialog.c
@@ -56,8 +60,10 @@ src/ui/chatty-contact-row.ui
 src/ui/chatty-dialog-join-muc.ui
 src/ui/chatty-dialog-new-chat.ui
 src/ui/chatty-info-dialog.ui
+src/ui/chatty-pp-chat-info.ui
 src/ui/chatty-fp-row.ui
 src/ui/chatty-list-row.ui
+src/ui/chatty-ma-account-details.ui
 src/ui/chatty-pp-account-details.ui
 src/ui/chatty-settings-dialog.ui
 src/ui/chatty-window.ui

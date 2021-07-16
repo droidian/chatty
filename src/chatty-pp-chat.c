@@ -541,7 +541,7 @@ chatty_pp_chat_get_account (ChattyChat *chat)
 }
 
 static void
-chatty_pp_chat_real_past_messages (ChattyChat *chat,
+chatty_pp_chat_load_past_messages (ChattyChat *chat,
                                    int         count)
 {
   ChattyPpChat *self = (ChattyPpChat *)chat;
@@ -1029,7 +1029,7 @@ chatty_pp_chat_class_init (ChattyPpChatClass *klass)
   chat_class->get_chat_name = chatty_pp_chat_get_chat_name;
   chat_class->get_username = chatty_pp_chat_get_username;
   chat_class->get_account = chatty_pp_chat_get_account;
-  chat_class->load_past_messages = chatty_pp_chat_real_past_messages;
+  chat_class->load_past_messages = chatty_pp_chat_load_past_messages;
   chat_class->is_loading_history = chatty_pp_chat_is_loading_history;
   chat_class->get_messages = chatty_pp_chat_get_messages;
   chat_class->get_users = chatty_pp_chat_get_users;

@@ -1,3 +1,64 @@
+chatty (0.3.3) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * manager: Add an API find chat with matching name
+  * application: Handle opening chats from notifications
+  * notification: Remove open-chat action and signals
+  * matrix-api: Add API to get 3pid and user details
+  * ma-account: Add API to get 3pid and user details
+  * Add ChattyMaAccountDetails to handle matrix accounts
+  * settings-dialog: Use ChattyMaAccountDetails for matrix accounts
+  * pp-account-details: Save changes async
+  * pp-account-details: Let 'modified' be a property
+  * ma-account-details: Add 'modified' property
+  * ma-account-details: Remove existing 3pid list when account is changed
+  * matrix-api: Add API to set display name
+  * ma-account: Add API to set display name
+  * ma-account-details: Handle changing display name
+  * Add MatrixNet
+  * matrix-api: Use MatrixNet for network related actions
+  * matrix-net: Add API to download files
+  * matrix-api: Use MatrixNet to download files
+  * matrix-net: Add priorities for network requests
+  * matrix: Clear memory before freeing access token
+  * matrix-api: Fix various memory leaks
+  * matrix-net: Properly free a hashtable
+  * ma-account: Fix memory leaks
+  * ma-buddy: Fix memory leaks
+  * ma-chat: Fix memory leaks
+  * matrix-net: Properly free JsonObject
+  * matrix-api: Add API to delete 3pid
+  * ma-account: Add API to delete 3pid
+  * ma-account-details: Add a way to delete 3pid
+  * matrix-api: Fix a double free
+  * message: Fix a check
+  * ma-chat: Load room name when chat data is set
+  * matrix-api: show error logs on common errors
+  * ma-chat: Save chat name to db once loaded
+  * matrix-api: Remove error from class struct
+  * matrix-api: Use single bit variables for booleans
+  * message: Use single bit variables for booleans
+  * matrix-net: Add documentation
+  * matrix-net: Remove a commented code
+  * matrix-api: Reset cancellable on timeout
+  * Add ChattyPpChatInfo
+  * info-dialog: Use ChattyPpChatInfo
+  * chat-view: Let labels can be wrapped
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+
+  [ Andy Holmes ]
+  * pp-chat: fix a tiny typo with a vfunc name
+
+  [ Vittorio Monti ]
+  * po: Update Italian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 14 Jul 2021 13:48:14 +0530
+
 chatty (0.3.2) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

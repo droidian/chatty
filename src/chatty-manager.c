@@ -1885,24 +1885,11 @@ chatty_manager_class_init (ChattyManagerClass *klass)
 }
 
 static void
-notification_open_chat_cb (ChattyManager *self,
-                           ChattyChat    *chat)
-{
-  g_assert (CHATTY_IS_MANAGER (self));
-  g_assert (CHATTY_IS_CHAT (chat));
-
-  g_signal_emit (self,  signals[OPEN_CHAT], 0, chat);
-}
-
-static void
 chatty_manager_init (ChattyManager *self)
 {
   g_autoptr(GtkFlattenListModel) flatten_list = NULL;
 
   self->notification = chatty_notification_new ();
-  g_signal_connect_object (self->notification, "open-chat",
-                           G_CALLBACK (notification_open_chat_cb),
-                           self, G_CONNECT_SWAPPED);
 
   self->chatty_eds = chatty_eds_new (CHATTY_PROTOCOL_SMS);
   self->account_list = g_list_store_new (CHATTY_TYPE_ACCOUNT);
@@ -2546,6 +2533,65 @@ chatty_manager_save_account_finish (ChattyManager  *self,
   g_return_val_if_fail (G_IS_ASYNC_RESULT (result), FALSE);
 
   return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+ChattyChat *
+chatty_manager_find_chat_with_name (ChattyManager *self,
+                                    const char    *account_id,
+                                    const char    *chat_id)
+{
+  GListModel *accounts, *chat_list;
+  const char *id;
+  guint n_accounts, n_items;
+
+  g_return_val_if_fail (CHATTY_IS_MANAGER (self), NULL);
+  g_return_val_if_fail (chat_id && *chat_id, NULL);
+
+  chat_list = G_LIST_MODEL (self->chat_list);
+  n_items = g_list_model_get_n_items (chat_list);
+
+  for (guint i = 0; i < n_items; i++) {
+    g_autoptr(ChattyChat) chat = NULL;
+    ChattyAccount *account;
+
+    chat = g_list_model_get_item (chat_list, i);
+    account = chatty_chat_get_account (chat);
+
+    if (g_strcmp0 (chatty_account_get_username (account), account_id) != 0)
+      continue;
+
+    id = chatty_chat_get_chat_name (chat);
+
+    if (g_strcmp0 (id, chat_id) == 0)
+      return chat;
+  }
+
+  accounts = G_LIST_MODEL (self->account_list);
+  n_accounts = g_list_model_get_n_items (accounts);
+
+  for (guint i = 0; i < n_accounts; i++) {
+    g_autoptr(ChattyAccount) account = NULL;
+
+    account = g_list_model_get_item (accounts, i);
+
+    if (!CHATTY_IS_MA_ACCOUNT (account) ||
+        g_strcmp0 (chatty_account_get_username (account), account_id) != 0)
+      continue;
+
+    chat_list = chatty_ma_account_get_chat_list (CHATTY_MA_ACCOUNT (account));
+    n_items = g_list_model_get_n_items (chat_list);
+
+    for (guint j = 0; j < n_items; j++) {
+      g_autoptr(ChattyMaChat) chat = NULL;
+
+      chat = g_list_model_get_item (chat_list, j);
+
+      if (chatty_ma_chat_matches_id (chat, chat_id))
+        return CHATTY_CHAT (chat);
+    }
+  }
+
+  return NULL;
 }
 
 ChattyChat *
