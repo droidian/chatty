@@ -26,38 +26,26 @@ struct _ChattyNotification
   GObject         parent_instance;
 
   GNotification  *notification;
-  ChattyChat     *chat; /* unowned */
   int             timeout_id;
 };
 
 G_DEFINE_TYPE (ChattyNotification, chatty_notification, G_TYPE_OBJECT)
 
-enum {
-  OPEN_CHAT,
-  N_SIGNALS
-};
-
-static guint signals[N_SIGNALS];
-
-static void   notification_open_chat   (GSimpleAction *action,
-                                        GVariant      *parameter,
-                                        gpointer       user_data);
-
-static const GActionEntry actions[] = {
-  { "open-chat", notification_open_chat },
-};
-
 static void
-notification_open_chat (GSimpleAction *action,
-                        GVariant      *parameter,
-                        gpointer       user_data)
+create_new_notification (ChattyNotification *self,
+                         ChattyChat         *chat)
 {
-  ChattyNotification *self = user_data;
+  g_assert (CHATTY_IS_NOTIFICATION (self));
 
-  g_assert (CHATTY_IS_NOTIFICATION (user_data));
+  if (self->notification)
+    return;
 
-  if (self->chat)
-    g_signal_emit (self, signals[OPEN_CHAT], 0, self->chat);
+  self->notification = g_notification_new ("chatty");
+  g_notification_set_default_action (self->notification, "app.show-window");
+  g_notification_add_button_with_target (self->notification, _("Open Message"), "app.open-chat",
+                                         "(ss)",
+                                         chatty_chat_get_chat_name (chat),
+                                         chatty_chat_get_username (chat));
 }
 
 static gboolean
@@ -74,6 +62,9 @@ show_notification (gpointer user_data)
   if (app)
     g_application_send_notification (app, "x-chatty.im.received",
                                      self->notification);
+
+  /* We create new GNotification for each notification */
+  g_clear_object (&self->notification);
 
   return G_SOURCE_REMOVE;
 }
@@ -155,36 +146,11 @@ chatty_notification_class_init (ChattyNotificationClass *klass)
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
   object_class->finalize = chatty_notification_finalize;
-
-  /**
-   * ChattyNotification::open-chat:
-   * @self: A #ChattyNotification
-   * @chat: A #ChattyChat
-   *
-   * Emit when requested to open @chat.
-   */
-  signals [OPEN_CHAT] =
-    g_signal_new ("open-chat",
-                  G_TYPE_FROM_CLASS (klass),
-                  G_SIGNAL_RUN_LAST,
-                  0, NULL, NULL, NULL,
-                  G_TYPE_NONE, 1, CHATTY_TYPE_CHAT);
 }
 
 static void
 chatty_notification_init (ChattyNotification *self)
 {
-  GApplication *app;
-
-  self->notification = g_notification_new ("chatty");
-  g_notification_set_default_action (self->notification, "app.show-window");
-  g_notification_add_button (self->notification, _("Open Message"), "app.open-chat");
-
-  app = g_application_get_default ();
-
-  if (app)
-    g_action_map_add_action_entries (G_ACTION_MAP (app), actions,
-                                     G_N_ELEMENTS (actions), self);
 }
 
 ChattyNotification *
@@ -210,7 +176,7 @@ chatty_notification_show_message (ChattyNotification *self,
   g_return_if_fail (CHATTY_IS_CHAT (chat));
   g_return_if_fail (CHATTY_IS_MESSAGE (message));
 
-  g_set_weak_pointer (&self->chat, chat);
+  create_new_notification (self, chat);
 
   if (name)
     title = g_strdup_printf (_("New message from %s"), name);

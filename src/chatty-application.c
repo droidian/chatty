@@ -242,6 +242,28 @@ chatty_application_show_window (GSimpleAction *action,
 }
 
 static void
+chatty_application_open_chat (GSimpleAction *action,
+                              GVariant      *parameter,
+                              gpointer       user_data)
+{
+  ChattyApplication *self = user_data;
+  const char *room_id, *account_id;
+  ChattyChat *chat;
+
+  g_assert (CHATTY_IS_APPLICATION (self));
+
+  g_variant_get (parameter, "(ss)", &room_id, &account_id);
+  g_return_if_fail (room_id && account_id);
+
+  chat = chatty_manager_find_chat_with_name (self->manager, account_id, room_id);
+  g_return_if_fail (chat);
+
+  CHATTY_DEBUG_MSG ("Opening chat %s, account: %s", room_id, account_id);
+
+  chatty_window_open_chat (CHATTY_WINDOW (self->main_window), chat);
+}
+
+static void
 chatty_application_finalize (GObject *object)
 {
   ChattyApplication *self = (ChattyApplication *)object;
@@ -321,6 +343,7 @@ chatty_application_startup (GApplication *application)
   g_autofree char *db_path = NULL;
   g_autofree char *dir = NULL;
   static const GActionEntry app_entries[] = {
+    { "open-chat", chatty_application_open_chat, "(ss)" },
     { "show-window", chatty_application_show_window },
   };
 

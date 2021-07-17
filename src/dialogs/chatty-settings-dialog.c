@@ -40,6 +40,7 @@
 #include "chatty-avatar.h"
 #include "chatty-settings.h"
 #include "chatty-secret-store.h"
+#include "chatty-ma-account-details.h"
 #include "chatty-pp-account-details.h"
 #include "chatty-settings-dialog.h"
 
@@ -65,6 +66,7 @@ struct _ChattySettingsDialog
 
   GtkWidget      *account_details_stack;
   GtkWidget      *pp_account_details;
+  GtkWidget      *ma_account_details;
 
   GtkWidget      *protocol_list_group;
   GtkWidget      *protocol_list;
@@ -310,6 +312,22 @@ chatty_settings_add_clicked_cb (ChattySettingsDialog *self)
 }
 
 static void
+pp_account_save_cb (GObject      *object,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+  g_autoptr(ChattySettingsDialog) self = user_data;
+
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  g_object_set (self->matrix_spinner, "active", FALSE, NULL);
+  gtk_widget_set_sensitive (self->account_details_stack, TRUE);
+
+  gtk_widget_hide (self->save_button);
+  gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
+}
+
+static void
 chatty_settings_save_clicked_cb (ChattySettingsDialog *self)
 {
   GtkStack *stack;
@@ -318,19 +336,29 @@ chatty_settings_save_clicked_cb (ChattySettingsDialog *self)
 
   stack = GTK_STACK (self->account_details_stack);
 
-  if (gtk_stack_get_visible_child (stack) == self->pp_account_details)
-    chatty_pp_account_save (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details));
+  g_object_set (self->matrix_spinner, "active", TRUE, NULL);
+  gtk_widget_set_sensitive (self->account_details_stack, FALSE);
 
-  gtk_widget_hide (self->save_button);
-  gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "main-settings");
+  if (gtk_stack_get_visible_child (stack) == self->pp_account_details)
+    chatty_pp_account_save_async (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details),
+                                  pp_account_save_cb, g_object_ref (self));
+  else if (gtk_stack_get_visible_child (stack) == self->ma_account_details)
+    chatty_ma_account_details_save_async (CHATTY_MA_ACCOUNT_DETAILS (self->ma_account_details),
+                                          pp_account_save_cb, g_object_ref (self));
 }
 
 static void
-settings_pp_details_changed_cb (ChattySettingsDialog *self)
+settings_pp_details_changed_cb (ChattySettingsDialog *self,
+                                GParamSpec           *pspec,
+                                GtkWidget            *details)
 {
-  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+  gboolean modified;
 
-  gtk_widget_set_sensitive (self->save_button, TRUE);
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+  g_assert (GTK_IS_WIDGET (details));
+
+  g_object_get (details, "modified", &modified, NULL);
+  gtk_widget_set_sensitive (self->save_button, modified);
 }
 
 static void chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self);
@@ -364,7 +392,8 @@ settings_delete_account_clicked_cb (ChattySettingsDialog *self)
 
       account = g_steal_pointer (&self->selected_account);
       chatty_account_delete (account);
-      chatty_manager_delete_account_async (chatty_manager_get_default (), account, NULL, NULL, NULL);
+      if (CHATTY_IS_MA_ACCOUNT (account))
+        chatty_manager_delete_account_async (chatty_manager_get_default (), account, NULL, NULL, NULL);
 
       chatty_settings_dialog_populate_account_list (self);
       gtk_widget_hide (self->save_button);
@@ -497,8 +526,18 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
       self->selected_account = g_object_get_data (G_OBJECT (row), "row-account");
       g_assert (self->selected_account != NULL);
 
-      chatty_pp_account_details_set_item (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details),
-                                          self->selected_account);
+      if (CHATTY_IS_MA_ACCOUNT (self->selected_account)) {
+        chatty_ma_account_details_set_item (CHATTY_MA_ACCOUNT_DETAILS (self->ma_account_details),
+                                            self->selected_account);
+        chatty_pp_account_details_set_item (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details), NULL);
+        gtk_stack_set_visible_child (GTK_STACK (self->account_details_stack), self->ma_account_details);
+      } else {
+        chatty_pp_account_details_set_item (CHATTY_PP_ACCOUNT_DETAILS (self->pp_account_details),
+                                            self->selected_account);
+        chatty_ma_account_details_set_item (CHATTY_MA_ACCOUNT_DETAILS (self->ma_account_details), NULL);
+        gtk_stack_set_visible_child (GTK_STACK (self->account_details_stack), self->pp_account_details);
+      }
+
       chatty_settings_dialog_update_status (row);
       gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack),
                                         "edit-account-view");
@@ -749,6 +788,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, account_details_stack);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, pp_account_details);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, ma_account_details);
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list_group);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, protocol_list);

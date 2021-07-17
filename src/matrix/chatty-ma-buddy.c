@@ -57,6 +57,20 @@ enum {
 
 static guint signals[N_SIGNALS];
 
+static void
+chatty_ma_device_free (BuddyDevice *device)
+{
+  if (!device)
+    return;
+
+  g_free (device->device_id);
+  g_free (device->device_name);
+  g_free (device->curve_key);
+  g_free (device->ed_key);
+  g_free (device->one_time_key);
+  g_free (device);
+}
+
 static ChattyProtocol
 chatty_ma_buddy_get_protocols (ChattyItem *item)
 {
@@ -129,6 +143,12 @@ chatty_ma_buddy_dispose (GObject *object)
 
   g_clear_pointer (&self->matrix_id, g_free);
   g_clear_pointer (&self->name, g_free);
+
+  g_clear_object (&self->matrix_api);
+  g_clear_object (&self->matrix_enc);
+
+  g_list_free_full (self->devices, (GDestroyNotify)chatty_ma_device_free);
+  self->devices = NULL;
 
   G_OBJECT_CLASS (chatty_ma_buddy_parent_class)->dispose (object);
 }

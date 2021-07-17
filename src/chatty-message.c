@@ -46,9 +46,9 @@ struct _ChattyMessage
   ChattyMsgDirection direction;
   time_t           time;
 
-  gboolean encrypted;
+  guint            encrypted : 1;
   /* Set if files are created with file path string */
-  gboolean         files_are_path;
+  guint            files_are_path : 1;
   guint            sms_id;
 };
 
@@ -370,7 +370,7 @@ chatty_message_user_matches (ChattyMessage *a,
     return TRUE;
 
   if (g_strcmp0 (chatty_message_get_user_name (a),
-                 chatty_message_get_user_name (a)) == 0)
+                 chatty_message_get_user_name (b)) == 0)
     return TRUE;
   else if (a->user_name && b->user_name)
     return FALSE;
