@@ -1,3 +1,11 @@
+chatty (0.3.3-1) experimental; urgency=medium
+
+  * New upstream version 0.3.3
+  * d/patches: Remove empty series file
+  * d/control: Bump standard-versions to 4.5.1
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Sat, 17 Jul 2021 16:59:13 +0200
+
 chatty (0.3.2-1) experimental; urgency=medium
 
   * New upstream version 0.3.2
