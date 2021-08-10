@@ -26,7 +26,12 @@ static const SecretSchema *
 secret_store_get_schema (void)
 {
   static const SecretSchema password_schema = {
-    "sm.puri.Chatty", SECRET_SCHEMA_NONE,
+    /** SECRET_SCHEMA_DONT_MATCH_NAME is used as a workaround for a bug in gnome-keyring
+     *  which prevents cold keyrings from being searched (and hence does not prompt for unlocking)
+     *  see https://gitlab.gnome.org/GNOME/gnome-keyring/-/issues/89 and
+     *  https://gitlab.gnome.org/GNOME/libsecret/-/issues/7 for more information
+     */
+    "sm.puri.Chatty", SECRET_SCHEMA_DONT_MATCH_NAME,
     {
       { CHATTY_USERNAME_ATTRIBUTE,  SECRET_SCHEMA_ATTRIBUTE_STRING },
       { CHATTY_SERVER_ATTRIBUTE,    SECRET_SCHEMA_ATTRIBUTE_STRING },
@@ -155,7 +160,13 @@ chatty_secret_load_async  (GCancellable        *cancellable,
 
   schema = secret_store_get_schema ();
   task = g_task_new (NULL, cancellable, callback, user_data);
-  attr = secret_attributes_build (schema, NULL);
+  /** With using SECRET_SCHEMA_DONT_MATCH_NAME we need some other attribute
+   *  (apart from the schema name itself) to use for the lookup.
+   *  The protocol attribute seems like a reasonable choice.
+   */
+  attr = secret_attributes_build (schema,
+                                  CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
+                                  NULL);
 
   CHATTY_TRACE_MSG ("loading secret accounts");
   secret_service_search (NULL, schema, attr,

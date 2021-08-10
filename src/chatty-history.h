@@ -64,11 +64,20 @@ GPtrArray     *chatty_history_get_chats_finish    (ChattyHistory        *self,
                                                    GError              **error);
 gboolean       chatty_history_update_chat         (ChattyHistory        *self,
                                                    ChattyChat           *chat);
+gboolean       chatty_history_update_user         (ChattyHistory        *self,
+                                                   ChattyAccount        *account);
 void           chatty_history_delete_chat_async   (ChattyHistory        *self,
                                                    ChattyChat           *chat,
                                                    GAsyncReadyCallback   callback,
                                                    gpointer              user_data);
 gboolean       chatty_history_delete_chat_finish  (ChattyHistory        *self,
+                                                   GAsyncResult         *result,
+                                                   GError              **error);
+void           chatty_history_load_account_async  (ChattyHistory       *self,
+                                                   ChattyAccount       *account,
+                                                   GAsyncReadyCallback  callback,
+                                                   gpointer             user_data);
+gboolean       chatty_history_load_account_finish (ChattyHistory        *self,
                                                    GAsyncResult         *result,
                                                    GError              **error);
 

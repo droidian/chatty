@@ -2343,6 +2343,67 @@ history_update_chat (ChattyHistory *self,
 }
 
 static void
+history_update_user (ChattyHistory *self,
+                     GTask         *task)
+{
+  ChattyAccount *account;
+  const char *user_name, *name;
+  ChattyFileInfo *file_info;
+  sqlite3_stmt *stmt;
+  ChattyProtocol protocol;
+  int id, file_id = 0;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+
+  if (!self->db) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Database not opened");
+    return;
+  }
+
+  account = g_object_get_data (G_OBJECT (task), "account");
+  g_assert (CHATTY_IS_ACCOUNT (account));
+
+  user_name = chatty_account_get_username (account);
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (account));
+  name = chatty_item_get_name (CHATTY_ITEM (account));
+
+  if (!user_name || !*user_name) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Username is empty");
+    return;
+  }
+
+  id = insert_or_ignore_user (self, protocol, user_name, name, task);
+
+  if (!id)
+    return;
+
+  file_info = chatty_item_get_avatar_file (CHATTY_ITEM (account));
+  file_id = add_file_info (self, file_info);
+
+  if (!file_id) {
+    g_task_return_boolean (task, TRUE);
+    return;
+  }
+
+  sqlite3_prepare_v2 (self->db,
+                      "UPDATE users SET avatar_id=?1 "
+                      "WHERE users.id=?2",
+                      -1, &stmt, NULL);
+  history_bind_int (stmt, 1, file_id, "binding when setting avatar");
+  history_bind_int (stmt, 2, id, "binding when settings avatar");
+
+  sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+  g_task_return_boolean (task, TRUE);
+}
+
+static void
 history_delete_chat (ChattyHistory *self,
                      GTask         *task)
 {
@@ -2401,6 +2462,63 @@ history_delete_chat (ChattyHistory *self,
                              G_IO_ERROR, G_IO_ERROR_FAILED,
                              "Failed to delete chat. errno: %d, desc: %s",
                              status, sqlite3_errmsg (self->db));
+}
+
+static void
+history_load_account (ChattyHistory *self,
+                      GTask         *task)
+{
+  ChattyAccount *account;
+  sqlite3_stmt *stmt;
+  const char *user_name;
+  int status;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (G_IS_TASK (task));
+  g_assert (g_thread_self () == self->worker_thread);
+
+  if (!self->db) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Database not opened");
+    return;
+  }
+
+  account = g_object_get_data (G_OBJECT (task), "account");
+  g_assert (CHATTY_IS_ACCOUNT (account));
+
+  user_name = chatty_account_get_username (account);
+
+  if (!user_name || !*user_name) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR, G_IO_ERROR_FAILED,
+                             "Error: username name is empty");
+    return;
+  }
+
+  sqlite3_prepare_v2 (self->db, "SELECT users.alias,files.url,files.path FROM users "
+                      "LEFT JOIN files ON files.id=users.avatar_id "
+                      "WHERE users.username=? LIMIT 1;", -1, &stmt, NULL);
+  history_bind_text (stmt, 1, user_name, "binding when getting user details");
+
+  if (sqlite3_step (stmt) == SQLITE_ROW) {
+    const char *name, *avatar_url, *avatar_path;
+    GObject *object;
+
+    name = (char *)sqlite3_column_text (stmt, 0);
+    avatar_url = (char *)sqlite3_column_text (stmt, 1);
+    avatar_path = (char *)sqlite3_column_text (stmt, 2);
+
+    object = G_OBJECT (task);
+    g_object_set_data_full (object, "name", g_strdup (name), g_free);
+    g_object_set_data_full (object, "avatar-url", g_strdup (avatar_url), g_free);
+    g_object_set_data_full (object, "avatar-path", g_strdup (avatar_path), g_free);
+  }
+
+  status = sqlite3_finalize (stmt);
+  warn_if_sql_error (status, "finalizing when getting user details");
+
+  g_task_return_boolean (task, TRUE);
 }
 
 static void
@@ -2959,6 +3077,38 @@ chatty_history_update_chat (ChattyHistory *self,
   return status;
 }
 
+gboolean
+chatty_history_update_user (ChattyHistory *self,
+                            ChattyAccount *account)
+{
+  g_autoptr(GTask) task = NULL;
+  g_autoptr(GError) error = NULL;
+  gboolean status;
+
+  g_return_val_if_fail (CHATTY_IS_HISTORY (self), FALSE);
+  g_return_val_if_fail (CHATTY_IS_ACCOUNT (account), FALSE);
+
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  g_object_ref (task);
+  g_task_set_source_tag (task, chatty_history_update_user);
+  g_task_set_task_data (task, history_update_user, NULL);
+  g_object_ref (account);
+  g_object_set_data_full (G_OBJECT (task), "account", account, g_object_unref);
+
+  g_async_queue_push (self->queue, task);
+
+  /* Wait until the task is completed */
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
+
+  status = g_task_propagate_boolean (task, &error);
+
+  if (error)
+    g_warning ("Error updating user: %s", error->message);
+
+  return status;
+}
+
 /**
  * chatty_history_delete_chat_async:
  * @self: a #ChattyHistory
@@ -3004,6 +3154,39 @@ gboolean
 chatty_history_delete_chat_finish (ChattyHistory  *self,
                                    GAsyncResult   *result,
                                    GError        **error)
+{
+  g_return_val_if_fail (CHATTY_IS_HISTORY (self), FALSE);
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+  g_return_val_if_fail (!error || !*error, FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+void
+chatty_history_load_account_async (ChattyHistory       *self,
+                                   ChattyAccount       *account,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             user_data)
+{
+  GTask *task;
+
+  g_return_if_fail (CHATTY_IS_HISTORY (self));
+  g_return_if_fail (CHATTY_IS_ACCOUNT (account));
+  g_return_if_fail (callback);
+
+  task = g_task_new (self, NULL, callback, user_data);
+  g_task_set_source_tag (task, chatty_history_load_account_async);
+  g_task_set_task_data (task, history_load_account, NULL);
+  g_object_ref (account);
+  g_object_set_data_full (G_OBJECT (task), "account", account, g_object_unref);
+
+  g_async_queue_push (self->queue, task);
+}
+
+gboolean
+chatty_history_load_account_finish (ChattyHistory  *self,
+                                    GAsyncResult   *result,
+                                    GError        **error)
 {
   g_return_val_if_fail (CHATTY_IS_HISTORY (self), FALSE);
   g_return_val_if_fail (G_IS_TASK (result), FALSE);

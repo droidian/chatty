@@ -36,6 +36,8 @@ src/chatty-utils.h
 src/chatty-window.c
 src/chatty-window.h
 src/dialogs/chatty-info-dialog.c
+src/dialogs/chatty-ma-chat-info.c
+src/dialogs/chatty-ma-chat-info.h
 src/dialogs/chatty-info-dialog.h
 src/dialogs/chatty-pp-chat-info.c
 src/dialogs/chatty-pp-chat-info.h
@@ -60,6 +62,7 @@ src/ui/chatty-contact-row.ui
 src/ui/chatty-dialog-join-muc.ui
 src/ui/chatty-dialog-new-chat.ui
 src/ui/chatty-info-dialog.ui
+src/ui/chatty-ma-chat-info.ui
 src/ui/chatty-pp-chat-info.ui
 src/ui/chatty-fp-row.ui
 src/ui/chatty-list-row.ui
