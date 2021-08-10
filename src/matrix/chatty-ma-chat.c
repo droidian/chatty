@@ -951,7 +951,7 @@ get_room_state_cb (GObject      *obj,
 {
   ChattyMaChat *self = user_data;
   g_autoptr(GError) error = NULL;
-  JsonArray *array;
+  g_autoptr(JsonArray) array = NULL;
 
   g_assert (CHATTY_IS_MA_CHAT (self));
 
@@ -1030,7 +1030,7 @@ get_room_name_cb (GObject      *obj,
 {
   ChattyMaChat *self = user_data;
   g_autoptr(GError) error = NULL;
-  JsonObject *object;
+  g_autoptr(JsonObject) object = NULL;
   const char *name;
 
   g_assert (CHATTY_IS_MA_CHAT (self));

@@ -415,6 +415,11 @@ chatty_pp_chat_info_set_item (ChattyPpChatInfo *self,
   g_return_if_fail (CHATTY_IS_PP_CHAT_INFO (self));
   g_return_if_fail (!chat || CHATTY_IS_CHAT (chat));
 
+  if (self->chat)
+    g_signal_handlers_disconnect_by_func (self->chat,
+                                          pp_chat_info_encrypt_changed_cb,
+                                          self);
+
   if (!g_set_object (&self->chat, chat))
     return;
 
@@ -424,11 +429,6 @@ chatty_pp_chat_info_set_item (ChattyPpChatInfo *self,
   g_clear_object (&self->binding);
   gtk_container_foreach (GTK_CONTAINER (self->key_list),
                          (GtkCallback)gtk_widget_destroy, NULL);
-
-  if (self->chat)
-    g_signal_handlers_disconnect_by_func (self->chat,
-                                          pp_chat_info_encrypt_changed_cb,
-                                          self);
 
   chatty_pp_chat_info_update (self);
 }

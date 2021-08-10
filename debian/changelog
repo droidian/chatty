@@ -1,3 +1,30 @@
+chatty (0.3.4) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * history: Add API to update user in db
+  * history: Add API to load user details
+  * ma-account: Implement get_avatar_file()
+  * ma-account: Update db when details are loaded
+  * ma-account: Load account details when db is set
+  * pp-chat-info: Disconnect signal callback before changing chat
+  * Add ChattyMaChatInfo for matrix chats
+  * info-dialog: Use ChattyMaChatInfo for matrix chats
+  * run.in: Set more debug env variables
+  * ma-account: Fix a memory leak
+  * pp-chat: Fix a memory leak
+  * matrix-api: Fix invalid assignments
+  * matrix-api: Fix various memory leaks
+  * ma-chat: Fix a memory leak
+  * item: Fix case insensitive search
+  * pp-chat: Fix returning username on first call
+  * pp-chat: Fix G_LOG_DOMAIN
+
+  [ Evangelos Ribeiro Tzaras ]
+  * secret-store: Work around bug in gnome-keyring preventing keyring unlocking
+  * secret-store: Use protocol attribute for lookup
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 28 Jul 2021 15:11:05 +0530
+
 chatty (0.3.3) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

@@ -14,6 +14,7 @@ libsrc = [
   'contrib/gtkslicelistmodel.c',
   'dialogs/chatty-ma-account-details.c',
   'dialogs/chatty-pp-account-details.c',
+  'dialogs/chatty-ma-chat-info.c',
   'dialogs/chatty-pp-chat-info.c',
   'matrix/matrix-api.c',
   'matrix/matrix-enc.c',
@@ -61,6 +62,7 @@ ui_files = files (
   'ui/chatty-message-row.ui',
   # FIXME
   # 'ui/chatty-pp-account-details.ui',
+  # 'ui/chatty-ma-chat-info.ui',
   # 'ui/chatty-pp-user-info.ui',
   'ui/chatty-settings-dialog.ui',
   'ui/chatty-window.ui',
