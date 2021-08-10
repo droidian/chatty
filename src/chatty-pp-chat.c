@@ -1,5 +1,5 @@
 /* -*- mode: c; c-basic-offset: 2; indent-tabs-mode: nil; -*- */
-/* chatty-chat.c
+/* chatty-pp-chat.c
  *
  * Copyright 2020 Purism SPC
  *
@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#define G_LOG_DOMAIN "chatty-chat"
+#define G_LOG_DOMAIN "chatty-pp-chat"
 
 #include <purple.h>
 
@@ -37,10 +37,10 @@ enum {
 };
 
 /**
- * SECTION: chatty-chat
+ * SECTION: chatty-pp-chat
  * @title: ChattyChat
  * @short_description: An abstraction over #PurpleConversation
- * @include: "chatty-chat.h"
+ * @include: "chatty-pp-chat.h"
  *
  * libpurple doesn’t have a nice OOP interface for managing anything.
  * This class hides all the complexities surrounding it.
@@ -500,6 +500,9 @@ chatty_pp_chat_get_username (ChattyChat *chat)
 
   g_assert (CHATTY_IS_PP_CHAT (self));
 
+  if (self->username && *self->username)
+    return self->username;
+
   if (self->pp_chat)
     username = purple_account_get_username (self->pp_chat->account);
 
@@ -512,7 +515,7 @@ chatty_pp_chat_get_username (ChattyChat *chat)
   if (username && *username && !self->username)
     self->username = chatty_utils_jabber_id_strip (username);
 
-  if (self->username && *self->username)
+  if (self->username)
     return self->username;
 
   return "";
@@ -1005,6 +1008,7 @@ chatty_pp_chat_finalize (GObject *object)
   g_object_unref (self->sorted_chat_users);
   g_free (self->last_message);
   g_free (self->chat_name);
+  g_free (self->username);
 
   G_OBJECT_CLASS (chatty_pp_chat_parent_class)->finalize (object);
 }

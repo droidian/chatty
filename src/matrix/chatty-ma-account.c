@@ -56,6 +56,7 @@ struct _ChattyMaAccount
   /* this will be moved to chat_list after login succeeds */
   GPtrArray      *db_chat_list;
   GdkPixbuf      *avatar;
+  ChattyFileInfo *avatar_file;
 
   ChattyStatus   status;
   gboolean       homeserver_valid;
@@ -816,6 +817,19 @@ chatty_ma_account_set_name (ChattyItem *item,
   self->name = g_strdup (name);
 }
 
+static ChattyFileInfo *
+chatty_ma_account_get_avatar_file (ChattyItem *item)
+{
+  ChattyMaAccount *self = (ChattyMaAccount *)item;
+
+  g_assert (CHATTY_IS_MA_ACCOUNT (self));
+
+  if (self->avatar_file && self->avatar_file->url)
+    return self->avatar_file;
+
+  return NULL;
+}
+
 static void
 chatty_ma_account_finalize (GObject *object)
 {
@@ -832,6 +846,7 @@ chatty_ma_account_finalize (GObject *object)
   g_clear_object (&self->matrix_db);
   g_clear_object (&self->history_db);
   g_clear_pointer (&self->db_chat_list, g_ptr_array_unref);
+  g_clear_pointer (&self->avatar_file, chatty_file_info_free);
 
   g_free (self->name);
   g_free (self->pickle_key);
@@ -852,6 +867,7 @@ chatty_ma_account_class_init (ChattyMaAccountClass *klass)
   item_class->get_protocols = chatty_ma_account_get_protocols;
   item_class->get_name = chatty_ma_account_get_name;
   item_class->set_name = chatty_ma_account_set_name;
+  item_class->get_avatar_file = chatty_ma_account_get_avatar_file;
 
   account_class->get_protocol_name = chatty_ma_account_get_protocol_name;
   account_class->get_status   = chatty_ma_account_get_status;
@@ -932,7 +948,7 @@ chatty_ma_account_new_secret (gpointer secret_item)
   ChattyMaAccount *self = NULL;
   g_autoptr(GHashTable) attributes = NULL;
   SecretItem *item = secret_item;
-  SecretValue *value;
+  g_autoptr(SecretValue) value = NULL;
   const char *username, *homeserver, *credentials = NULL;
   char *password, *token, *device_id;
   char *password_str, *token_str = NULL;
@@ -1063,6 +1079,39 @@ db_load_chats_cb (GObject      *object,
                                 db_load_account_cb, self);
 }
 
+static void
+history_db_load_account_cb (GObject      *object,
+                            GAsyncResult *result,
+                            gpointer      user_data)
+{
+  g_autoptr(ChattyMaAccount) self = user_data;
+  const char *name, *avatar_url, *avatar_path;
+  g_autoptr(GError) error = NULL;
+  ChattyFileInfo *file;
+
+  g_assert (CHATTY_IS_MA_ACCOUNT (self));
+
+  chatty_history_load_account_finish (self->history_db, result, &error);
+
+  if (error)
+    g_warning ("error loading account: %s", error->message);
+
+  name = g_object_get_data (G_OBJECT (result), "name");
+  avatar_url = g_object_get_data (G_OBJECT (result), "avatar-url");
+  avatar_path = g_object_get_data (G_OBJECT (result), "avatar-path");
+
+  self->name = g_strdup (name);
+  g_object_notify (G_OBJECT (self), "name");
+
+  file = g_new0 (ChattyFileInfo, 1);
+  file->url = g_strdup (avatar_url);
+  file->path = g_strdup (avatar_path);
+  self->avatar_file = file;
+
+  chatty_history_get_chats_async (self->history_db, CHATTY_ACCOUNT (self),
+                                  db_load_chats_cb, self);
+}
+
 void
 chatty_ma_account_set_db (ChattyMaAccount *self,
                           gpointer         matrix_db)
@@ -1073,8 +1122,9 @@ chatty_ma_account_set_db (ChattyMaAccount *self,
   g_return_if_fail (self->history_db);
 
   self->matrix_db = g_object_ref (matrix_db);
-  chatty_history_get_chats_async (self->history_db, CHATTY_ACCOUNT (self),
-                                  db_load_chats_cb, self);
+  chatty_history_load_account_async (self->history_db, CHATTY_ACCOUNT (self),
+                                     history_db_load_account_cb,
+                                     g_object_ref (self));
 }
 
 static void
@@ -1283,9 +1333,22 @@ ma_get_details_cb (GObject      *object,
   if (error)
     g_task_return_error (task, error);
   else {
+    ChattyFileInfo *file;
+
+    CHATTY_TRACE_MSG ("Got user info for %s",
+                      matrix_api_get_username (self->matrix_api));
+
     g_free (self->name);
     self->name = name;
+    file = self->avatar_file;
 
+    if (g_strcmp0 (file->url, avatar_url) != 0) {
+      g_clear_pointer (&file->path, g_free);
+      g_free (file->url);
+      file->url = avatar_url;
+    }
+
+    chatty_history_update_user (self->history_db, CHATTY_ACCOUNT (self));
     g_object_notify (G_OBJECT (self), "name");
     g_task_return_boolean (task, TRUE);
   }
@@ -1348,6 +1411,7 @@ ma_set_name_cb (GObject      *object,
     g_free (self->name);
     self->name = g_strdup (name);
 
+    chatty_history_update_user (self->history_db, CHATTY_ACCOUNT (self));
     g_object_notify (G_OBJECT (self), "name");
     g_task_return_boolean (task, TRUE);
   }

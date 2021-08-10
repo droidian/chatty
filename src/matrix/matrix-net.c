@@ -335,6 +335,7 @@ queue_data (MatrixNet  *self,
 
     g_hash_table_replace (query, g_strdup ("access_token"), g_strdup (self->access_token));
     soup_uri_set_query_from_form (uri, query);
+    g_hash_table_unref (query);
   }
 
   message = soup_message_new_from_uri (method, uri);

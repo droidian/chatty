@@ -63,13 +63,15 @@ chatty_item_real_matches (ChattyItem     *self,
                           ChattyProtocol  protocols,
                           gboolean        match_name)
 {
+  g_autofree char *str = NULL;
   const char *name;
 
   g_assert (CHATTY_IS_ITEM (self));
 
   name = chatty_item_get_name (self);
+  str = g_utf8_casefold (name, -1);
 
-  return strcasestr (name, needle) != NULL;
+  return strstr (str, needle) != NULL;
 }
 
 static const char *

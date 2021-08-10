@@ -81,11 +81,15 @@
             <property name="transition-type">slide-left-right</property>
 
             <child>
-              <object class="GtkBox" id="main_page">
+              <object class="GtkStack" id="chat_type_stack">
                 <property name="visible">1</property>
-                <property name="orientation">vertical</property>
                 <child>
                   <object class="ChattyPpChatInfo" id="pp_chat_info">
+                    <property name="visible">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="ChattyMaChatInfo" id="ma_chat_info">
                     <property name="visible">1</property>
                   </object>
                 </child>

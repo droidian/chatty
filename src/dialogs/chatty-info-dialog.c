@@ -19,8 +19,10 @@
 #include "chatty-list-row.h"
 #include "chatty-fp-row.h"
 #include "chatty-pp-chat.h"
+#include "matrix/chatty-ma-chat.h"
 #include "chatty-manager.h"
 #include "chatty-utils.h"
+#include "chatty-ma-chat-info.h"
 #include "chatty-pp-chat-info.h"
 #include "chatty-info-dialog.h"
 
@@ -29,7 +31,8 @@ struct _ChattyInfoDialog
   GtkDialog       parent_instance;
 
   GtkWidget      *main_stack;
-  GtkWidget      *main_page;
+  GtkWidget      *chat_type_stack;
+  GtkWidget      *ma_chat_info;
   GtkWidget      *pp_chat_info;
   GtkWidget      *invite_page;
 
@@ -64,7 +67,7 @@ info_dialog_cancel_clicked_cb (ChattyInfoDialog *self)
   gtk_widget_hide (self->invite_button);
   gtk_widget_show (self->new_invite_button);
   gtk_stack_set_visible_child (GTK_STACK (self->main_stack),
-                               self->main_page);
+                               self->chat_type_stack);
 }
 
 static void
@@ -138,7 +141,8 @@ chatty_info_dialog_class_init (ChattyInfoDialogClass *klass)
                                                "ui/chatty-info-dialog.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, main_stack);
-  gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, main_page);
+  gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, chat_type_stack);
+  gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, ma_chat_info);
   gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, pp_chat_info);
   gtk_widget_class_bind_template_child (widget_class, ChattyInfoDialog, invite_page);
 
@@ -153,6 +157,7 @@ chatty_info_dialog_class_init (ChattyInfoDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, info_dialog_invite_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, info_dialog_contact_id_changed_cb);
 
+  g_type_ensure (CHATTY_TYPE_MA_CHAT_INFO);
   g_type_ensure (CHATTY_TYPE_PP_CHAT_INFO);
 }
 
@@ -186,7 +191,15 @@ chatty_info_dialog_set_chat (ChattyInfoDialog *self,
   if (!g_set_object (&self->chat, chat))
     return;
 
-  chatty_pp_chat_info_set_item (CHATTY_PP_CHAT_INFO (self->pp_chat_info), chat);
+  if (CHATTY_IS_MA_CHAT (chat)) {
+    chatty_ma_chat_info_set_item (CHATTY_MA_CHAT_INFO (self->ma_chat_info), chat);
+    chatty_pp_chat_info_set_item (CHATTY_PP_CHAT_INFO (self->pp_chat_info), NULL);
+    gtk_stack_set_visible_child (GTK_STACK (self->chat_type_stack), self->ma_chat_info);
+  } else {
+    chatty_ma_chat_info_set_item (CHATTY_MA_CHAT_INFO (self->ma_chat_info), NULL);
+    chatty_pp_chat_info_set_item (CHATTY_PP_CHAT_INFO (self->pp_chat_info), chat);
+    gtk_stack_set_visible_child (GTK_STACK (self->chat_type_stack), self->pp_chat_info);
+  }
 
   if (chatty_item_get_protocols (CHATTY_ITEM (chat)) == CHATTY_PROTOCOL_XMPP &&
       !chatty_chat_is_im (self->chat))
