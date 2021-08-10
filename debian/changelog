@@ -1,3 +1,9 @@
+chatty (0.3.4-1) experimental; urgency=medium
+
+  * New upstream version 0.3.4
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 10 Aug 2021 14:39:19 +0200
+
 chatty (0.3.3-1) experimental; urgency=medium
 
   * New upstream version 0.3.3
