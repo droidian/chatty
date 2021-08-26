@@ -1,3 +1,10 @@
+chatty (0.3.4-2) unstable; urgency=medium
+
+  * ci: No need to use experimental anymore
+  * Upload to unstable
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Thu, 26 Aug 2021 17:47:00 +0200
+
 chatty (0.3.4-1) experimental; urgency=medium
 
   * New upstream version 0.3.4
