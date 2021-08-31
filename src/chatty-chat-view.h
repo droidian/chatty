@@ -22,8 +22,6 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (ChattyChatView, chatty_chat_view, CHATTY, CHAT_VIEW, GtkBox)
 
 GtkWidget  *chatty_chat_view_new      (void);
-void        chatty_chat_view_purple_init   (void);
-void        chatty_chat_view_purple_uninit (void);
 void        chatty_chat_view_set_chat (ChattyChatView *self,
                                        ChattyChat     *chat);
 ChattyChat *chatty_chat_view_get_chat (ChattyChatView *self);

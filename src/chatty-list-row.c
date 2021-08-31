@@ -281,7 +281,7 @@ chatty_list_row_update (ChattyListRow *self)
       ChattyAccount *account;
 
       account = chatty_pp_buddy_get_account (CHATTY_PP_BUDDY (self->item));
-      subtitle = chatty_account_get_username (account);
+      subtitle = chatty_item_get_username (CHATTY_ITEM (account));
     } else { /* Buddy in chat list */
       g_autofree char *markup = NULL;
       ChattyUserFlag flag;
@@ -295,7 +295,7 @@ chatty_list_row_update (ChattyListRow *self)
     g_autofree gchar *type = NULL;
     const gchar *number;
 
-    number = chatty_contact_get_value (CHATTY_CONTACT (self->item));
+    number = chatty_item_get_username (self->item);
 
     if (chatty_contact_is_dummy (CHATTY_CONTACT (self->item)))
       type = g_strdup (number);

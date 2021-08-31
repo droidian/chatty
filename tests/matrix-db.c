@@ -53,7 +53,7 @@ account_matches_username (gconstpointer account,
   g_assert_true (CHATTY_IS_MA_ACCOUNT ((gpointer)account));
   g_assert_true (id && *id);
 
-  return g_strcmp0 (id, chatty_account_get_username ((gpointer)account)) == 0;
+  return g_strcmp0 (id, chatty_item_get_username ((gpointer)account)) == 0;
 }
 
 static void
@@ -114,7 +114,7 @@ add_matrix_account (MatrixDb   *db,
   g_assert_no_error (error);
   g_assert_true (success);
   g_assert_cmpstr (g_object_get_data (G_OBJECT (task), "username"), ==,
-                   chatty_account_get_username (CHATTY_ACCOUNT (account)));
+                   chatty_item_get_username (CHATTY_ITEM (account)));
   g_assert_cmpint (GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "enabled")),
                    ==, GPOINTER_TO_INT (g_object_get_data (object, "enabled")));
   g_assert_cmpstr (g_object_get_data (G_OBJECT (task), "pickle"), ==,

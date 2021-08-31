@@ -1,3 +1,96 @@
+chatty (0.4.0~beta2) byzantium; urgency=medium
+
+  * contact: Add API to test for exact match
+  * contact-provider: Test for exact match to find matching contact
+  * contact: Let item_matches() match partial matches
+  * new-chat-dialog: Place the new contact at top of the list
+  * new-chat-dialog: Update search list on protocol changes
+  * mm-account: Use time from the SMS for new messages
+  * mm-buddy: Prefer locally parsed number as the SMS number
+  * new-chat-dialog: Update search view when list item changes
+  * window: Allow adding non existing contacts to GNOME contacts
+  * message-row: Hide avatar image only if not hidden before
+  * log: Improve logging
+  * history: Return not-found error if chat is not found
+  * manager: Don't warn if chat is not found in db
+  * settings: Add settings for SMS delivery report request
+  * mm-account: Request delivery reports only if asked for one
+  * settings-dialog: Add UI to set SMS delivery report request
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Mon, 30 Aug 2021 16:38:08 +0530
+
+chatty (0.4.0~beta) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * matrix-net: Handle mxc file uri
+  * ma-account: Load user avatars and use it
+  * matrix-api: Add API to get room encryption state
+  * ma-chat: Load encryption state on start
+  * chat-view: Fix message entry focus in non-folded mode
+  * text-item: Let message text be selectable
+  * pp-chat-info: Allow selecting chat details
+  * ma-chat-info: Allow selecting chat details
+  * debian/control: Depend on mm-glib
+  * Add native SMS support
+  * manager: Use the new MmAccount for SMS chat
+  * window: Handle opening ChattyMmChat
+  * history: Support SMS accounts
+  * window: Always show SMS chats
+  * chat-view: Adapt to ChattyMmAccount changes
+  * new-chat-dialog: Use MmAccount for SMS chats
+  * window: Handle deleting SMS chats
+  * pp-chat-info: Don't allow changing SMS avatars
+  * pp-chat-info: Show notification switch only for purple account
+  * ma-chat: Fix a debug format string
+  * chat-view: Add support for message spell check
+  * matrix-api: Add API to delete avatar
+  * ma-account: Implemente deleting user avatar
+  * ma-account-details: Add a way to delete user avatar
+  * secret-store: Use simple API to manage secrets
+  * window: Simplify chat list filter
+  * various: Avoid an unnecessary check
+  * pp-account: Don't handle SMS accounts
+  * pp-chat-info: Don't handle SMS accounts
+  * pp-chat: Don't handle SMS accounts
+  * pp-buddy: Don't handle SMS accounts
+  * enums: Remove no longer used enum
+  * manager: Don't handle SMS with purple
+  * window: Remove purple SMS code
+  * various: Rename SMS enum to MMS_SMS
+  * manager: Don't add purple sms account to list
+  * application: Improve presenting window
+  * chat-view: Reset unread count after message is sent
+  * matrix-api: Add an API to get room members
+  * ma-chat: Get members list for sending encrypted messages
+  * ma-chat: Don't claim keys when a request is in progress
+  * ma-chat: Handle m.room.member events
+  * item: Unify API to get/set username
+  * pp-chat-info: Show the right title for phone numbers
+  * window: Show delete menu item for SMS chats
+  * flatpak: Fix build
+
+  [ Guido Günther ]
+  * notification: Set category (Closes: #514)
+
+  [ Bruno Lopes ]
+  * Update Brazilian Portuguese translation
+
+  [ Rafael Fontenelle ]
+  * Update Brazilian Portuguese translation
+
+  [ Chris T ]
+  * mm-account: Do not delete an SMS if there is no text in it
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+  [ Chris Talbot ]
+  * image-item: Handle MMS files
+  * mm-account: set eds after users are loaded
+  * message-row: Handle MMS Files
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 25 Aug 2021 14:23:08 +0530
+
 chatty (0.3.4) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

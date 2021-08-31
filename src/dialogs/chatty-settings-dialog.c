@@ -79,6 +79,8 @@ struct _ChattySettingsDialog
   GtkWidget      *new_account_id_entry;
   GtkWidget      *new_password_entry;
 
+  GtkWidget      *delivery_reports_switch;
+
   GtkWidget      *send_receipts_switch;
   GtkWidget      *message_archive_switch;
   GtkWidget      *message_carbons_row;
@@ -379,7 +381,7 @@ settings_delete_account_clicked_cb (ChattySettingsDialog *self)
 
   gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
                                             _("Delete account %s?"),
-                                            chatty_account_get_username (CHATTY_ACCOUNT (self->selected_account)));
+                                            chatty_item_get_username (CHATTY_ITEM (self->selected_account)));
 
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
   gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
@@ -409,6 +411,14 @@ settings_pp_details_delete_cb (ChattySettingsDialog *self)
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
 
   settings_delete_account_clicked_cb (self);
+}
+
+static void
+sms_mms_settings_row_activated_cb (ChattySettingsDialog *self)
+{
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "message-settings-view");
 }
 
 static void
@@ -640,7 +650,7 @@ chatty_account_row_new (ChattyAccount *account)
                    CHATTY_PROTOCOL_TELEGRAM |
                    CHATTY_PROTOCOL_DELTA |
                    CHATTY_PROTOCOL_THREEPL |
-                   CHATTY_PROTOCOL_SMS))
+                   CHATTY_PROTOCOL_MMS_SMS))
     return NULL;
 
   spinner = gtk_spinner_new ();
@@ -663,7 +673,7 @@ chatty_account_row_new (ChattyAccount *account)
                           account_enabled_switch, "active",
                           G_BINDING_BIDIRECTIONAL | G_BINDING_SYNC_CREATE);
 
-  hdy_preferences_row_set_title (HDY_PREFERENCES_ROW (row), chatty_account_get_username (CHATTY_ACCOUNT (account)));
+  hdy_preferences_row_set_title (HDY_PREFERENCES_ROW (row), chatty_item_get_username (CHATTY_ITEM (account)));
   hdy_action_row_set_subtitle (row, chatty_account_get_protocol_name (CHATTY_ACCOUNT (account)));
   gtk_container_add (GTK_CONTAINER (row), account_enabled_switch);
   hdy_action_row_set_activatable_widget (row, NULL);
@@ -689,9 +699,6 @@ chatty_settings_dialog_populate_account_list (ChattySettingsDialog *self)
       GtkWidget *row;
 
       account = g_list_model_get_item (model, i);
-
-      if (chatty_item_is_sms (CHATTY_ITEM (account)))
-        continue;
 
       row = chatty_account_row_new (account);
 
@@ -750,6 +757,10 @@ chatty_settings_dialog_constructed (GObject *object)
                           self->return_sends_switch, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
+  g_object_bind_property (settings, "request-sms-delivery-reports",
+                          self->delivery_reports_switch, "active",
+                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+
   chatty_settings_dialog_populate_account_list (self);
 }
 
@@ -801,6 +812,8 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, new_account_id_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, new_password_entry);
 
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, delivery_reports_switch);
+
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, send_receipts_switch);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, message_archive_switch);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, message_carbons_row);
@@ -822,6 +835,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_save_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_pp_details_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_pp_details_delete_cb);
+  gtk_widget_class_bind_template_callback (widget_class, sms_mms_settings_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, account_list_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_back_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_cancel_clicked_cb);

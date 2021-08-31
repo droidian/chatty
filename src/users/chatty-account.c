@@ -54,23 +54,6 @@ chatty_account_real_get_status (ChattyAccount *self)
   return CHATTY_DISCONNECTED;
 }
 
-static const char *
-chatty_account_real_get_username (ChattyAccount *self)
-{
-  g_assert (CHATTY_IS_ACCOUNT (self));
-
-  return "";
-}
-
-static void
-chatty_account_real_set_username (ChattyAccount *self,
-                                  const char    *username)
-{
-  g_assert (CHATTY_IS_ACCOUNT (self));
-
-  /* Do nothing */
-}
-
 static GListModel *
 chatty_account_real_get_buddies (ChattyAccount *self)
 {
@@ -339,8 +322,6 @@ chatty_account_class_init (ChattyAccountClass *klass)
 
   klass->get_protocol_name = chatty_account_real_get_protocol_name;
   klass->get_status   = chatty_account_real_get_status;
-  klass->get_username = chatty_account_real_get_username;
-  klass->set_username = chatty_account_real_set_username;
   klass->get_buddies  = chatty_account_real_get_buddies;
   klass->buddy_exists = chatty_account_real_buddy_exists;
   klass->get_enabled  = chatty_account_real_get_enabled;
@@ -410,23 +391,6 @@ chatty_account_get_status (ChattyAccount *self)
   g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), CHATTY_DISCONNECTED);
 
   return CHATTY_ACCOUNT_GET_CLASS (self)->get_status (self);
-}
-
-const char *
-chatty_account_get_username (ChattyAccount *self)
-{
-  g_return_val_if_fail (CHATTY_IS_ACCOUNT (self), "");
-
-  return CHATTY_ACCOUNT_GET_CLASS (self)->get_username (self);
-}
-
-void
-chatty_account_set_username (ChattyAccount *self,
-                             const char    *username)
-{
-  g_return_if_fail (CHATTY_IS_ACCOUNT (self));
-
-  CHATTY_ACCOUNT_GET_CLASS (self)->set_username (self, username);
 }
 
 GListModel *

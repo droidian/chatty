@@ -107,6 +107,30 @@
               <object class="HdyPreferencesPage">
                 <property name="visible">True</property>
 
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible">True</property>
+                    <child>
+                      <object class="GtkListBox">
+                        <property name="visible">True</property>
+                        <style>
+                         <class name="content"/>
+                        </style>
+                        <child>
+                          <object class="HdyActionRow">
+                            <property name="visible">True</property>
+                            <property name="activatable">True</property>
+                            <property name="selectable">False</property>
+                            <property name="title" translatable="yes">Message Settings</property>
+                            <property name="subtitle" translatable="yes">SMS/MMS Settings</property>
+                            <signal name="activated" handler="sms_mms_settings_row_activated_cb" swapped="yes"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
                 <!-- Account settings -->
                 <child>
                   <object class="HdyPreferencesGroup">
@@ -280,6 +304,37 @@
               </object>
               <packing>
                 <property name="name">main-settings</property>
+              </packing>
+            </child>
+
+            <child>
+              <object class="HdyPreferencesPage">
+                <property name="visible">True</property>
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible">True</property>
+                    <property name="title" translatable="yes">SMS Settings</property>
+                    <child>
+                      <object class="HdyActionRow">
+                        <property name="visible">True</property>
+                        <property name="selectable">False</property>
+                        <property name="title" translatable="yes">Delivery Reports</property>
+                        <property name="subtitle" translatable="yes">Request delivery reports for SMS messages</property>
+                        <property name="activatable-widget">delivery_reports_switch</property>
+                        <child>
+                          <object class="GtkSwitch" id="delivery_reports_switch">
+                            <property name="visible">True</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="name">message-settings-view</property>
               </packing>
             </child>
 

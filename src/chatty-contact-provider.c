@@ -115,10 +115,9 @@ chatty_eds_bus_got (GObject      *object,
 }
 
 static ChattyContact *
-chatty_contact_provider_matches (ChattyEds      *self,
-                                 const char     *needle,
-                                 ChattyProtocol  protocols,
-                                 gboolean        match_name)
+chatty_contact_provider_get_match (ChattyEds      *self,
+                                   const char     *value,
+                                   ChattyProtocol  protocols)
 {
   GListModel *model;
   guint n_items;
@@ -129,13 +128,13 @@ chatty_contact_provider_matches (ChattyEds      *self,
 
   for (guint i = 0; i < n_items; i++)
     {
-      g_autoptr(ChattyItem) item = NULL;
+      g_autoptr(ChattyContact) contact = NULL;
 
-      item = g_list_model_get_item (model, i);
-      match = chatty_item_matches (item, needle, protocols, match_name);
+      contact = g_list_model_get_item (model, i);
+      match = chatty_contact_is_exact_match (contact, value, protocols);
 
       if (match)
-        return CHATTY_CONTACT (item);
+        return contact;
     }
 
   return NULL;
@@ -191,7 +190,7 @@ chatty_eds_load_contact (ChattyEds     *self,
     if (self->protocols & CHATTY_PROTOCOL_CALL)
       protocol = CHATTY_PROTOCOL_CALL;
     else
-      protocol = CHATTY_PROTOCOL_SMS;
+      protocol = CHATTY_PROTOCOL_MMS_SMS;
   } else if (field_id == E_CONTACT_IM_JABBER) {
     protocol = CHATTY_PROTOCOL_XMPP;
   } else {
@@ -240,7 +239,7 @@ chatty_eds_objects_added_cb (ChattyEds       *self,
 
   for (GSList *l = (GSList *)objects; l != NULL; l = l->next)
     {
-      if (self->protocols & CHATTY_PROTOCOL_SMS ||
+      if (self->protocols & CHATTY_PROTOCOL_MMS_SMS ||
           self->protocols & CHATTY_PROTOCOL_CALL)
         chatty_eds_load_contact (self, l->data, E_CONTACT_TEL);
 
@@ -641,7 +640,7 @@ chatty_eds_find_by_number (ChattyEds  *self,
 {
   g_return_val_if_fail (CHATTY_IS_EDS (self), NULL);
 
-  return chatty_contact_provider_matches (self, phone_number, CHATTY_PROTOCOL_ANY, FALSE);
+  return chatty_contact_provider_get_match (self, phone_number, CHATTY_PROTOCOL_ANY);
 }
 
 

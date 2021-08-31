@@ -172,19 +172,6 @@
                             <property name="valign">start</property>
 
                             <child>
-                              <object class="GtkListBox" id="chats_listbox">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="expand">True</property>
-                                <property name="selection-mode">none</property>
-                                <signal name="row-activated" handler="contact_row_activated_cb" swapped="yes"/>
-                                <style>
-                                 <class name="frame"/>
-                                </style>
-                              </object>
-                            </child>
-
-                            <child>
                               <object class="GtkListBox" id="new_contact_listbox">
                                 <property name="visible" bind-source="new_contact_row" bind-property="visible"/>
                                 <property name="selection-mode">none</property>
@@ -192,6 +179,19 @@
                                 <child>
                                   <object class="ChattyListRow" id="new_contact_row"/>
                                 </child>
+                                <style>
+                                 <class name="frame"/>
+                                </style>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="GtkListBox" id="chats_listbox">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="expand">True</property>
+                                <property name="selection-mode">none</property>
+                                <signal name="row-activated" handler="contact_row_activated_cb" swapped="yes"/>
                                 <style>
                                  <class name="frame"/>
                                 </style>

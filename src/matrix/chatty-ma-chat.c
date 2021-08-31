@@ -80,6 +80,8 @@ struct _ChattyMaChat
   guint          is_sending_message : 1;
   guint          notification_shown : 1;
 
+  guint          user_list_loading : 1;
+  guint          user_list_loaded : 1;
   guint          state_is_sync    : 1;
   guint          state_is_syncing : 1;
   /* Set if the complete buddy list is loaded */
@@ -147,7 +149,7 @@ chatty_mat_chat_update_name (ChattyMaChat *self)
     buddy = g_list_model_get_item (G_LIST_MODEL (self->buddy_list), i);
 
     /* Don't add self to create room name */
-    if (g_strcmp0 (chatty_ma_buddy_get_id (CHATTY_MA_BUDDY (buddy)), chatty_account_get_username (self->account)) == 0) {
+    if (g_strcmp0 (chatty_item_get_username (buddy), chatty_item_get_username (CHATTY_ITEM (self))) == 0) {
       count--;
       continue;
     }
@@ -195,7 +197,7 @@ ma_chat_find_buddy (ChattyMaChat *self,
 
     buddy = g_list_model_get_item (model, i);
     if (id_hash == chatty_ma_buddy_get_id_hash (buddy) &&
-        g_str_equal (chatty_ma_buddy_get_id (buddy), matrix_id)) {
+        g_str_equal (chatty_item_get_username (CHATTY_ITEM (buddy)), matrix_id)) {
       if (index)
         *index = i;
 
@@ -295,60 +297,37 @@ ma_chat_new_file (ChattyMaChat *self,
   return file;
 }
 
-#if 0
 static void
 handle_m_room_member (ChattyMaChat *self,
-                      JsonObject   *object,
-                      GListStore   *members_list)
+                      JsonObject   *object)
 {
   GListModel *model;
   ChattyMaBuddy *buddy;
   JsonObject *content;
-  const char *value, *membership, *sender, *name;
+  const char *membership, *sender, *name;
 
   g_assert (CHATTY_IS_MA_CHAT (self));
   g_assert (object);
-  g_assert (G_IS_LIST_STORE (members_list));
-
-  value = matrix_utils_json_object_get_string (object, "room_id");
-  if (g_strcmp0 (value, self->room_id) != 0) {
-    g_warning ("room_id '%s' doesn't match '%s", value, self->room_id);
-    return;
-  }
 
   sender = matrix_utils_json_object_get_string (object, "sender");
   content = matrix_utils_json_object_get_object (object, "content");
   membership = matrix_utils_json_object_get_string (content, "membership");
 
-  model = G_LIST_MODEL (members_list);
+  model = G_LIST_MODEL (self->buddy_list);
   buddy = ma_chat_find_buddy (self, model, sender, NULL);
-
-  if (!buddy && members_list != self->buddy_list) {
-    model = G_LIST_MODEL (self->buddy_list);
-    buddy = ma_chat_find_buddy (self, model, sender, NULL);
-  }
-
   name = matrix_utils_json_object_get_string (content, "displayname");
-  if (buddy)
-    chatty_item_set_name (CHATTY_ITEM (buddy), name);
 
   if (g_strcmp0 (membership, "join") == 0) {
-    if (buddy && model == (gpointer)members_list)
-      return;
-
-    if (buddy)
-      g_list_store_append (members_list, buddy);
-    else
-      buddy = ma_chat_add_buddy (self, members_list, sender);
+    if (!buddy)
+      buddy = ma_chat_add_buddy (self, self->buddy_list, sender);
     chatty_item_set_name (CHATTY_ITEM (buddy), name);
-  } else if (buddy &&
-             g_strcmp0 (membership, "leave") == 0) {
     self->keys_claimed = FALSE;
-    chatty_utils_remove_list_item (members_list, buddy);
+  } else if (buddy && g_strcmp0 (membership, "leave") == 0) {
+    chatty_utils_remove_list_item (self->buddy_list, buddy);
     g_clear_pointer (&self->generated_name, g_free);
+    self->keys_claimed = FALSE;
   }
 }
-#endif
 
 static void
 handle_m_room_name (ChattyMaChat *self,
@@ -727,15 +706,13 @@ matrix_send_message_from_queue (ChattyMaChat *self)
 {
   g_autoptr(ChattyMessage) message = NULL;
 
-  CHATTY_ENTRY;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
 
   if (self->is_sending_message ||
       !self->message_queue ||
       !self->message_queue->length ||
       self->message_timeout_id)
-    CHATTY_EXIT;
+    return;
 
   message = g_queue_pop_head (self->message_queue);
   self->is_sending_message = TRUE;
@@ -743,7 +720,6 @@ matrix_send_message_from_queue (ChattyMaChat *self)
                                  self->room_id, message,
                                  ma_chat_send_message_cb,
                                  g_object_ref (self));
-  CHATTY_EXIT;
 }
 
 static void
@@ -821,8 +797,6 @@ upload_out_group_key_cb (GObject      *obj,
   ChattyMaChat *self = user_data;
   g_autoptr(GError) error = NULL;
 
-  CHATTY_ENTRY;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
 
   self->claiming_keys = FALSE;
@@ -832,11 +806,10 @@ upload_out_group_key_cb (GObject      *obj,
   if (error) {
     if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
       g_warning ("error uploading group keys: %s", error->message);
-    CHATTY_EXIT;
+    return;
   }
 
   matrix_send_message_from_queue (self);
-  CHATTY_EXIT;
 }
 
 static void
@@ -850,8 +823,6 @@ claim_key_cb (GObject      *obj,
   g_autoptr(GError) error = NULL;
   JsonObject *object;
 
-  CHATTY_ENTRY;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
 
   root = matrix_api_claim_keys_finish (self->matrix_api, result, &error);
@@ -860,7 +831,7 @@ claim_key_cb (GObject      *obj,
     self->claiming_keys = FALSE;
     if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
       g_warning ("error: %s", error->message);
-    CHATTY_EXIT;
+    return;
   }
 
   object = matrix_utils_json_object_get_object (root, "one_time_keys");
@@ -888,7 +859,6 @@ claim_key_cb (GObject      *obj,
                                       G_LIST_MODEL (self->buddy_list),
                                       upload_out_group_key_cb,
                                       self);
-  CHATTY_EXIT;
 }
 
 static void
@@ -902,8 +872,6 @@ query_key_cb (GObject      *obj,
   g_autoptr(GError) error = NULL;
   JsonObject *object;
 
-  CHATTY_ENTRY;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
   g_return_if_fail (!self->keys_claimed);
 
@@ -913,7 +881,7 @@ query_key_cb (GObject      *obj,
     self->claiming_keys = FALSE;
     if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
       g_warning ("error: %s", error->message);
-    CHATTY_EXIT;
+    return;
   }
 
   object = matrix_utils_json_object_get_object (root, "device_keys");
@@ -940,7 +908,54 @@ query_key_cb (GObject      *obj,
   matrix_api_claim_keys_async (self->matrix_api,
                                G_LIST_MODEL (self->buddy_list),
                                claim_key_cb, self);
-  CHATTY_EXIT;
+}
+
+static void
+get_chat_users_cb (GObject      *obj,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+  g_autoptr(ChattyMaChat) self = user_data;
+  g_autoptr(JsonObject) object = NULL;
+  g_autoptr(GList) members = NULL;
+  g_autoptr(GError) error = NULL;
+  JsonObject *joined;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  object = matrix_api_get_room_users_finish (self->matrix_api, result, &error);
+
+  self->user_list_loading = FALSE;
+  self->user_list_loaded = !error;
+
+  if (error) {
+    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+      g_warning ("Error loading chat members: %s", error->message);
+
+    return;
+  }
+
+  joined = matrix_utils_json_object_get_object (object, "joined");
+  members = json_object_get_members (joined);
+
+  for (GList *member = members; member; member = member->next) {
+    ChattyMaBuddy *buddy;
+    JsonObject *data;
+    const char *name;
+
+    buddy = ma_chat_find_buddy (self, G_LIST_MODEL (self->buddy_list), member->data, NULL);
+    if (!buddy)
+      buddy = ma_chat_add_buddy (self, self->buddy_list, member->data);
+
+    data = json_object_get_object_member (joined, member->data);
+    name = matrix_utils_json_object_get_string (data, "display_name");
+    chatty_item_set_name (CHATTY_ITEM (buddy), name);
+  };
+
+  self->claiming_keys = TRUE;
+  matrix_api_query_keys_async (self->matrix_api,
+                               G_LIST_MODEL (self->buddy_list),
+                               NULL, query_key_cb, self);
 }
 
 #if 0
@@ -1050,10 +1065,32 @@ get_room_name_cb (GObject      *obj,
   self->room_name = g_strdup (name);
   chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
 
-  CHATTY_TRACE_MSG ("Got room name, room: %s (%s)",
-                    self->room_id, chatty_item_get_name (CHATTY_ITEM (self)));
+  CHATTY_TRACE (self->room_id, "Got room name, room:");
 
   g_object_notify (G_OBJECT (self), "name");
+}
+
+static void
+get_room_encryption_cb (GObject      *obj,
+                        GAsyncResult *result,
+                        gpointer      user_data)
+{
+  ChattyMaChat *self = user_data;
+  g_autoptr(GError) error = NULL;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  self->encryption = matrix_api_get_room_encryption_finish (self->matrix_api, result, &error);
+
+  CHATTY_TRACE (self->room_id, "Got room encryption state: encrypted: %d, room:",
+                !!self->encryption);
+  g_object_notify (G_OBJECT (self), "encrypt");
+
+  CHATTY_TRACE (self->room_id, "Getting room name for");
+  matrix_api_get_room_name_async (self->matrix_api,
+                                  self->room_id,
+                                  get_room_name_cb,
+                                  self);
 }
 
 static void
@@ -1086,7 +1123,7 @@ parse_chat_array (ChattyMaChat *self,
       buddy = ma_chat_add_buddy (self, self->buddy_list, sender);
 
     if (!self->self_buddy &&
-        g_strcmp0 (sender, chatty_chat_get_username (CHATTY_CHAT (self))) == 0)
+        g_strcmp0 (sender, chatty_item_get_username (CHATTY_ITEM (self))) == 0)
       g_set_object (&self->self_buddy, buddy);
 
     if (g_str_equal (type, "m.room.name")) {
@@ -1097,6 +1134,8 @@ parse_chat_array (ChattyMaChat *self,
       handle_m_room_encryption (self, object);
     } else if (g_str_equal (type, "m.room.encrypted")) {
       handle_m_room_encrypted (self, buddy, object);
+    } else if (g_str_equal (type, "m.room.member")) {
+      handle_m_room_member (self, object);
     }
   }
 
@@ -1221,8 +1260,8 @@ db_room_room_cb (GObject      *object,
 
   g_free (self->prev_batch);
   self->prev_batch = matrix_db_load_room_finish (self->matrix_db, result, &error);
-  CHATTY_TRACE_MSG ("Load chat %s from db, success: %d, has prev-batch: %d",
-                    self->room_id, !error, !!self->prev_batch);
+  CHATTY_TRACE (self->room_id, "Load from db, success: %d, has prev-batch: %d, chat:",
+                !error, !!self->prev_batch);
 
   if (error)
     g_warning ("Error loading prev batch: %s", error->message);
@@ -1310,16 +1349,6 @@ chatty_ma_chat_get_chat_name (ChattyChat *chat)
   return self->room_id;
 }
 
-static const char *
-chatty_ma_chat_get_username (ChattyChat *chat)
-{
-  ChattyMaChat *self = (ChattyMaChat *)chat;
-
-  g_assert (CHATTY_IS_MA_CHAT (self));
-
-  return matrix_api_get_username (self->matrix_api);
-}
-
 static void
 chatty_ma_chat_real_past_messages (ChattyChat *chat,
                                    int         count)
@@ -1335,8 +1364,7 @@ chatty_ma_chat_real_past_messages (ChattyChat *chat,
   if (self->history_is_loading)
     return;
 
-  CHATTY_TRACE_MSG ("Loading %d past messages from %s(%s)", count, self->room_id,
-                    chatty_item_get_name (CHATTY_ITEM (chat)));
+  CHATTY_TRACE (self->room_id, "Loading %d past messages from", count);
 
   self->history_is_loading = TRUE;
   g_object_notify (G_OBJECT (self), "loading-history");
@@ -1523,8 +1551,6 @@ chatty_ma_chat_send_message_async (ChattyChat          *chat,
 {
   ChattyMaChat *self = (ChattyMaChat *)chat;
 
-  CHATTY_ENTRY;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
   g_assert (CHATTY_IS_MESSAGE (message));
 
@@ -1537,11 +1563,17 @@ chatty_ma_chat_send_message_async (ChattyChat          *chat,
   if (chatty_chat_get_encryption (chat) != CHATTY_ENCRYPTION_ENABLED ||
       self->keys_claimed)
     matrix_send_message_from_queue (self);
-  else if (!self->state_is_syncing && !self->claiming_keys)
+  else if (!self->user_list_loaded && !self->user_list_loading) {
+    self->user_list_loading = TRUE;
+    matrix_api_get_room_users_async (self->matrix_api, self->room_id,
+                                     get_chat_users_cb,
+                                     g_object_ref (self));
+  } else if (!self->state_is_syncing && !self->claiming_keys) {
+    self->claiming_keys = TRUE;
     matrix_api_query_keys_async (self->matrix_api,
                                  G_LIST_MODEL (self->buddy_list),
                                  NULL, query_key_cb, self);
-  CHATTY_EXIT;
+  }
 }
 
 static void
@@ -1611,6 +1643,16 @@ chatty_ma_chat_get_name (ChattyItem *item)
     return self->room_id;
 
   return "";
+}
+
+static const char *
+chatty_ma_chat_get_username (ChattyItem *item)
+{
+  ChattyMaChat *self = (ChattyMaChat *)item;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  return matrix_api_get_username (self->matrix_api);
 }
 
 static ChattyItemState
@@ -1749,6 +1791,7 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
   object_class->finalize = chatty_ma_chat_finalize;
 
   item_class->get_name = chatty_ma_chat_get_name;
+  item_class->get_username = chatty_ma_chat_get_username;
   item_class->get_state = chatty_ma_chat_get_state;
   item_class->set_state = chatty_ma_chat_set_state;
   item_class->get_protocols = chatty_ma_chat_get_protocols;
@@ -1757,7 +1800,6 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
 
   chat_class->is_im = chatty_ma_chat_is_im;
   chat_class->get_chat_name = chatty_ma_chat_get_chat_name;
-  chat_class->get_username = chatty_ma_chat_get_username;
   chat_class->load_past_messages = chatty_ma_chat_real_past_messages;
   chat_class->is_loading_history = chatty_ma_chat_is_loading_history;
   chat_class->get_messages = chatty_ma_chat_get_messages;
@@ -1870,13 +1912,11 @@ chatty_ma_chat_set_data (ChattyMaChat  *self,
   if (!self->state_is_sync && !self->state_is_syncing &&
       self->matrix_api && self->matrix_enc) {
     self->state_is_syncing = TRUE;
-    CHATTY_TRACE_MSG ("Getting room name for '%s(%s)'", self->room_id,
-                      chatty_item_get_name (CHATTY_ITEM (self)));
-
-    matrix_api_get_room_name_async (self->matrix_api,
-                                    self->room_id,
-                                    get_room_name_cb,
-                                    self);
+    CHATTY_TRACE (self->room_id, "Getting encryption state for");
+    matrix_api_get_room_encryption_async (self->matrix_api,
+                                          self->room_id,
+                                          get_room_encryption_cb,
+                                          self);
   }
 }
 

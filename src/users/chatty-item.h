@@ -33,6 +33,9 @@ struct _ChattyItemClass
   const char      *(*get_name)            (ChattyItem           *self);
   void             (*set_name)            (ChattyItem           *self,
                                            const char           *name);
+  const char      *(*get_username)        (ChattyItem           *self);
+  void             (*set_username)        (ChattyItem           *self,
+                                           const char           *username);
   ChattyItemState  (*get_state)           (ChattyItem           *self);
   void             (*set_state)           (ChattyItem           *self,
                                            ChattyItemState       state);
@@ -56,7 +59,6 @@ struct _ChattyItemClass
 };
 
 ChattyProtocol   chatty_item_get_protocols       (ChattyItem           *self);
-gboolean         chatty_item_is_sms              (ChattyItem           *self);
 gboolean         chatty_item_matches             (ChattyItem           *self,
                                                   const char           *needle,
                                                   ChattyProtocol        protocols,
@@ -66,6 +68,9 @@ int              chatty_item_compare              (ChattyItem          *a,
 const char      *chatty_item_get_name            (ChattyItem           *self);
 void             chatty_item_set_name            (ChattyItem           *self,
                                                   const char           *name);
+const char      *chatty_item_get_username        (ChattyItem           *self);
+void             chatty_item_set_username        (ChattyItem           *self,
+                                                  const char           *username);
 ChattyItemState  chatty_item_get_state           (ChattyItem           *self);
 void             chatty_item_set_state           (ChattyItem           *self,
                                                   ChattyItemState       state);

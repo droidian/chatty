@@ -43,6 +43,11 @@ struct _ChattyMaAccountDetails
   ChattyAccount *account;
 
   GtkWidget     *avatar_image;
+  GtkWidget     *delete_avatar_button;
+  GtkWidget     *delete_button_stack;
+  GtkWidget     *delete_button_image;
+  GtkWidget     *delete_avatar_spinner;
+
   GtkWidget     *status_label;
   GtkWidget     *name_entry;
   GtkWidget     *email_box;
@@ -53,6 +58,7 @@ struct _ChattyMaAccountDetails
   GtkWidget     *device_id_label;
 
   guint          modified : 1;
+  guint          is_deleting_avatar : 1;
   gulong         status_id;
 };
 
@@ -71,6 +77,31 @@ static GParamSpec *properties[N_PROPS];
 static guint signals[N_SIGNALS];
 
 G_DEFINE_TYPE (ChattyMaAccountDetails, chatty_ma_account_details, HDY_TYPE_PREFERENCES_PAGE)
+
+static void
+update_delete_avatar_button_state (ChattyMaAccountDetails *self)
+{
+  GtkStack *button_stack;
+  ChattyStatus status;
+  gboolean has_avatar = FALSE, can_delete;
+
+  if (CHATTY_IS_ITEM (self->account) &&
+      chatty_item_get_avatar_file (CHATTY_ITEM (self->account)))
+    has_avatar = TRUE;
+
+  status = chatty_account_get_status (CHATTY_ACCOUNT (self->account));
+  can_delete = has_avatar && !self->is_deleting_avatar && status == CHATTY_CONNECTED;
+  gtk_widget_set_sensitive (self->delete_avatar_button, can_delete);
+
+  button_stack = GTK_STACK (self->delete_button_stack);
+
+  if (self->is_deleting_avatar)
+    gtk_stack_set_visible_child (button_stack, self->delete_avatar_spinner);
+  else
+    gtk_stack_set_visible_child (button_stack, self->delete_button_image);
+
+  g_object_set (self->delete_avatar_spinner, "active", self->is_deleting_avatar, NULL);
+}
 
 static char *
 ma_account_show_dialog_load_avatar (ChattyMaAccountDetails *self)
@@ -104,6 +135,33 @@ ma_details_avatar_button_clicked_cb (ChattyMaAccountDetails *self)
   if (file_name)
     chatty_item_set_avatar_async (CHATTY_ITEM (self->account),
                                   file_name, NULL, NULL, NULL);
+}
+
+static void
+ma_details_delete_avatar_cb (GObject      *object,
+                             GAsyncResult *result,
+                             gpointer      user_data)
+{
+  g_autoptr(ChattyMaAccountDetails) self = user_data;
+
+  self->is_deleting_avatar = FALSE;
+  update_delete_avatar_button_state (self);
+}
+
+static void
+ma_details_delete_avatar_button_clicked_cb (ChattyMaAccountDetails *self)
+{
+  g_assert (CHATTY_IS_MA_ACCOUNT_DETAILS (self));
+
+  if (self->is_deleting_avatar)
+    return;
+
+  g_warning ("xxxxxxxxxx");
+  self->is_deleting_avatar = TRUE;
+  update_delete_avatar_button_state (self);
+  chatty_item_set_avatar_async (CHATTY_ITEM (self->account), NULL, NULL,
+                                ma_details_delete_avatar_cb,
+                                g_object_ref (self));
 }
 
 static void
@@ -329,6 +387,7 @@ ma_details_status_changed_cb (ChattyMaAccountDetails *self)
     status_text = _("disconnected");
 
   gtk_label_set_text (GTK_LABEL (self->status_label), status_text);
+  update_delete_avatar_button_state (self);
 
   if (status == CHATTY_CONNECTED) {
     chatty_ma_account_get_details_async (CHATTY_MA_ACCOUNT (self->account), NULL,
@@ -403,6 +462,11 @@ chatty_ma_account_details_class_init (ChattyMaAccountDetailsClass *klass)
                                                "ui/chatty-ma-account-details.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, avatar_image);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, delete_avatar_button);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, delete_button_stack);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, delete_button_image);
+  gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, delete_avatar_spinner);
+
   gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, status_label);
   gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, name_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, email_box);
@@ -413,6 +477,7 @@ chatty_ma_account_details_class_init (ChattyMaAccountDetailsClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyMaAccountDetails, device_id_label);
 
   gtk_widget_class_bind_template_callback (widget_class, ma_details_avatar_button_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, ma_details_delete_avatar_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, ma_details_name_entry_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, ma_details_delete_account_clicked_cb);
 }
@@ -538,7 +603,7 @@ chatty_ma_account_details_set_item (ChattyMaAccountDetails *self,
   gtk_label_set_text (GTK_LABEL (self->homeserver_label),
                       chatty_ma_account_get_homeserver (CHATTY_MA_ACCOUNT (self->account)));
   gtk_label_set_text (GTK_LABEL (self->matrix_id_label),
-                      chatty_account_get_username (account));
+                      chatty_item_get_username (CHATTY_ITEM (account)));
 
   chatty_avatar_set_item (CHATTY_AVATAR (self->avatar_image), CHATTY_ITEM (account));
 
