@@ -62,6 +62,12 @@
       <description>Whether pressing Enter key sends the message</description>
     </key>
 
+    <key name="request-sms-delivery-reports" type="b">
+      <default>true</default>
+      <summary>Request SMS delivery reports</summary>
+      <description>Whether to request delivery reports for outgoing SMS</description>
+    </key>
+
     <key name="experimental-features" type="b">
       <default>false</default>
       <summary>Enable experimental features</summary>

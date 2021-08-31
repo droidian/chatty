@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#define G_LOG_DOMAIN "chatty-xeps"
+#define G_LOG_DOMAIN "chatty-xeps-0313"
 
 #include <glib.h>
 #include <prpl.h>
@@ -21,6 +21,7 @@
 #include "chatty-pp-chat.h"
 #include "chatty-manager.h"
 #include "chatty-settings.h"
+#include "chatty-log.h"
 
 #define NS_FWDv0 "urn:xmpp:forward:0"
 #define NS_SIDv0 "urn:xmpp:sid:0"
@@ -177,7 +178,7 @@ static void
 chatty_mam_ctx_del(PurpleAccount *pa)
 {
   g_return_if_fail(pa != NULL);
-  g_debug("Cleaning context for %s", purple_account_get_username(pa));
+  CHATTY_DEBUG (purple_account_get_username (pa), "Cleaning context for ");
   g_hash_table_remove(ht_mam_ctx, purple_account_get_username(pa));
 }
 
@@ -503,8 +504,8 @@ cb_chatty_mam_bare_info(PurpleConnection *pc,
     }
     mamq->start = g_date_time_format(dt,"%FT%TZ");
     g_date_time_unref(dt);
-    g_debug ("Server supports MAM %s on %s; Querying by %s from %s after %s",
-                                    var, bare, qid, mamq->start, mamq->after);
+    CHATTY_DEBUG (bare, "Server supports MAM %s; Querying by %s from %s after %s, id:",
+                  var, qid, mamq->start, mamq->after);
     // Request MAM backlog
     chatty_mam_query_archive(mamq);
     // Also - request preferences and correct them if required
@@ -656,8 +657,12 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
   node_sid    = xmlnode_get_child_with_namespace (msg, "stanza-id", NS_SIDv0);
 
   if(mamc->cur_msg != NULL) {
+    g_autofree char *str = NULL;
+
+    str = g_strdup_printf ("%s %s", from, to);
+
     // Skip resubmission - break the loop
-    g_debug ("Received resubmission %s %s %s", id, from, to);
+    CHATTY_DEBUG (str, "Received resubmission %s", id);
     return FALSE;
   }
 
@@ -706,7 +711,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
       // store the SID in history at the least - to know where to start.
       message = msg;
       peer = from;
-      g_debug ("Received forward id %s from %s", stanza_id, peer);
+      CHATTY_DEBUG (peer, "Received forward id %s from", stanza_id);
     }
     // check history and drop the dup
     msg_type = xmlnode_get_attrib(message, "type");
@@ -760,7 +765,7 @@ cb_chatty_mam_msg_received (PurpleConnection *pc,
     message = msg;
     peer = from;
   }
-  g_debug ("Stealing parser for MAM, from %s at ID %s", peer, stanza_id);
+  CHATTY_DEBUG (peer, "Stealing parser for MAM, ID %s user:", stanza_id);
   /**
    * Before we resume message processing we need to pre-cook the message.
    * If there's no body the whole server_got_stuff is skipped, so we may never

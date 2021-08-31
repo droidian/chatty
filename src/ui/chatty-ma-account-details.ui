@@ -7,21 +7,60 @@
         <property name="visible">1</property>
 
         <child>
-          <object class="GtkButton">
+          <object class="GtkOverlay">
             <property name="visible">1</property>
-            <property name="hexpand">1</property>
-            <!-- <property name="sensitive" bind-source="name_entry" bind-property="sensitive" bind-flags="sync-create"/> -->
-            <property name="sensitive">0</property>
             <property name="halign">center</property>
-            <property name="can-focus">0</property>
-            <property name="focus-on-click">0</property>
-            <property name="receives_default">0</property>
-            <property name="margin-bottom">24</property>
-            <signal name="clicked" handler="ma_details_avatar_button_clicked_cb" swapped="yes"/>
+            <property name="valign">center</property>
             <child>
-              <object class="ChattyAvatar" id="avatar_image">
+              <object class="GtkButton">
                 <property name="visible">1</property>
-                <property name="size">96</property>
+                <property name="hexpand">1</property>
+                <property name="sensitive">0</property>
+                <property name="halign">center</property>
+                <property name="can-focus">0</property>
+                <property name="focus-on-click">0</property>
+                <property name="receives_default">0</property>
+                <property name="margin-bottom">24</property>
+                <signal name="clicked" handler="ma_details_avatar_button_clicked_cb" swapped="yes"/>
+                <child>
+                  <object class="ChattyAvatar" id="avatar_image">
+                    <property name="visible">1</property>
+                    <property name="size">96</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkButton" id="delete_avatar_button">
+                <property name="visible">1</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <property name="margin-bottom">27</property>
+                <property name="margin-end">3</property>
+                <signal name="clicked" handler="ma_details_delete_avatar_button_clicked_cb" swapped="yes"/>
+                <child>
+                  <object class="GtkStack" id="delete_button_stack">
+                    <property name="visible">1</property>
+                    <property name="width-request">24</property>
+                    <property name="height-request">24</property>
+                    <property name="hhomogeneous">1</property>
+                    <property name="vhomogeneous">1</property>
+                    <child>
+                      <object class="GtkImage" id="delete_button_image">
+                        <property name="visible">1</property>
+                        <property name="icon-name">user-trash-symbolic</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinner" id="delete_avatar_spinner">
+                        <property name="visible">1</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular"/>
+                </style>
               </object>
             </child>
           </object>

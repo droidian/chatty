@@ -48,7 +48,7 @@ typedef enum
 typedef enum
 {
   CHATTY_PROTOCOL_NONE     = 0,
-  CHATTY_PROTOCOL_SMS      = 1 << 0,
+  CHATTY_PROTOCOL_MMS_SMS  = 1 << 0,
   CHATTY_PROTOCOL_MMS      = 1 << 1,
   CHATTY_PROTOCOL_CALL     = 1 << 2,
   CHATTY_PROTOCOL_XMPP     = 1 << 3,
@@ -148,10 +148,3 @@ typedef enum
   CHATTY_ITEM_ARCHIVED,
   CHATTY_ITEM_BLOCKED,
 } ChattyItemState;
-
-typedef enum
-{
-  CHATTY_SMS_RECEIPT_NONE      = -1,
-  CHATTY_SMS_RECEIPT_MM_ACKN   =  0,
-  CHATTY_SMS_RECEIPT_SMSC_ACKN,
-} e_sms_receipt_states;

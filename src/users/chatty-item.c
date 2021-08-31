@@ -91,6 +91,21 @@ chatty_item_real_set_name (ChattyItem *self,
   /* Do Nothing */
 }
 
+static const char *
+chatty_item_real_get_username (ChattyItem *self)
+{
+  g_assert (CHATTY_IS_ITEM (self));
+
+  return "";
+}
+
+static void
+chatty_item_real_set_username (ChattyItem *self,
+                               const char *username)
+{
+  /* Do Nothing */
+}
+
 static ChattyItemState
 chatty_item_real_get_state (ChattyItem *self)
 {
@@ -241,6 +256,8 @@ chatty_item_class_init (ChattyItemClass *klass)
   klass->matches  = chatty_item_real_matches;
   klass->get_name = chatty_item_real_get_name;
   klass->set_name = chatty_item_real_set_name;
+  klass->get_username = chatty_item_real_get_username;
+  klass->set_username = chatty_item_real_set_username;
   klass->get_state = chatty_item_real_get_state;
   klass->set_state = chatty_item_real_set_state;
   klass->get_avatar_file = chatty_item_real_get_avatar_file;
@@ -331,14 +348,6 @@ chatty_item_get_protocols (ChattyItem *self)
   g_return_val_if_fail (CHATTY_IS_ITEM (self), CHATTY_PROTOCOL_NONE);
 
   return CHATTY_ITEM_GET_CLASS (self)->get_protocols (self);
-}
-
-gboolean
-chatty_item_is_sms (ChattyItem *self)
-{
-  g_return_val_if_fail (CHATTY_IS_ITEM (self), FALSE);
-
-  return chatty_item_get_protocols (self) == CHATTY_PROTOCOL_SMS;
 }
 
 /**
@@ -442,6 +451,35 @@ chatty_item_set_name (ChattyItem *self,
   g_return_if_fail (CHATTY_IS_ITEM (self));
 
   CHATTY_ITEM_GET_CLASS (self)->set_name (self, name);
+}
+
+/**
+ * chatty_item_get_username:
+ * @self: a #ChattyItem
+ *
+ * Returns the username/value of the item.  It can be a phone
+ * number, an XMPP/matrix ID, etc, depending on what @self
+ * represents.  For a #ChattyChat, the username of the account
+ * for the chat was created, is returned.
+ *
+ * Returns: the value of the item
+ */
+const char *
+chatty_item_get_username (ChattyItem *self)
+{
+  g_return_val_if_fail (CHATTY_IS_ITEM (self), NULL);
+
+  return CHATTY_ITEM_GET_CLASS (self)->get_username (self);
+}
+
+void
+chatty_item_set_username (ChattyItem *self,
+                          const char *username)
+{
+  g_return_if_fail (CHATTY_IS_ITEM (self));
+  g_return_if_fail (username && *username);
+
+  return CHATTY_ITEM_GET_CLASS (self)->set_username (self, username);
 }
 
 /**

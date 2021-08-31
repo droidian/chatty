@@ -30,7 +30,6 @@ ChattyAccount   *chatty_pp_buddy_get_account   (ChattyPpBuddy *self);
 void             chatty_pp_buddy_set_chat      (ChattyPpBuddy      *self,
                                                 PurpleConversation *conv);
 PurpleBuddy     *chatty_pp_buddy_get_buddy      (ChattyPpBuddy *self);
-const char      *chatty_pp_buddy_get_id        (ChattyPpBuddy *self);
 ChattyContact   *chatty_pp_buddy_get_contact   (ChattyPpBuddy *self);
 void             chatty_pp_buddy_set_contact   (ChattyPpBuddy *self,
                                                 ChattyContact *contact);

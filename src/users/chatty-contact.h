@@ -28,11 +28,13 @@ ChattyContact     *chatty_contact_new                   (EContact          *cont
                                                          ChattyProtocol     protocol);
 void               chatty_contact_set_name              (ChattyContact     *self,
                                                          const char        *name);
-const char        *chatty_contact_get_value             (ChattyContact     *self);
 void               chatty_contact_set_value             (ChattyContact     *self,
                                                          const char        *value);
 const char        *chatty_contact_get_value_type        (ChattyContact     *self);
 const char        *chatty_contact_get_uid               (ChattyContact     *self);
+gboolean           chatty_contact_is_exact_match        (ChattyContact     *self,
+                                                         const char        *value,
+                                                         ChattyProtocol     protocols);
 gboolean           chatty_contact_is_dummy              (ChattyContact     *self);
 
 G_END_DECLS

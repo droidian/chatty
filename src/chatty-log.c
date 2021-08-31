@@ -10,17 +10,88 @@
  */
 
 #include <glib.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <unistd.h>
 
 #include "chatty-log.h"
 
-#define DEFAULT_DOMAIN "chatty"
+#define DEFAULT_DOMAIN_PREFIX "chatty"
 
 char *domains;
 static int verbosity;
 gboolean any_domain;
+gboolean no_anonymize;
 gboolean stderr_is_journal;
+
+static gboolean
+should_log (const char     *log_domain,
+            GLogLevelFlags  log_level)
+{
+  /* Ignore custom flags set */
+  log_level = log_level & ~CHATTY_LOG_DETAILED;
+
+  /* Don't skip serious logs */
+  if (log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_WARNING))
+    return TRUE;
+
+  if (any_domain && domains) {
+    /* If domain is “all” show logs upto debug regardless of the verbosity */
+    if (log_level & ~CHATTY_LOG_LEVEL_TRACE)
+      return TRUE;
+
+    /* If the log is trace level, log if verbosity >= 4 */
+    return verbosity >= 4;
+  }
+
+  if (!any_domain && domains && log_domain && strstr (domains, log_domain))
+    return TRUE;
+
+  switch ((int)log_level)
+    {
+    case G_LOG_LEVEL_MESSAGE:
+      if (verbosity < 1)
+        return FALSE;
+      break;
+
+    case G_LOG_LEVEL_INFO:
+      if (verbosity < 2)
+        return FALSE;
+      break;
+
+    case G_LOG_LEVEL_DEBUG:
+      if (verbosity < 3)
+        return FALSE;
+      break;
+
+    case CHATTY_LOG_LEVEL_TRACE:
+      if (verbosity < 4)
+        return FALSE;
+      break;
+
+    default:
+      break;
+    }
+
+  if (!log_domain)
+    log_domain = "**";
+
+  /* Skip logs from other domains if verbosity level is low */
+  if (any_domain && !domains &&
+      verbosity < 5 &&
+      log_level > G_LOG_LEVEL_MESSAGE &&
+      !strstr (log_domain, DEFAULT_DOMAIN_PREFIX))
+    return FALSE;
+
+  /* GdkPixbuf logs are too much verbose, skip unless asked not to. */
+  if (log_level >= G_LOG_LEVEL_MESSAGE &&
+      verbosity < 7 &&
+      g_strcmp0 (log_domain, "GdkPixbuf") == 0 &&
+      (!domains || !strstr (domains, log_domain)))
+    return FALSE;
+
+  return TRUE;
+}
 
 static void
 log_str_append_log_domain (GString    *log_str,
@@ -57,6 +128,9 @@ static const char *
 get_log_level_prefix (GLogLevelFlags log_level,
                       gboolean       use_color)
 {
+  /* Ignore custom flags set */
+  log_level = log_level & ~CHATTY_LOG_DETAILED;
+
   if (use_color)
     {
       switch ((int)log_level)        /* Same colors as used in GLib */
@@ -132,6 +206,33 @@ chatty_log_write (GLogLevelFlags   log_level,
   g_string_append_printf (log_str, "[%5d]:", getpid ());
 
   g_string_append_printf (log_str, "%s: ", get_log_level_prefix (log_level, can_color));
+
+  if (log_level & CHATTY_LOG_DETAILED)
+    {
+      const char *code_func = NULL, *code_line = NULL;
+      for (guint i = 0; i < n_fields; i++)
+        {
+          const GLogField *field = &fields[i];
+
+          if (!code_func && g_strcmp0 (field->key, "CODE_FUNC") == 0)
+            code_func = field->value;
+          else if (!code_line && g_strcmp0 (field->key, "CODE_LINE") == 0)
+            code_line = field->value;
+
+          if (code_func && code_line)
+            break;
+        }
+
+      if (code_func)
+        {
+          g_string_append_printf (log_str, "%s():", code_func);
+
+          if (code_line)
+            g_string_append_printf (log_str, "%s:", code_line);
+          g_string_append_c (log_str, ' ');
+        }
+    }
+
   g_string_append (log_str, log_message);
 
   fprintf (stream, "%s\n", log_str->str);
@@ -149,39 +250,6 @@ chatty_log_handler (GLogLevelFlags   log_level,
   const char *log_domain = NULL;
   const char *log_message = NULL;
 
-  /* If domain is “all” show logs upto debug regardless of the verbosity */
-  switch ((int)log_level)
-    {
-    case G_LOG_LEVEL_MESSAGE:
-      if (any_domain && domains)
-        break;
-      if (verbosity < 1)
-        return G_LOG_WRITER_HANDLED;
-      break;
-
-    case G_LOG_LEVEL_INFO:
-      if (any_domain && domains)
-        break;
-      if (verbosity < 2)
-        return G_LOG_WRITER_HANDLED;
-      break;
-
-    case G_LOG_LEVEL_DEBUG:
-      if (any_domain && domains)
-        break;
-      if (verbosity < 3)
-        return G_LOG_WRITER_HANDLED;
-      break;
-
-    case CHATTY_LOG_LEVEL_TRACE:
-      if (verbosity < 4)
-      return G_LOG_WRITER_HANDLED;
-      break;
-
-    default:
-      break;
-    }
-
   for (guint i = 0; (!log_domain || !log_message) && i < n_fields; i++)
     {
       const GLogField *field = &fields[i];
@@ -192,22 +260,11 @@ chatty_log_handler (GLogLevelFlags   log_level,
         log_message = field->value;
     }
 
+  if (!should_log (log_domain, log_level))
+    return G_LOG_WRITER_HANDLED;
+
   if (!log_domain)
     log_domain = "**";
-
-  /* Skip logs from other domains if verbosity level is low */
-  if (any_domain && !domains &&
-      verbosity < 5 &&
-      log_level > G_LOG_LEVEL_MESSAGE &&
-      !strstr (log_domain, DEFAULT_DOMAIN))
-    return G_LOG_WRITER_HANDLED;
-
-  /* GdkPixbuf logs are too much verbose, skip unless asked not to. */
-  if (log_level >= G_LOG_LEVEL_MESSAGE &&
-      verbosity < 7 &&
-      g_strcmp0 (log_domain, "GdkPixbuf") == 0 &&
-      (!domains || !strstr (domains, log_domain)))
-    return G_LOG_WRITER_HANDLED;
 
   if (!log_message)
     log_message = "(NULL) message";
@@ -244,6 +301,13 @@ chatty_log_init (void)
       if (!domains || g_str_equal (domains, "all"))
         any_domain = TRUE;
 
+      if (domains && g_str_equal (domains, "no-anonymize"))
+        {
+          any_domain = TRUE;
+          no_anonymize = TRUE;
+          g_clear_pointer (&domains, g_free);
+        }
+
       stderr_is_journal = g_log_writer_is_journald (fileno (stderr));
       g_log_set_writer_func (chatty_log_handler, NULL, NULL);
       g_once_init_leave (&initialized, 1);
@@ -261,4 +325,81 @@ int
 chatty_log_get_verbosity (void)
 {
   return verbosity;
+}
+
+void
+chatty_log (const char     *domain,
+            GLogLevelFlags  log_level,
+            const char     *value,
+            const char     *file,
+            const char     *line,
+            const char     *func,
+            const char     *message_format,
+            ...)
+{
+  g_autoptr(GString) str = NULL;
+  va_list args;
+
+  if (!message_format || !*message_format)
+    return;
+
+  if (!should_log (domain, log_level))
+    return;
+
+  str = g_string_new (NULL);
+  va_start (args, message_format);
+  g_string_append_vprintf (str, message_format, args);
+  va_end (args);
+
+  chatty_log_anonymize_value (str, value);
+  g_log_structured (domain, log_level,
+                    "CODE_FILE", file,
+                    "CODE_LINE", line,
+                    "CODE_FUNC", func,
+                    "MESSAGE", "%s", str->str);
+}
+
+void
+chatty_log_anonymize_value (GString    *str,
+                            const char *value)
+{
+  if (!value || !*value)
+    return;
+
+  g_assert (str);
+
+  if (no_anonymize)
+    {
+      g_string_append (str, value);
+      return;
+    }
+
+  g_string_append_c (str, ' ');
+
+  if (!isalnum (*value))
+    g_string_append_c (str, *value++);
+
+  if (*value)
+    g_string_append_c (str, *value++);
+
+  if (*value)
+    g_string_append_c (str, *value++);
+
+  if (!*value)
+    return;
+
+  /* Replace all but the last two alnum chars with 'x' */
+  while (*value)
+    {
+      while (isalnum (*value) && value[1] && value[2])
+        {
+          if (value[1] == ':' || value[1] == '@' || value[1] == ' ' ||
+              value[-1] == ':' || value[-1] == '@' || value[-1] == ' ')
+            g_string_append_c (str, *value);
+          else
+            g_string_append_c (str, '#');
+          value++;
+        }
+      g_string_append_c (str, *value++);
+    }
 }

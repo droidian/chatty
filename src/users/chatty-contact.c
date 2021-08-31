@@ -75,14 +75,17 @@ chatty_contact_matches (ChattyItem     *item,
 
   g_assert (CHATTY_IS_CONTACT (self));
 
-  value = chatty_contact_get_value (self);
+  value = chatty_item_get_username (item);
   protocol = chatty_item_get_protocols (item);
 
-  if (protocol == CHATTY_PROTOCOL_SMS &&
-      protocols & CHATTY_PROTOCOL_SMS) {
+  if (protocol == CHATTY_PROTOCOL_MMS_SMS &&
+      protocols & CHATTY_PROTOCOL_MMS_SMS) {
     ChattySettings *settings;
     const char *country;
     EPhoneNumberMatch match;
+
+    if (strstr (value, needle))
+      return TRUE;
 
     settings = chatty_settings_get_default ();
     country = chatty_settings_get_country_iso_code (settings);
@@ -122,6 +125,21 @@ chatty_contact_get_name (ChattyItem *item)
   return "";
 }
 
+static const char *
+chatty_contact_get_username (ChattyItem *item)
+{
+  ChattyContact *self = (ChattyContact *)item;
+
+  g_assert (CHATTY_IS_CONTACT (self));
+
+  if (!self->value && self->attribute)
+    self->value = e_vcard_attribute_get_value (self->attribute);
+
+  if (self->value)
+    return self->value;
+
+  return "";
+}
 
 static GdkPixbuf *
 chatty_contact_get_avatar (ChattyItem *item)
@@ -210,6 +228,7 @@ chatty_contact_class_init (ChattyContactClass *klass)
   item_class->get_protocols = chatty_contact_get_protocols;
   item_class->matches  = chatty_contact_matches;
   item_class->get_name = chatty_contact_get_name;
+  item_class->get_username = chatty_contact_get_username;
   item_class->get_avatar = chatty_contact_get_avatar;
   item_class->get_avatar_async  = chatty_contact_get_avatar_async;
 }
@@ -258,31 +277,6 @@ chatty_contact_set_name (ChattyContact *self,
 
   g_free (self->name);
   self->name = g_strdup (name);
-}
-
-/**
- * chatty_contact_get_value:
- * @self: A #ChattyContact
- *
- * Get the value stored in @self. It can be a phone
- * number, an XMPP ID, etc.
- * Also see chatty_contact_get_value_type().
- *
- * Returns: (transfer none): The value of @self.
- * Or an empty string if no value.
- */
-const char *
-chatty_contact_get_value (ChattyContact *self)
-{
-  g_return_val_if_fail (CHATTY_IS_CONTACT (self), NULL);
-
-  if (!self->value && self->attribute)
-    self->value = e_vcard_attribute_get_value (self->attribute);
-
-  if (self->value)
-    return self->value;
-
-  return "";
 }
 
 void
@@ -344,6 +338,39 @@ chatty_contact_get_uid (ChattyContact *self)
   return "";
 }
 
+gboolean
+chatty_contact_is_exact_match (ChattyContact  *self,
+                               const char     *value,
+                               ChattyProtocol  protocols)
+{
+  const char *contact_value;
+  ChattyProtocol protocol;
+
+  g_assert (CHATTY_IS_CONTACT (self));
+
+  contact_value = chatty_item_get_username (CHATTY_ITEM (self));
+  protocol = chatty_item_get_protocols (CHATTY_ITEM (self));
+
+  if (protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS) &&
+      protocols & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
+    ChattySettings *settings;
+    const char *country;
+    EPhoneNumberMatch match;
+
+    if (g_str_equal (contact_value, value))
+      return TRUE;
+
+    settings = chatty_settings_get_default ();
+    country = chatty_settings_get_country_iso_code (settings);
+    match = e_phone_number_compare_strings_with_region (contact_value, value, country, NULL);
+
+    if (match == E_PHONE_NUMBER_MATCH_EXACT ||
+        match == E_PHONE_NUMBER_MATCH_NATIONAL)
+      return TRUE;
+  }
+
+  return FALSE;
+}
 
 /**
  * chatty_contact_clear_cache:

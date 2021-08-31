@@ -16,6 +16,7 @@
 #include "chatty-xep-0184.h"
 #include "chatty-xep-0313.h"
 #include "chatty-xep-0352.h"
+#include "chatty-log.h"
 
 static PurplePlugin *jabber = NULL;
 
@@ -67,7 +68,7 @@ jabber_disco_bare_items_result_cb(JabberStream *js, const char *from,
       continue;
 
     // find out some useful nodes perhaps? Like, eh... ava, nick
-    g_debug ("Discovered node %s on bare %s", node, jid);
+    CHATTY_DEBUG (jid, "Discovered node %s on bare", node);
     purple_signal_emit (jabber, "jabber-bare-items", js->gc, jid, node);
   }
 }

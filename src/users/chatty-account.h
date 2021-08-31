@@ -28,9 +28,6 @@ struct _ChattyAccountClass
 
   const char  *(*get_protocol_name)     (ChattyAccount *self);
   ChattyStatus (*get_status)            (ChattyAccount *self);
-  const char  *(*get_username)          (ChattyAccount *self);
-  void         (*set_username)          (ChattyAccount *self,
-                                         const char    *username);
   GListModel  *(*get_buddies)           (ChattyAccount *self);
   gboolean     (*buddy_exists)          (ChattyAccount *self,
                                          const char    *buddy_username);
@@ -82,9 +79,6 @@ struct _ChattyAccountClass
 
 const char   *chatty_account_get_protocol_name     (ChattyAccount *self);
 ChattyStatus  chatty_account_get_status            (ChattyAccount *self);
-const char   *chatty_account_get_username          (ChattyAccount *self);
-void          chatty_account_set_username          (ChattyAccount *self,
-                                                    const char    *username);
 GListModel   *chatty_account_get_buddies           (ChattyAccount *self);
 gboolean      chatty_account_buddy_exists          (ChattyAccount *self,
                                                     const char    *buddy_username);

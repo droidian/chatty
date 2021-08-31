@@ -56,8 +56,12 @@ item_set_image (gpointer user_data)
   scale_factor = gtk_widget_get_scale_factor (GTK_WIDGET (self));
   sc = gtk_widget_get_style_context (self->image);
 
-  if (file->path)
-    path = g_build_filename (g_get_user_cache_dir (), "chatty", file->path, NULL);
+  if (file->path) {
+    if (self->protocol == CHATTY_PROTOCOL_MMS_SMS || self->protocol == CHATTY_PROTOCOL_MMS)
+      path = g_build_filename (g_get_user_data_dir (), "chatty", file->path, NULL);
+    else
+      path = g_build_filename (g_get_user_cache_dir (), "chatty", file->path, NULL);
+  }
 
   if (path)
     pixbuf = gdk_pixbuf_new_from_file_at_scale (path, 240 * scale_factor,

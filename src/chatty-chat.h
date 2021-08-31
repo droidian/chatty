@@ -34,7 +34,6 @@ struct _ChattyChatClass
   gboolean          (*is_im)              (ChattyChat *self);
   gboolean          (*has_file_upload)    (ChattyChat *self);
   const char       *(*get_chat_name)      (ChattyChat *self);
-  const char       *(*get_username)       (ChattyChat *self);
   ChattyAccount    *(*get_account)        (ChattyChat *self);
   GListModel       *(*get_messages)       (ChattyChat *self);
   GListModel       *(*get_users)          (ChattyChat *self);
@@ -89,7 +88,6 @@ void                chatty_chat_set_data           (ChattyChat *self,
 gboolean            chatty_chat_is_im              (ChattyChat *self);
 gboolean            chatty_chat_has_file_upload    (ChattyChat *self);
 const char         *chatty_chat_get_chat_name      (ChattyChat *self);
-const char         *chatty_chat_get_username       (ChattyChat *self);
 ChattyAccount      *chatty_chat_get_account        (ChattyChat *self);
 GListModel         *chatty_chat_get_messages       (ChattyChat *self);
 void                chatty_chat_load_past_messages (ChattyChat *self,

@@ -45,7 +45,10 @@ create_new_notification (ChattyNotification *self,
   g_notification_add_button_with_target (self->notification, _("Open Message"), "app.open-chat",
                                          "(ss)",
                                          chatty_chat_get_chat_name (chat),
-                                         chatty_chat_get_username (chat));
+                                         chatty_item_get_username (CHATTY_ITEM (chat)));
+#if GLIB_CHECK_VERSION(2,70,0)
+  g_notification_set_category (self->notification, "im.received");
+#endif
 }
 
 static gboolean

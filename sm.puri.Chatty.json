@@ -9,7 +9,12 @@
         "--share=ipc",
         "--socket=fallback-x11",
         "--socket=wayland",
-        "--talk-name=org.sigxcpu.Feedback"
+        "--talk-name=org.sigxcpu.Feedback",
+        "--system-talk-name=org.freedesktop.ModemManager1",
+        "--talk-name=org.gnome.evolution.dataserver.AddressBook10",
+        "--talk-name=org.gnome.evolution.dataserver.Sources5",
+        "--talk-name=im.pidgin.purple.PurpleService",
+        "--talk-name=org.gnome.evolution.dataserver.Subprocess.Backend.*"
     ],
     "cleanup-commands": [ "rm -rf /app/lib/debug/ /app/include/boost" ],
     "cleanup": [
@@ -169,9 +174,9 @@
                 "-DENABLE_UOA=OFF",
                 "-DENABLE_GOOGLE_AUTH=OFF",
                 "-DENABLE_GOOGLE=OFF",
-                "-DENABLE_WITH_PHONENUMBER=ON",
                 "-DENABLE_VALA_BINDINGS=ON",
                 "-DENABLE_WEATHER=OFF",
+                "-DWITH_PHONENUMBER=ON",
                 "-DWITH_OPENLDAP=OFF",
                 "-DWITH_LIBDB=OFF",
                 "-DENABLE_INTROSPECTION=ON",
@@ -207,9 +212,63 @@
           "sources": [
             {
               "type": "git",
+              "tag" : "3.2.4",
               "url": "https://gitlab.matrix.org/matrix-org/olm.git"
             }
           ]
+        },
+        {
+            "name" : "gspell",
+            "config-opts" : [
+                "--disable-gtk-doc",
+                "--disable-gtk-doc-html"
+            ],
+            "cleanup" : [
+                "/bin",
+                "/include",
+                "/lib/pkgconfig",
+                "*.la",
+                "/share"
+            ],
+            "sources" : [
+                {
+                    "type" : "archive",
+                    "url" : "https://download.gnome.org/sources/gspell/1.8/gspell-1.8.1.tar.xz",
+		    "sha256" : "819a1d23c7603000e73f5e738bdd284342e0cd345fb0c7650999c31ec741bbe5"
+                }
+            ]
+        },
+        {
+            "name" : "gudev",
+            "buildsystem" : "meson",
+            "config-opts" : [
+                "-Dtests=disabled",
+                "-Dintrospection=disabled"
+            ],
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/libgudev.git"
+                }
+            ]
+        },
+        {
+            "name" : "ModemManager",
+            "buildsystem" : "autotools",
+            "config-opts" : [
+                "--disable-introspection",
+                "--disable-vala",
+                "--with-udev-base-dir=/app/lib",
+                "--with-systemdsystemunitdir=/app/lib/systemd/system",
+                "--without-mbim",
+                "--without-qmi"
+            ],
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "git://anongit.freedesktop.org/ModemManager/ModemManager"
+                }
+            ]
         },
         {
             "name": "purism-chatty",

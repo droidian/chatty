@@ -564,11 +564,13 @@ matrix_net_get_file_async (MatrixNet             *self,
                            GAsyncReadyCallback    callback,
                            gpointer               user_data)
 {
+  g_autofree char *url = NULL;
   SoupMessage *msg;
   GTask *task;
 
   g_return_if_fail (MATRIX_IS_NET (self));
   g_return_if_fail (!message || CHATTY_IS_MESSAGE (message));
+  g_return_if_fail (file && file->url);
 
   if (message)
     g_object_ref (message);
@@ -576,7 +578,18 @@ matrix_net_get_file_async (MatrixNet             *self,
   if (!cancellable)
     cancellable = self->cancellable;
 
-  msg = soup_message_new (SOUP_METHOD_GET, file->url);
+  if (g_str_has_prefix (file->url, "mxc://")) {
+    const char *file_url;
+
+    file_url = file->url + strlen ("mxc://");
+    url = g_strconcat (self->homeserver,
+                       "/_matrix/media/r0/download/", file_url, NULL);
+  }
+
+  if (!url)
+    url = g_strdup (file->url);
+
+  msg = soup_message_new (SOUP_METHOD_GET, url);
 
   task = g_task_new (self, cancellable, callback, user_data);
   g_object_set_data (G_OBJECT (task), "progress", progress_callback);

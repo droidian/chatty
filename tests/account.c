@@ -32,18 +32,13 @@ test_account (ChattyAccount *ac,
 
   g_assert_true (CHATTY_IS_PP_ACCOUNT (ac));
 
-  if (is_sms)
-    g_assert_true (chatty_item_is_sms (CHATTY_ITEM (ac)));
-  else
-    g_assert_false (chatty_item_is_sms (CHATTY_ITEM (ac)));
-
   account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (ac));
   g_assert_nonnull (account);
 
   str = chatty_pp_account_get_protocol_id (CHATTY_PP_ACCOUNT (ac));
   g_assert_cmpstr (str, ==, protocol_id);
 
-  str = chatty_account_get_username (CHATTY_ACCOUNT (ac));
+  str = chatty_item_get_username (CHATTY_ITEM (ac));
   g_assert_cmpstr (str, ==, username);
 
   chatty_account_set_enabled (ac, TRUE);
