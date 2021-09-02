@@ -22,6 +22,9 @@
 
 #include "chatty-utils.h"
 #include "chatty-settings.h"
+#include "users/chatty-mm-account.h"
+#include "users/chatty-mm-buddy.h"
+#include "chatty-mm-chat.h"
 #include "chatty-history.h"
 
 #define STRING(arg) STRING_VALUE(arg)
@@ -29,6 +32,11 @@
 
 /* increment when DB changes */
 #define HISTORY_VERSION 3
+
+/* Shouldn't be modified, new values should be appended */
+#define MESSAGE_DIRECTION_OUT    -1
+#define MESSAGE_DIRECTION_SYSTEM  0
+#define MESSAGE_DIRECTION_IN      1
 
 /* Shouldn't be modified, new values should be appended */
 #define CHATTY_ID_UNKNOWN_VALUE 0
@@ -41,7 +49,7 @@
 
 /* Shouldn't be modified, new values should be appended */
 #define PROTOCOL_UNKNOWN   0
-#define PROTOCOL_SMS       1
+#define PROTOCOL_MMS_SMS   1
 #define PROTOCOL_MMS       2
 #define PROTOCOL_XMPP      3
 #define PROTOCOL_MATRIX    4
@@ -148,8 +156,8 @@ static int
 history_protocol_to_value (ChattyProtocol protocol)
 {
   switch (protocol) {
-  case CHATTY_PROTOCOL_SMS:
-    return PROTOCOL_SMS;
+  case CHATTY_PROTOCOL_MMS_SMS:
+    return PROTOCOL_MMS_SMS;
 
   case CHATTY_PROTOCOL_MMS:
     return PROTOCOL_MMS;
@@ -177,7 +185,7 @@ static int
 history_protocol_to_type_value (ChattyProtocol protocol)
 {
   switch (protocol) {
-  case CHATTY_PROTOCOL_SMS:
+  case CHATTY_PROTOCOL_MMS_SMS:
   case CHATTY_PROTOCOL_MMS:
   case CHATTY_PROTOCOL_TELEGRAM:
     return CHATTY_ID_PHONE_VALUE;
@@ -530,7 +538,7 @@ chatty_history_create_schema (ChattyHistory *self,
     "SELECT users.id,"
     "CASE "
     "WHEN users.username='SMS' "
-    "THEN " STRING (PROTOCOL_SMS) " "
+    "THEN " STRING (PROTOCOL_MMS_SMS) " "
     "ELSE " STRING (PROTOCOL_MMS) " "
     "END "
     "FROM users;"
@@ -638,7 +646,7 @@ insert_or_ignore_user (ChattyHistory  *self,
   if (!who || !*who)
     return 0;
 
-  if (protocol & (CHATTY_PROTOCOL_SMS | CHATTY_PROTOCOL_MMS | CHATTY_PROTOCOL_TELEGRAM)) {
+  if (protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS | CHATTY_PROTOCOL_TELEGRAM)) {
     char *country;
 
     country = g_object_get_data (G_OBJECT (task), "country-code");
@@ -725,6 +733,54 @@ insert_or_ignore_account (ChattyHistory  *self,
 }
 
 static int
+history_add_phone_user (ChattyHistory *self,
+                        GTask         *task,
+                        const char    *username,
+                        const char    *alias)
+{
+  sqlite3_stmt *stmt;
+  int status, id = 0;
+
+  sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO users(username,alias,type) "
+                      "VALUES(?,?,"STRING(CHATTY_ID_PHONE_VALUE)");",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, username, "binding when adding user");
+  history_bind_text (stmt, 2, alias, "binding when adding user");
+  status = sqlite3_step (stmt);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_DONE) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Couldn't insert into users. errno: %d, desc: %s",
+                             status, sqlite3_errmsg (self->db));
+    return 0;
+  }
+
+  /* We can't use last_row_id as we may ignore the last insert */
+  sqlite3_prepare_v2 (self->db,
+                      "SELECT users.id FROM users "
+                      "WHERE users.username=? AND type="STRING(CHATTY_ID_PHONE_VALUE)";",
+                      -1, &stmt, NULL);
+  history_bind_text (stmt, 1, username, "binding when getting phone user");
+  status = sqlite3_step (stmt);
+
+  if (status == SQLITE_ROW)
+    id = sqlite3_column_int (stmt, 0);
+  sqlite3_finalize (stmt);
+
+  if (status != SQLITE_ROW)
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_FAILED,
+                             "Couldn't get user. errno: %d, desc: %s",
+                             status, sqlite3_errmsg (self->db));
+
+  return id;
+}
+
+static int
 get_thread_id (ChattyHistory *self,
                ChattyChat    *chat)
 {
@@ -739,7 +795,7 @@ get_thread_id (ChattyHistory *self,
                       "ON users.username=? AND accounts.user_id=users.id "
                       "AND threads.name=? AND threads.type=?;",
                       -1, &stmt, NULL);
-  history_bind_text (stmt, 1, chatty_chat_get_username (chat), "binding when getting thread");
+  history_bind_text (stmt, 1, chatty_item_get_username (CHATTY_ITEM (chat)), "binding when getting thread");
   history_bind_text (stmt, 2, chatty_chat_get_chat_name (chat), "binding when getting thread");
   history_bind_int (stmt, 3, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
                     "binding when adding phone number");
@@ -769,13 +825,13 @@ insert_or_ignore_thread (ChattyHistory *self,
 
   user_id = insert_or_ignore_user (self,
                                    chatty_item_get_protocols (CHATTY_ITEM (chat)),
-                                   chatty_chat_get_username (chat),
+                                   chatty_item_get_username (CHATTY_ITEM (chat)),
                                    NULL,
                                    task);
   if (!user_id) {
     const char *who;
 
-    who = chatty_chat_get_username (chat);
+    who = chatty_item_get_username (CHATTY_ITEM (chat));
 
     if (!who || !*who)
       g_task_return_new_error (task,
@@ -832,6 +888,35 @@ insert_or_ignore_thread (ChattyHistory *self,
     id = sqlite3_column_int (stmt, 0);
   sqlite3_finalize (stmt);
 
+  if (status == SQLITE_ROW &&
+      CHATTY_IS_MM_CHAT (chat)) {
+    GListModel *buddies;
+    guint n_items;
+
+    buddies = chatty_chat_get_users (chat);
+    n_items = g_list_model_get_n_items (buddies);
+
+    for (guint i = 0; i < n_items; i++) {
+      g_autoptr(ChattyMmBuddy) buddy = NULL;
+      const char *number, *name;
+
+      buddy = g_list_model_get_item (buddies, i);
+      name = chatty_item_get_name (CHATTY_ITEM (buddy));
+      number = chatty_mm_buddy_get_number (buddy);
+      user_id = history_add_phone_user (self, task, number, name);
+
+      sqlite3_prepare_v2 (self->db,
+                          "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
+                          "VALUES(?,?);",
+                          -1, &stmt, NULL);
+      history_bind_int (stmt, 1, id, "binding when adding phone number");
+      history_bind_int (stmt, 2, user_id, "binding when adding phone number");
+
+      sqlite3_step (stmt);
+      sqlite3_finalize (stmt);
+    }
+  }
+
   if (status != SQLITE_ROW)
     g_task_return_new_error (task,
                              G_IO_ERROR,
@@ -861,33 +946,6 @@ chatty_history_backup (ChattyHistory *self)
       !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND) &&
       !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS))
     g_critical ("Error creating DB backup: %s", error->message);
-}
-
-static gboolean
-history_add_phone_user (ChattyHistory *self,
-                        GTask         *task,
-                        const char    *username,
-                        const char    *alias)
-{
-  sqlite3_stmt *stmt;
-  int status;
-
-  sqlite3_prepare_v2 (self->db, "INSERT OR IGNORE INTO users(username,alias,type) "
-                      "VALUES(?,?,"STRING(CHATTY_ID_PHONE_VALUE)");",
-                      -1, &stmt, NULL);
-  history_bind_text (stmt, 1, username, "binding when adding user");
-  history_bind_text (stmt, 2, alias, "binding when adding user");
-  status = sqlite3_step (stmt);
-  sqlite3_finalize (stmt);
-
-  if (status != SQLITE_DONE)
-    g_task_return_new_error (task,
-                             G_IO_ERROR,
-                             G_IO_ERROR_FAILED,
-                             "Couldn't insert into accounts. errno: %d, desc: %s",
-                             status, sqlite3_errmsg (self->db));
-
-  return status == SQLITE_DONE;
 }
 
 static gboolean
@@ -1047,7 +1105,7 @@ chatty_history_migrate_db_to_v1_to_v3 (ChattyHistory *self,
                          /*** Accounts ***/
                          /* We have exactly one account for SMS */
                          "INSERT OR IGNORE INTO accounts(user_id,protocol,enabled) "
-                         "SELECT DISTINCT users.id," STRING(PROTOCOL_SMS) ",1 FROM users "
+                         "SELECT DISTINCT users.id," STRING(PROTOCOL_MMS_SMS) ",1 FROM users "
                          "WHERE users.username='SMS';"
 
                          /* XMPP IM accounts */
@@ -1274,7 +1332,7 @@ chatty_history_migrate_db_to_v1_to_v3 (ChattyHistory *self,
       /* Fill in accounts */
       if (!history_add_phone_account (self, task,
                                       account_number ? account_number : account,
-                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_SMS : PROTOCOL_TELEGRAM))
+                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_MMS_SMS : PROTOCOL_TELEGRAM))
         return FALSE;
 
       if (!history_add_phone_user (self, task,
@@ -1360,7 +1418,7 @@ chatty_history_migrate_db_to_v1_to_v3 (ChattyHistory *self,
       /* Fill in accounts */
       if (!history_add_phone_account (self, task,
                                       account_number ? account_number : account,
-                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_SMS : PROTOCOL_TELEGRAM))
+                                      g_strcmp0 (account, "SMS") == 0 ? PROTOCOL_MMS_SMS : PROTOCOL_TELEGRAM))
         return FALSE;
 
       if (sender &&
@@ -2017,7 +2075,7 @@ history_get_messages (ChattyHistory *self,
 
   if (!thread_id) {
     g_task_return_new_error (task,
-                             G_IO_ERROR, G_IO_ERROR_FAILED,
+                             G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
                              "Couldn't find chat %s",
                              chatty_chat_get_chat_name (chat));
     return;
@@ -2167,7 +2225,7 @@ history_add_message (ChattyHistory *self,
   alias = chatty_message_get_user_alias (message);
 
   if (direction == CHATTY_DIRECTION_OUT)
-    who = chatty_chat_get_username (chat);
+    who = chatty_item_get_username (CHATTY_ITEM (chat));
 
   if ((!who || !*who) && direction == CHATTY_DIRECTION_IN && chatty_chat_is_im (chat))
     who = chatty_chat_get_chat_name (chat);
@@ -2244,6 +2302,42 @@ history_add_message (ChattyHistory *self,
                              status, sqlite3_errmsg (self->db));
 }
 
+static GPtrArray *
+get_sms_thread_members (ChattyHistory *self,
+                        int            thread_id)
+{
+  GPtrArray *members = NULL;
+  sqlite3_stmt *stmt;
+
+  g_assert (CHATTY_IS_HISTORY (self));
+  g_assert (g_thread_self () == self->worker_thread);
+
+  sqlite3_prepare_v2 (self->db, "SELECT username,alias FROM users "
+                      "INNER JOIN thread_members "
+                      "ON thread_id=? AND user_id=users.id "
+                      "WHERE users.username != 'SMS' AND users.username != 'MMS'",
+                      -1, &stmt, NULL);
+  history_bind_int (stmt, 1, thread_id, "binding when getting thread members");
+
+  while (sqlite3_step (stmt) == SQLITE_ROW) {
+    ChattyMmBuddy *buddy;
+    const char *name, *alias;
+
+    if (!members)
+      members = g_ptr_array_new_full (30, g_object_unref);
+
+    name = (const char *)sqlite3_column_text (stmt, 0);
+    alias = (const char *)sqlite3_column_text (stmt, 1);
+
+    buddy = chatty_mm_buddy_new (name, alias);
+    g_ptr_array_insert (members, 0, buddy);
+  }
+
+  sqlite3_finalize (stmt);
+
+  return members;
+}
+
 static void
 history_get_chats (ChattyHistory *self,
                    GTask         *task)
@@ -2267,10 +2361,14 @@ history_get_chats (ChattyHistory *self,
 
   account = g_object_get_data (G_OBJECT (task), "account");
   /* We currently handle only matrix accounts */
-  g_assert (CHATTY_IS_MA_ACCOUNT (account));
+  g_assert (CHATTY_IS_MA_ACCOUNT (account) || CHATTY_IS_MM_ACCOUNT (account));
 
-  user_id = chatty_account_get_username (account);
-  protocol = PROTOCOL_MATRIX;
+  user_id = chatty_item_get_username (CHATTY_ITEM (account));
+
+  if (CHATTY_IS_MA_ACCOUNT (account))
+    protocol = PROTOCOL_MATRIX;
+  else
+    protocol = PROTOCOL_MMS_SMS;
 
   sqlite3_prepare_v2 (self->db,
                       "SELECT threads.id,threads.name,threads.alias,threads.encrypted,"
@@ -2306,12 +2404,28 @@ history_get_chats (ChattyHistory *self,
       file->path = g_strdup ((const char *)sqlite3_column_text (stmt, 5));
     }
 
-    chat = (gpointer)chatty_ma_chat_new (name, alias, file);
-    chatty_chat_set_encryption (CHATTY_CHAT (chat), encrypted);
+    if (CHATTY_IS_MA_ACCOUNT (account)) {
+      chat = (gpointer)chatty_ma_chat_new (name, alias, file);
+      chatty_chat_set_encryption (CHATTY_CHAT (chat), encrypted);
+    } else {
+      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS_SMS, TRUE);
+    }
+
     messages = get_messages_before_time (self, chat, NULL, thread_id, INT_MAX, 1);
-    chatty_ma_chat_add_messages (CHATTY_MA_CHAT (chat), messages);
+
+    if (CHATTY_IS_MA_ACCOUNT (account))
+      chatty_ma_chat_add_messages (CHATTY_MA_CHAT (chat), messages);
+    else
+      chatty_mm_chat_prepend_messages (CHATTY_MM_CHAT (chat), messages);
 
     g_ptr_array_insert (threads, -1, chat);
+
+    if (protocol == PROTOCOL_MMS_SMS) {
+      g_autoptr(GPtrArray) members = NULL;
+
+      members = get_sms_thread_members (self, thread_id);
+      chatty_mm_chat_add_users (CHATTY_MM_CHAT (chat), members);
+    }
   }
 
   sqlite3_finalize (stmt);
@@ -2367,7 +2481,7 @@ history_update_user (ChattyHistory *self,
   account = g_object_get_data (G_OBJECT (task), "account");
   g_assert (CHATTY_IS_ACCOUNT (account));
 
-  user_name = chatty_account_get_username (account);
+  user_name = chatty_item_get_username (CHATTY_ITEM (account));
   protocol = chatty_item_get_protocols (CHATTY_ITEM (account));
   name = chatty_item_get_name (CHATTY_ITEM (account));
 
@@ -2435,7 +2549,7 @@ history_delete_chat (ChattyHistory *self,
     return;
   }
 
-  account = chatty_chat_get_username (chat);
+  account = chatty_item_get_username (CHATTY_ITEM (chat));
 
   status = sqlite3_prepare_v2 (self->db,
                                "DELETE FROM threads "
@@ -2487,7 +2601,7 @@ history_load_account (ChattyHistory *self,
   account = g_object_get_data (G_OBJECT (task), "account");
   g_assert (CHATTY_IS_ACCOUNT (account));
 
-  user_name = chatty_account_get_username (account);
+  user_name = chatty_item_get_username (CHATTY_ITEM (account));
 
   if (!user_name || !*user_name) {
     g_task_return_new_error (task,
@@ -3018,12 +3132,15 @@ chatty_history_get_chats_async (ChattyHistory       *self,
                                 gpointer             user_data)
 {
   GTask *task;
+  const char *protocol;
 
   g_return_if_fail (CHATTY_IS_HISTORY (self));
   g_return_if_fail (CHATTY_IS_ACCOUNT (account));
 
-  /* Currently we handle only matrix accounts */
-  if (!g_str_equal (chatty_account_get_protocol_name (account), "Matrix"))
+  /* Currently we handle only matrix and SMS accounts */
+  protocol = chatty_account_get_protocol_name (account);
+  if (!g_str_equal (protocol, "Matrix") &&
+      !g_str_equal (protocol, "SMS"))
     g_return_if_reached ();
 
   task = g_task_new (self, NULL, callback, user_data);

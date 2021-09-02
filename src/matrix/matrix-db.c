@@ -943,7 +943,7 @@ matrix_db_save_account_async (MatrixDb            *self,
   g_task_set_task_data (task, matrix_db_save_account, NULL);
 
   object = G_OBJECT (task);
-  username = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  username = chatty_item_get_username (CHATTY_ITEM (account));
 
   if (g_application_get_default ())
     g_application_hold (g_application_get_default ());
@@ -990,7 +990,7 @@ matrix_db_load_account_async (MatrixDb            *self,
   g_task_set_source_tag (task, matrix_db_load_account_async);
   g_task_set_task_data (task, matrix_db_load_account, NULL);
 
-  username = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  username = chatty_item_get_username (CHATTY_ITEM (account));
   g_object_set_data_full (G_OBJECT (task), "device", g_strdup (device_id), g_free);
   g_object_set_data_full (G_OBJECT (task), "username", g_strdup (username), g_free);
   g_object_set_data_full (G_OBJECT (task), "account", g_object_ref (account), g_object_unref);
@@ -1029,7 +1029,7 @@ matrix_db_save_room_async (MatrixDb            *self,
   g_task_set_source_tag (task, matrix_db_save_room_async);
   g_task_set_task_data (task, matrix_db_save_room, NULL);
 
-  username = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  username = chatty_item_get_username (CHATTY_ITEM (account));
   g_object_set_data_full (G_OBJECT (task), "room", g_strdup (room_id), g_free);
   g_object_set_data_full (G_OBJECT (task), "username", g_strdup (username), g_free);
   g_object_set_data_full (G_OBJECT (task), "account-id", g_strdup (username), g_free);
@@ -1070,7 +1070,7 @@ matrix_db_load_room_async (MatrixDb            *self,
   g_task_set_source_tag (task, matrix_db_load_room_async);
   g_task_set_task_data (task, matrix_db_load_room, NULL);
 
-  username = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  username = chatty_item_get_username (CHATTY_ITEM (account));
   g_object_set_data_full (G_OBJECT (task), "room", g_strdup (room_id), g_free);
   g_object_set_data_full (G_OBJECT (task), "username", g_strdup (username), g_free);
   g_object_set_data_full (G_OBJECT (task), "account-id", g_strdup (username), g_free);
@@ -1107,7 +1107,7 @@ matrix_db_delete_account_async (MatrixDb            *self,
   g_task_set_source_tag (task, matrix_db_delete_account_async);
   g_task_set_task_data (task, matrix_db_delete_account, NULL);
 
-  username = chatty_account_get_username (CHATTY_ACCOUNT (account));
+  username = chatty_item_get_username (CHATTY_ITEM (account));
   g_object_set_data_full (G_OBJECT (task), "username", g_strdup (username), g_free);
   g_object_set_data_full (G_OBJECT (task), "account", g_object_ref (account), g_object_unref);
 

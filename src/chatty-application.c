@@ -193,7 +193,7 @@ application_show_connection_error (ChattyApplication *self,
   gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG(dialog),
                                             "%s: %s\n\n%s",
                                             message,
-                                            chatty_account_get_username (CHATTY_ACCOUNT (account)),
+                                            chatty_item_get_username (CHATTY_ITEM (account)),
                                             _("Please check ID and password"));
 
   run_dialog_and_destroy (GTK_DIALOG (dialog));
@@ -206,13 +206,8 @@ application_open_chat (ChattyApplication *self,
   g_assert (CHATTY_IS_APPLICATION (self));
   g_assert (CHATTY_IS_CHAT (chat));
 
-  if (!self->main_window) {
-    self->main_window = chatty_window_new (GTK_APPLICATION (self));
-    g_object_add_weak_pointer (G_OBJECT (self->main_window), (gpointer *)&self->main_window);
-  }
-
+  g_application_activate (G_APPLICATION (self));
   chatty_window_open_chat (CHATTY_WINDOW (self->main_window), chat);
-  gtk_window_present (GTK_WINDOW (self->main_window));
 }
 
 static gboolean
@@ -237,8 +232,8 @@ chatty_application_show_window (GSimpleAction *action,
 
   g_assert (CHATTY_IS_APPLICATION (self));
 
+  self->show_window = TRUE;
   g_application_activate (G_APPLICATION (self));
-  gtk_window_present (GTK_WINDOW (self->main_window));
 }
 
 static void
@@ -260,6 +255,8 @@ chatty_application_open_chat (GSimpleAction *action,
 
   CHATTY_DEBUG_MSG ("Opening chat %s, account: %s", room_id, account_id);
 
+  self->show_window = TRUE;
+  g_application_activate (G_APPLICATION (self));
   chatty_window_open_chat (CHATTY_WINDOW (self->main_window), chat);
 }
 

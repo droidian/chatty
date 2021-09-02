@@ -83,11 +83,12 @@ chatty_secret_store_save_async (ChattyAccount       *account,
                                  key ? key : "", device_id);
   schema = secret_store_get_schema ();
   server = chatty_ma_account_get_homeserver (CHATTY_MA_ACCOUNT (account));
-  label = g_strdup_printf (_("Chatty password for \"%s\""), chatty_account_get_username (account));
+  label = g_strdup_printf (_("Chatty password for \"%s\""),
+                           chatty_item_get_username (CHATTY_ITEM (account)));
 
   secret_password_store (schema, NULL, label, credentials,
                          cancellable, callback, user_data,
-                         CHATTY_USERNAME_ATTRIBUTE, chatty_account_get_username (account),
+                         CHATTY_USERNAME_ATTRIBUTE, chatty_item_get_username (CHATTY_ITEM (account)),
                          CHATTY_SERVER_ATTRIBUTE, server,
                          CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
                          NULL);
@@ -121,7 +122,7 @@ secret_load_cb (GObject      *object,
 
   g_assert_true (G_IS_TASK (task));
 
-  secrets = secret_service_search_finish (NULL, result, &error);
+  secrets = secret_password_search_finish (result, &error);
   CHATTY_TRACE_MSG ("secret accounts loaded, has-error: %d", !!error);
 
   if (error) {
@@ -153,25 +154,23 @@ chatty_secret_load_async  (GCancellable        *cancellable,
                            gpointer             user_data)
 {
   const SecretSchema *schema;
-  g_autoptr(GHashTable) attr = NULL;
   GTask *task;
 
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
   schema = secret_store_get_schema ();
   task = g_task_new (NULL, cancellable, callback, user_data);
+
   /** With using SECRET_SCHEMA_DONT_MATCH_NAME we need some other attribute
    *  (apart from the schema name itself) to use for the lookup.
    *  The protocol attribute seems like a reasonable choice.
    */
-  attr = secret_attributes_build (schema,
-                                  CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
-                                  NULL);
-
+  secret_password_search (schema,
+                          SECRET_SEARCH_ALL | SECRET_SEARCH_UNLOCK | SECRET_SEARCH_LOAD_SECRETS,
+                          cancellable, secret_load_cb, task,
+                          CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
+                          NULL);
   CHATTY_TRACE_MSG ("loading secret accounts");
-  secret_service_search (NULL, schema, attr,
-                         SECRET_SEARCH_ALL | SECRET_SEARCH_UNLOCK | SECRET_SEARCH_LOAD_SECRETS,
-                         cancellable, secret_load_cb, task);
 }
 
 GPtrArray *
@@ -190,19 +189,17 @@ chatty_secret_delete_async (ChattyAccount       *account,
                             gpointer             user_data)
 {
   const SecretSchema *schema;
-  g_autoptr(GHashTable) attr = NULL;
   const char *server;
 
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
   schema = secret_store_get_schema ();
   server = chatty_ma_account_get_homeserver (CHATTY_MA_ACCOUNT (account));
-  attr = secret_attributes_build (schema,
-                                  CHATTY_USERNAME_ATTRIBUTE, chatty_account_get_username (account),
-                                  CHATTY_SERVER_ATTRIBUTE, server,
-                                  CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
-                                  NULL);
-  secret_service_clear (NULL, schema, attr, cancellable, callback, user_data);
+  secret_password_clear (schema, cancellable, callback, user_data,
+                         CHATTY_USERNAME_ATTRIBUTE, chatty_item_get_username (CHATTY_ITEM (account)),
+                         CHATTY_SERVER_ATTRIBUTE, server,
+                         CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
+                         NULL);
 }
 
 gboolean
@@ -211,5 +208,5 @@ chatty_secret_delete_finish  (GAsyncResult  *result,
 {
   g_return_val_if_fail (G_IS_ASYNC_RESULT (result), FALSE);
 
-  return secret_service_clear_finish (NULL, result, error);
+  return secret_password_clear_finish (result, error);
 }

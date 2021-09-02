@@ -70,6 +70,13 @@ void          matrix_api_get_room_state_async    (MatrixApi      *self,
 JsonArray    *matrix_api_get_room_state_finish   (MatrixApi      *self,
                                                   GAsyncResult   *result,
                                                   GError        **error);
+void          matrix_api_get_room_users_async    (MatrixApi      *self,
+                                                  const char     *room_id,
+                                                  GAsyncReadyCallback callback,
+                                                  gpointer        user_data);
+JsonObject   *matrix_api_get_room_users_finish   (MatrixApi      *self,
+                                                  GAsyncResult   *result,
+                                                  GError        **error);
 void          matrix_api_get_room_name_async     (MatrixApi      *self,
                                                   const char     *room_id,
                                                   GAsyncReadyCallback callback,
@@ -77,6 +84,13 @@ void          matrix_api_get_room_name_async     (MatrixApi      *self,
 JsonObject   *matrix_api_get_room_name_finish    (MatrixApi      *self,
                                                   GAsyncResult   *result,
                                                   GError        **error);
+void          matrix_api_get_room_encryption_async  (MatrixApi   *self,
+                                                     const char  *room_id,
+                                                     GAsyncReadyCallback callback,
+                                                     gpointer     user_data);
+char         *matrix_api_get_room_encryption_finish (MatrixApi   *self,
+                                                     GAsyncResult *result,
+                                                     GError     **error);
 void          matrix_api_get_members_async       (MatrixApi      *self,
                                                   const char *room_id,
                                                   GAsyncReadyCallback callback,
@@ -175,6 +189,14 @@ void         matrix_api_set_name_async           (MatrixApi      *self,
                                                   GAsyncReadyCallback callback,
                                                   gpointer        user_data);
 gboolean     matrix_api_set_name_finish          (MatrixApi      *self,
+                                                  GAsyncResult   *result,
+                                                  GError        **error);
+void         matrix_api_set_user_avatar_async    (MatrixApi      *self,
+                                                  const char     *file_name,
+                                                  GCancellable   *cancellable,
+                                                  GAsyncReadyCallback callback,
+                                                  gpointer        user_data);
+gboolean     matrix_api_set_user_avatar_finish   (MatrixApi      *self,
                                                   GAsyncResult   *result,
                                                   GError        **error);
 void         matrix_api_get_3pid_async           (MatrixApi      *self,

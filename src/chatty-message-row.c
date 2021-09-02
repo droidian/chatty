@@ -118,7 +118,11 @@ message_activate_gesture_cb (ChattyMessageRow *self)
   if (!info || !info->path)
     return;
 
-  file = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", info->path, NULL);
+  if (self->protocol == CHATTY_PROTOCOL_MMS_SMS || self->protocol == CHATTY_PROTOCOL_MMS)
+    file = g_file_new_build_filename (g_get_user_data_dir (), "chatty", info->path, NULL);
+  else
+    file = g_file_new_build_filename (g_get_user_cache_dir (), "chatty", info->path, NULL);
+
   uri = g_file_get_uri (file);
 
   gtk_show_uri_on_window (NULL, uri, GDK_CURRENT_TIME, NULL);
@@ -253,7 +257,7 @@ chatty_message_row_new (ChattyMessage  *message,
     gtk_widget_set_halign (self->content_grid, GTK_ALIGN_START);
     gtk_widget_set_halign (self->message_event_box, GTK_ALIGN_START);
     gtk_widget_set_halign (self->author_label, GTK_ALIGN_START);
-  } else if (direction == CHATTY_DIRECTION_OUT && protocol == CHATTY_PROTOCOL_SMS) {
+  } else if (direction == CHATTY_DIRECTION_OUT && protocol == CHATTY_PROTOCOL_MMS_SMS) {
     gtk_style_context_add_class (sc, "bubble_green");
   } else if (direction == CHATTY_DIRECTION_OUT) {
     gtk_style_context_add_class (sc, "bubble_blue");
@@ -317,6 +321,8 @@ chatty_message_row_hide_user_detail (ChattyMessageRow *self)
   g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
 
   gtk_widget_hide (self->author_label);
-  gtk_widget_hide (self->avatar_image);
-  gtk_widget_show (self->hidden_box);
+  if (gtk_widget_get_visible (self->avatar_image)) {
+    gtk_widget_hide (self->avatar_image);
+    gtk_widget_show (self->hidden_box);
+  }
 }

@@ -23,6 +23,7 @@
 #include "chatty-window.h"
 #include "chatty-pp-chat.h"
 #include "chatty-pp-account.h"
+#include "chatty-log.h"
 
 /**
  * SECTION: chatty-pp-account
@@ -130,7 +131,7 @@ account_connect (ChattyPpAccount *self)
   if (!purple_status_is_online (pp_status))
     return G_SOURCE_REMOVE;
 
-  g_debug ("connecting to %s", chatty_account_get_username (CHATTY_ACCOUNT (self)));
+  CHATTY_DEBUG (chatty_item_get_username (CHATTY_ITEM (self)), "connecting to");
   purple_account_connect (self->pp_account);
 
   return G_SOURCE_REMOVE;
@@ -139,7 +140,7 @@ account_connect (ChattyPpAccount *self)
 static void
 chatty_pp_account_create (ChattyPpAccount *self)
 {
-  const char *protocol_id;
+  const char *protocol_id = NULL;
   ChattyProtocol protocol;
 
   g_assert (CHATTY_IS_PP_ACCOUNT (self));
@@ -150,8 +151,6 @@ chatty_pp_account_create (ChattyPpAccount *self)
     protocol_id = "prpl-jabber";
   else if (protocol == CHATTY_PROTOCOL_MATRIX)
     protocol_id = "prpl-matrix";
-  else if (protocol == CHATTY_PROTOCOL_SMS)
-    protocol_id = "prpl-mm-sms";
   else if (protocol == CHATTY_PROTOCOL_TELEGRAM)
     protocol_id = "prpl-telegram";
 
@@ -160,11 +159,6 @@ chatty_pp_account_create (ChattyPpAccount *self)
     if (protocol == CHATTY_PROTOCOL_MATRIX)
       {
         purple_account_set_string (self->pp_account, "home_server", self->server_url);
-      }
-    else if (protocol == CHATTY_PROTOCOL_SMS)
-      {
-        purple_account_set_password (self->pp_account, NULL);
-        purple_account_set_remember_password (self->pp_account, TRUE);
       }
 }
 
@@ -184,8 +178,6 @@ chatty_pp_load_protocol (ChattyPpAccount *self)
     protocol = CHATTY_PROTOCOL_XMPP;
   else if (g_str_equal (protocol_id, "prpl-matrix"))
     protocol = CHATTY_PROTOCOL_MATRIX;
-  else if (g_str_equal (protocol_id, "prpl-mm-sms"))
-    protocol = CHATTY_PROTOCOL_SMS;
   else if (g_str_equal (protocol_id, "prpl-telegram"))
     protocol = CHATTY_PROTOCOL_TELEGRAM;
   else if (g_str_equal (protocol_id, "prpl-delta"))
@@ -219,27 +211,6 @@ chatty_pp_account_get_status (ChattyAccount *account)
     return CHATTY_CONNECTING;
 
   return CHATTY_DISCONNECTED;
-}
-
-static const gchar *
-chatty_pp_account_get_username (ChattyAccount *account)
-{
-  ChattyPpAccount *self = (ChattyPpAccount *)account;
-
-  g_assert (CHATTY_IS_PP_ACCOUNT (self));
-
-  return purple_account_get_username (self->pp_account);
-}
-
-static void
-chatty_pp_account_set_username (ChattyAccount *account,
-                                const char    *username)
-{
-  ChattyPpAccount *self = (ChattyPpAccount *)account;
-
-  g_assert (CHATTY_IS_PP_ACCOUNT (self));
-
-  purple_account_set_username (self->pp_account, username);
 }
 
 static GListModel *
@@ -345,9 +316,6 @@ chatty_pp_account_disconnect (ChattyAccount *account)
   ChattyStatus status;
 
   g_assert (CHATTY_IS_PP_ACCOUNT (self));
-
-  if (chatty_item_is_sms (CHATTY_ITEM (self)))
-    return;
 
   status = chatty_account_get_status (CHATTY_ACCOUNT (self));
 
@@ -607,6 +575,27 @@ chatty_pp_account_set_name (ChattyItem *item,
   purple_account_set_alias (self->pp_account, name);
 }
 
+static const char *
+chatty_pp_account_get_username (ChattyItem *item)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)item;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  return purple_account_get_username (self->pp_account);
+}
+
+static void
+chatty_pp_account_set_username (ChattyItem *item,
+                                const char *username)
+{
+  ChattyPpAccount *self = (ChattyPpAccount *)item;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT (self));
+
+  purple_account_set_username (self->pp_account, username);
+}
+
 static GdkPixbuf *
 chatty_icon_from_data (const guchar *buf,
                        gsize         size)
@@ -786,13 +775,13 @@ chatty_pp_account_class_init (ChattyPpAccountClass *klass)
   item_class->get_protocols = chatty_pp_account_get_protocols;
   item_class->get_name = chatty_pp_account_get_name;
   item_class->set_name = chatty_pp_account_set_name;
+  item_class->get_username = chatty_pp_account_get_username;
+  item_class->set_username = chatty_pp_account_set_username;
   item_class->get_avatar = chatty_pp_account_get_avatar;
   item_class->set_avatar_async = chatty_pp_account_set_avatar_async;
 
   account_class->get_protocol_name = chatty_pp_account_get_protocol_name;
   account_class->get_status   = chatty_pp_account_get_status;
-  account_class->get_username = chatty_pp_account_get_username;
-  account_class->set_username = chatty_pp_account_set_username;
   account_class->get_buddies  = chatty_pp_account_get_buddies;
   account_class->buddy_exists = chatty_pp_account_buddy_exists;
   account_class->get_enabled  = chatty_pp_account_get_enabled;
@@ -873,8 +862,7 @@ chatty_pp_account_new (ChattyProtocol  protocol,
 {
   ChattyPpAccount *self;
 
-  g_return_val_if_fail (protocol & (CHATTY_PROTOCOL_SMS |
-                                    CHATTY_PROTOCOL_XMPP |
+  g_return_val_if_fail (protocol & (CHATTY_PROTOCOL_XMPP |
                                     CHATTY_PROTOCOL_MATRIX |
                                     CHATTY_PROTOCOL_TELEGRAM), NULL);
   g_return_val_if_fail (username && *username, NULL);

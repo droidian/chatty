@@ -23,6 +23,7 @@
 #include "chatty-manager.h"
 #include "chatty-list-row.h"
 #include "chatty-settings.h"
+#include "chatty-mm-chat.h"
 #include "chatty-pp-chat.h"
 #include "chatty-chat-view.h"
 #include "chatty-manager.h"
@@ -181,20 +182,19 @@ static gboolean
 window_chat_name_matches (ChattyItem   *item,
                           ChattyWindow *self)
 {
-  ChattyProtocol protocols, protocol;
+  ChattyProtocol protocol;
 
   g_assert (CHATTY_IS_CHAT (item));
   g_assert (CHATTY_IS_WINDOW (self));
 
-  protocols = chatty_manager_get_active_protocols (self->manager);
   protocol = chatty_item_get_protocols (item);
 
-  if (protocol != CHATTY_PROTOCOL_MATRIX &&
-      !(protocols & chatty_item_get_protocols (item)))
-    return FALSE;
+  if ((!self->chat_needle || !*self->chat_needle) &&
+      CHATTY_IS_MM_CHAT (item))
+    return TRUE;
 
   /* FIXME: Not a good idea */
-  if (chatty_item_get_protocols (item) != CHATTY_PROTOCOL_SMS) {
+  if (chatty_item_get_protocols (item) != CHATTY_PROTOCOL_MMS_SMS) {
     ChattyAccount *account;
 
     if (CHATTY_IS_PP_CHAT (item) &&
@@ -243,7 +243,7 @@ chatty_window_open_item (ChattyWindow *self,
   if (CHATTY_IS_CONTACT (item)) {
     const char *number;
 
-    number = chatty_contact_get_value (CHATTY_CONTACT (item));
+    number = chatty_item_get_username (item);
     chatty_window_set_uri (self, number);
 
     return;
@@ -265,16 +265,15 @@ chatty_window_open_item (ChattyWindow *self,
   if (CHATTY_IS_PP_CHAT (item))
     chat = CHATTY_CHAT (item);
 
-  if (chatty_item_get_protocols (item) == CHATTY_PROTOCOL_SMS &&
-      CHATTY_IS_PP_BUDDY (item) &&
-      !chatty_pp_buddy_get_contact (CHATTY_PP_BUDDY (item)))
-    gtk_widget_show (self->menu_add_contact_button);
-
   if (CHATTY_IS_PP_CHAT (chat)) {
     chatty_pp_chat_join (CHATTY_PP_CHAT (chat));
 
     gtk_filter_changed (self->chat_filter, GTK_FILTER_CHANGE_DIFFERENT);
     window_chat_changed_cb (self);
+  }
+
+  if (CHATTY_IS_MM_CHAT (item)) {
+    chatty_window_open_chat (CHATTY_WINDOW (self), CHATTY_CHAT (item));
   }
 }
 
@@ -354,7 +353,7 @@ window_new_message_clicked_cb (ChattyWindow *self)
 
   if (CHATTY_IS_CONTACT (item) &&
       chatty_contact_is_dummy (CHATTY_CONTACT (item)))
-    phone_number = chatty_contact_get_value (CHATTY_CONTACT (item));
+    phone_number = chatty_item_get_username (item);
 
   if (phone_number)
     chatty_window_set_uri (self, phone_number);
@@ -384,7 +383,7 @@ window_add_chat_button_clicked_cb (ChattyWindow *self)
 {
   g_assert (CHATTY_IS_WINDOW (self));
 
-  if (chatty_manager_get_active_protocols (self->manager) == CHATTY_PROTOCOL_SMS)
+  if (chatty_manager_get_active_protocols (self->manager) == CHATTY_PROTOCOL_MMS_SMS)
     window_new_message_clicked_cb (self);
   else
     gtk_popover_popup (GTK_POPOVER (self->header_chat_list_new_msg_popover));
@@ -471,6 +470,8 @@ window_delete_buddy_clicked_cb (ChattyWindow *self)
                                 CHATTY_CHAT (self->selected_item));
     if (CHATTY_IS_PP_CHAT (self->selected_item)) {
       chatty_pp_chat_delete (CHATTY_PP_CHAT (self->selected_item));
+    } else if (CHATTY_IS_MM_CHAT (self->selected_item)) {
+      chatty_mm_chat_delete (CHATTY_MM_CHAT (self->selected_item));
     } else {
       g_return_if_reached ();
     }
@@ -527,16 +528,45 @@ write_contact_cb (GObject      *object,
 }
 
 static void
+write_eds_contact_cb (GObject      *object,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+  g_autoptr(ChattyWindow) self = user_data;
+  g_autoptr(GError) error = NULL;
+  GtkWidget *dialog;
+
+  g_assert (CHATTY_IS_WINDOW (self));
+
+  if (chatty_eds_write_contact_finish (result, &error))
+    return;
+
+  dialog = gtk_message_dialog_new (GTK_WINDOW (self),
+                                   GTK_DIALOG_MODAL,
+                                   GTK_MESSAGE_WARNING,
+                                   GTK_BUTTONS_CLOSE,
+                                   _("Error saving contact: %s"), error->message);
+  gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+}
+
+static void
 window_add_contact_clicked_cb (ChattyWindow *self)
 {
   g_assert (CHATTY_IS_WINDOW (self));
   g_return_if_fail (self->selected_item);
 
-  if (!CHATTY_IS_PP_CHAT (self->selected_item))
-    return;
+  if (CHATTY_IS_PP_CHAT (self->selected_item)) {
+    chatty_pp_chat_save_to_contacts_async (CHATTY_PP_CHAT (self->selected_item),
+                                           write_contact_cb, g_object_ref (self));
+  } else if (CHATTY_IS_MM_CHAT (self->selected_item)) {
+    const char *phone;
 
-  chatty_pp_chat_save_to_contacts_async (CHATTY_PP_CHAT (self->selected_item),
-                                         write_contact_cb, g_object_ref (self));
+    phone = chatty_chat_get_chat_name (CHATTY_CHAT (self->selected_item));
+    chatty_eds_write_contact_async ("", phone,
+                                    write_eds_contact_cb,
+                                    g_object_ref (self));
+  }
 
   gtk_widget_hide (self->menu_add_contact_button);
 }
@@ -624,8 +654,8 @@ window_active_protocols_changed_cb (ChattyWindow *self)
   g_assert (CHATTY_IS_WINDOW (self));
 
   protocols = chatty_manager_get_active_protocols (self->manager);
-  has_sms = !!(protocols & CHATTY_PROTOCOL_SMS);
-  has_im  = !!(protocols & ~CHATTY_PROTOCOL_SMS);
+  has_sms = !!(protocols & CHATTY_PROTOCOL_MMS_SMS);
+  has_im  = !!(protocols & ~CHATTY_PROTOCOL_MMS_SMS);
 
   gtk_widget_set_sensitive (self->header_add_chat_button, has_sms || has_im);
   gtk_widget_set_sensitive (self->menu_new_group_message_button, has_im);
@@ -861,6 +891,8 @@ void
 chatty_window_open_chat (ChattyWindow *self,
                          ChattyChat   *chat)
 {
+  gboolean can_delete;
+
   g_return_if_fail (CHATTY_IS_WINDOW (self));
   g_return_if_fail (CHATTY_IS_CHAT (chat));
   g_debug ("opening item of type: %s, protocol: %d",
@@ -871,9 +903,30 @@ chatty_window_open_chat (ChattyWindow *self,
   window_set_item (self, CHATTY_ITEM (chat));
   window_chat_changed_cb (self);
 
-  gtk_widget_set_visible (self->delete_button, CHATTY_IS_PP_CHAT (chat));
+  gtk_widget_set_visible (self->leave_button, !CHATTY_IS_MM_CHAT (chat));
+  can_delete = CHATTY_IS_PP_CHAT (chat) || CHATTY_IS_MM_CHAT (chat);
+  gtk_widget_set_visible (self->delete_button, can_delete);
   hdy_leaflet_set_visible_child (HDY_LEAFLET (self->content_box), self->chat_view);
+  gtk_widget_hide (self->menu_add_contact_button);
 
   if (chatty_window_get_active_chat (self))
     chatty_chat_set_unread_count (chat, 0);
+
+  if (CHATTY_IS_MM_CHAT (chat)) {
+    GListModel *users;
+    const char *name;
+
+    users = chatty_chat_get_users (chat);
+    name = chatty_chat_get_chat_name (chat);
+
+    if (g_list_model_get_n_items (users) == 1 &&
+        chatty_utils_username_is_valid (name, CHATTY_PROTOCOL_MMS_SMS)) {
+      g_autoptr(ChattyMmBuddy) buddy = NULL;
+
+      buddy = g_list_model_get_item (users, 0);
+
+      if (!chatty_mm_buddy_get_contact (buddy))
+        gtk_widget_show (self->menu_add_contact_button);
+    }
+  }
 }

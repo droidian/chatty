@@ -101,19 +101,6 @@ chatty_chat_real_get_chat_name (ChattyChat *self)
   return "";
 }
 
-static const char *
-chatty_chat_real_get_username (ChattyChat *self)
-{
-  ChattyChatPrivate *priv = chatty_chat_get_instance_private (self);
-
-  g_assert (CHATTY_IS_CHAT (self));
-
-  if (priv->user_name)
-    return priv->user_name;
-
-  return "";
-}
-
 static ChattyAccount *
 chatty_chat_real_get_account (ChattyChat *self)
 {
@@ -303,6 +290,20 @@ chatty_chat_real_get_name (ChattyItem *item)
   return "";
 }
 
+static const char *
+chatty_chat_real_get_username (ChattyItem *item)
+{
+  ChattyChat *self = (ChattyChat *)item;
+  ChattyChatPrivate *priv = chatty_chat_get_instance_private (self);
+
+  g_assert (CHATTY_IS_CHAT (self));
+
+  if (priv->user_name)
+    return priv->user_name;
+
+  return "";
+}
+
 static void
 chatty_chat_get_property (GObject    *object,
                           guint       prop_id,
@@ -376,12 +377,12 @@ chatty_chat_class_init (ChattyChatClass *klass)
   object_class->finalize = chatty_chat_finalize;
 
   item_class->get_name = chatty_chat_real_get_name;
+  item_class->get_username = chatty_chat_real_get_username;
 
   klass->set_data = chatty_chat_real_set_data;
   klass->is_im = chatty_chat_real_is_im;
   klass->has_file_upload = chatty_chat_real_has_file_upload;
   klass->get_chat_name = chatty_chat_real_get_chat_name;
-  klass->get_username = chatty_chat_real_get_username;
   klass->get_account = chatty_chat_real_get_account;
   klass->load_past_messages = chatty_chat_real_load_past_messages;
   klass->is_loading_history = chatty_chat_real_is_loading_history;
@@ -518,14 +519,6 @@ chatty_chat_get_chat_name (ChattyChat *self)
   g_return_val_if_fail (CHATTY_IS_CHAT (self), "");
 
   return CHATTY_CHAT_GET_CLASS (self)->get_chat_name (self);
-}
-
-const char *
-chatty_chat_get_username (ChattyChat *self)
-{
-  g_return_val_if_fail (CHATTY_IS_CHAT (self), "");
-
-  return CHATTY_CHAT_GET_CLASS (self)->get_username (self);
 }
 
 ChattyAccount *

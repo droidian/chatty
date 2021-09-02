@@ -351,7 +351,7 @@ chatty_pp_account_details_set_item (ChattyPpAccountDetails *self,
   if (!g_set_object (&self->account, account) || !account)
     return;
 
-  account_name = chatty_account_get_username (account);
+  account_name = chatty_item_get_username (CHATTY_ITEM (account));
   protocol_name = chatty_account_get_protocol_name (account);
 
   gtk_label_set_text (GTK_LABEL (self->account_id_label), account_name);

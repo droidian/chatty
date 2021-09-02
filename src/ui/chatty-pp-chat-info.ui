@@ -145,6 +145,7 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <property name="justify">left</property>
+                <property name="selectable">1</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>
@@ -171,6 +172,7 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <property name="justify">left</property>
+                <property name="selectable">1</property>
               </object>
               <packing>
                 <property name="left-attach">1</property>

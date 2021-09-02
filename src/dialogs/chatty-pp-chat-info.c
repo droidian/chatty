@@ -245,7 +245,9 @@ chatty_pp_chat_info_update (ChattyPpChatInfo *self)
                            G_CONNECT_SWAPPED);
   pp_chat_info_encrypt_changed_cb (self);
 
-  if (protocol == CHATTY_PROTOCOL_SMS) {
+  if (protocol == CHATTY_PROTOCOL_MMS_SMS ||
+      protocol == CHATTY_PROTOCOL_MMS) {
+    gtk_widget_set_sensitive (self->avatar_button, FALSE);
     gtk_label_set_text (GTK_LABEL (self->user_id_title), _("Phone Number:"));
   } else if (protocol == CHATTY_PROTOCOL_XMPP) {
     gtk_label_set_text (GTK_LABEL (self->user_id_title), _("XMPP ID:"));
@@ -292,9 +294,8 @@ chatty_pp_chat_info_update (ChattyPpChatInfo *self)
     gtk_widget_hide (self->status_label);
   }
 
-  gtk_widget_set_visible (self->notification_switch,
-                          protocol != CHATTY_PROTOCOL_MATRIX);
-  if (protocol != CHATTY_PROTOCOL_MATRIX)
+  gtk_widget_set_visible (self->notification_switch, CHATTY_IS_PP_CHAT (self->chat));
+  if (CHATTY_IS_PP_CHAT (self->chat))
     gtk_switch_set_state (GTK_SWITCH (self->notification_switch),
                           chatty_pp_chat_get_show_notifications (CHATTY_PP_CHAT (self->chat)));
 

@@ -1,3 +1,10 @@
+chatty (0.4.0~beta2-1) experimental; urgency=medium
+
+  * New upstream version 0.4.0~beta2
+  * d/control: Add libgspell-1-dev build dependency
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 31 Aug 2021 23:30:07 +0200
+
 chatty (0.3.4-2) unstable; urgency=medium
 
   * ci: No need to use experimental anymore

@@ -142,6 +142,7 @@ chatty_text_item_init (ChattyTextItem *self)
                                       "wrap-mode", PANGO_WRAP_WORD_CHAR,
                                       "xalign", 0.0,
                                       NULL);
+  gtk_label_set_selectable (GTK_LABEL (self->content_label), TRUE);
   gtk_container_add (GTK_CONTAINER (self), self->content_label);
 }
 

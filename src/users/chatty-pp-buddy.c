@@ -129,9 +129,6 @@ chatty_add_new_buddy (ChattyPpBuddy *self)
 
   g_debug ("%s: %s ", __func__, purple_buddy_get_name (self->pp_buddy));
 
-  if (chatty_item_get_protocols (CHATTY_ITEM (self)) != CHATTY_PROTOCOL_SMS)
-    purple_account_add_buddy_with_invite (self->pp_account, self->pp_buddy, NULL);
-
   conv = purple_find_conversation_with_account (PURPLE_CONV_TYPE_IM,
                                                 self->username,
                                                 self->pp_account);
@@ -235,6 +232,30 @@ chatty_pp_buddy_set_name (ChattyItem *item,
   purple_blist_alias_contact (contact, self->name);
 }
 
+static const char *
+chatty_pp_buddy_get_username (ChattyItem *item)
+{
+  ChattyPpBuddy *self = (ChattyPpBuddy *)item;
+  const char *name;
+
+  g_assert (CHATTY_IS_PP_BUDDY (self));
+
+  if (self->contact)
+    return chatty_item_get_username (CHATTY_ITEM (self->contact));
+
+  if (self->chat_buddy && self->chat_buddy->name)
+    return self->chat_buddy->name;
+
+  if (!self->pp_buddy)
+    return "";
+
+  name = purple_buddy_get_name (self->pp_buddy);
+
+  if (!name)
+    name = "";
+
+  return name;
+}
 
 static gboolean
 load_icon (gpointer user_data)
@@ -424,6 +445,7 @@ chatty_pp_buddy_class_init (ChattyPpBuddyClass *klass)
   item_class->matches  = chatty_pp_buddy_matches;
   item_class->get_name = chatty_pp_buddy_get_name;
   item_class->set_name = chatty_pp_buddy_set_name;
+  item_class->get_username = chatty_pp_buddy_get_username;
   item_class->get_avatar = chatty_pp_buddy_get_avatar;
 
   properties[PROP_PURPLE_ACCOUNT] =
@@ -514,42 +536,6 @@ chatty_pp_buddy_get_buddy (ChattyPpBuddy *self)
   g_return_val_if_fail (CHATTY_IS_PP_BUDDY (self), NULL);
 
   return self->pp_buddy;
-}
-
-
-/**
- * chatty_pp_buddy_get_id:
- * @self: a #ChattyPpBuddy
- *
- * Get the user id of @self.  For XMPP, this
- * is the XMPP name (eg: name@example.com).
- * For SMS buddy, this is the phone number.
- *
- * Returns: (transfer none): the id of Buddy.
- * or an empty string if not found or on error.
- */
-const char *
-chatty_pp_buddy_get_id (ChattyPpBuddy *self)
-{
-  const char *name;
-
-  g_return_val_if_fail (CHATTY_IS_PP_BUDDY (self), "");
-
-  if (self->contact)
-    return chatty_contact_get_value (self->contact);
-
-  if (self->chat_buddy && self->chat_buddy->name)
-    return self->chat_buddy->name;
-
-  if (!self->pp_buddy)
-    return "";
-
-  name = purple_buddy_get_name (self->pp_buddy);
-
-  if (!name)
-    name = "";
-
-  return name;
 }
 
 ChattyContact *

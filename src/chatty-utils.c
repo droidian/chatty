@@ -188,7 +188,7 @@ chatty_utils_username_is_valid (const char     *name,
       valid |= CHATTY_PROTOCOL_TELEGRAM;
   }
 
-  if (protocol & CHATTY_PROTOCOL_SMS && len < 20) {
+  if (protocol & CHATTY_PROTOCOL_MMS_SMS && len < 20) {
     const char *end;
     guint end_len;
 
@@ -202,7 +202,7 @@ chatty_utils_username_is_valid (const char     *name,
       end_len++;
 
     if (end_len == len)
-      valid |= CHATTY_PROTOCOL_SMS;
+      valid |= CHATTY_PROTOCOL_MMS_SMS;
   }
 
   return valid;

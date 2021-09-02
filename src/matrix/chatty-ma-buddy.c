@@ -126,6 +126,29 @@ chatty_ma_buddy_set_name (ChattyItem *item,
     self->name = g_strdup (name);
 }
 
+/*
+ * chatty_ma_buddy_get_username:
+ *
+ * Get the user id of @item. The id is usually a
+ * fully qualified Matrix ID (@user:example.com),
+ * but it can also be the username alone (user).
+ *
+ * Returns: (transfer none): the id of Buddy.
+ * or an empty string if not found or on error.
+ */
+static const char *
+chatty_ma_buddy_get_username (ChattyItem *item)
+{
+  ChattyMaBuddy *self = (ChattyMaBuddy *)item;
+
+  g_assert (CHATTY_IS_MA_BUDDY (self));
+
+  if (self->matrix_id)
+    return self->matrix_id;
+
+  return "";
+}
+
 static GdkPixbuf *
 chatty_ma_buddy_get_avatar (ChattyItem *item)
 {
@@ -165,6 +188,7 @@ chatty_ma_buddy_class_init (ChattyMaBuddyClass *klass)
   item_class->matches  = chatty_ma_buddy_matches;
   item_class->get_name = chatty_ma_buddy_get_name;
   item_class->set_name = chatty_ma_buddy_set_name;
+  item_class->get_username = chatty_ma_buddy_get_username;
   item_class->get_avatar = chatty_ma_buddy_get_avatar;
 
   /**
@@ -207,28 +231,6 @@ chatty_ma_buddy_new (const char *matrix_id,
     self->is_self = TRUE;
 
   return self;
-}
-
-/**
- * chatty_ma_buddy_get_id:
- * @self: a #ChattyMaBuddy
- *
- * Get the user id of @self. The id is usually a
- * fully qualified Matrix ID (@user:example.com),
- * but it can also be the username alone (user).
- *
- * Returns: (transfer none): the id of Buddy.
- * or an empty string if not found or on error.
- */
-const char *
-chatty_ma_buddy_get_id (ChattyMaBuddy *self)
-{
-  g_return_val_if_fail (CHATTY_IS_MA_BUDDY (self), "");
-
-  if (self->matrix_id)
-    return self->matrix_id;
-
-  return "";
 }
 
 guint

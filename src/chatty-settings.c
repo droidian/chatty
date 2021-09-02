@@ -60,6 +60,7 @@ enum {
   PROP_INDICATE_UNKNOWN_CONTACTS,
   PROP_CONVERT_EMOTICONS,
   PROP_RETURN_SENDS_MESSAGE,
+  PROP_REQUEST_SMS_DELIVERY_REPORTS,
   PROP_MAM_ENABLED,
   N_PROPS
 };
@@ -110,6 +111,10 @@ chatty_settings_get_property (GObject    *object,
 
     case PROP_RETURN_SENDS_MESSAGE:
       g_value_set_boolean (value, chatty_settings_get_return_sends_message (self));
+      break;
+
+    case PROP_REQUEST_SMS_DELIVERY_REPORTS:
+      g_value_set_boolean (value, chatty_settings_request_sms_delivery_reports (self));
       break;
 
     default:
@@ -174,6 +179,11 @@ chatty_settings_set_property (GObject      *object,
                               g_value_get_boolean (value));
       break;
 
+    case PROP_REQUEST_SMS_DELIVERY_REPORTS:
+      g_settings_set_boolean (self->settings, "request-sms-delivery-reports",
+                              g_value_get_boolean (value));
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -201,6 +211,8 @@ chatty_settings_constructed (GObject *object)
                    self, "indicate-unknown-contacts", G_SETTINGS_BIND_DEFAULT);
   g_settings_bind (self->settings, "return-sends-message",
                    self, "return-sends-message", G_SETTINGS_BIND_DEFAULT);
+  g_settings_bind (self->settings, "request-sms-delivery-reports",
+                   self, "request-sms-delivery-reports", G_SETTINGS_BIND_DEFAULT);
   self->country_code = g_settings_get_string (self->settings, "country-code");
 }
 
@@ -286,6 +298,13 @@ chatty_settings_class_init (ChattySettingsClass *klass)
       g_param_spec_boolean ("return-sends-message",
                             "Return Sends Message",
                             "Whether Return key sends message",
+                            FALSE,
+                            G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+    properties[PROP_REQUEST_SMS_DELIVERY_REPORTS] =
+      g_param_spec_boolean ("request-sms-delivery-reports",
+                            "Request SMS delivery reports",
+                            "Whether to request delivery reports for outgoing SMS",
                             FALSE,
                             G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
@@ -528,6 +547,15 @@ chatty_settings_set_country_iso_code (ChattySettings *self,
   g_free (self->country_code);
   self->country_code = g_strdup (country_code);
   g_settings_set (G_SETTINGS (self->settings), "country-code", "s", country_code);
+}
+
+gboolean
+chatty_settings_request_sms_delivery_reports (ChattySettings *self)
+{
+  g_return_val_if_fail (CHATTY_IS_SETTINGS (self), FALSE);
+
+  return g_settings_get_boolean (G_SETTINGS (self->settings),
+                                 "request-sms-delivery-reports");
 }
 
 gboolean
