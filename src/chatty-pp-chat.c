@@ -701,6 +701,7 @@ chatty_pp_chat_send_message_async (ChattyChat          *chat,
   else if (purple_conversation_get_type (self->conv) == PURPLE_CONV_TYPE_CHAT)
     purple_conv_chat_send (PURPLE_CONV_CHAT (self->conv), msg);
 
+  purple_idle_touch ();
   g_task_return_boolean (task, TRUE);
 }
 

@@ -319,7 +319,7 @@ chatty_pp_account_disconnect (ChattyAccount *account)
 
   status = chatty_account_get_status (CHATTY_ACCOUNT (self));
 
-  if (status == CHATTY_DISCONNECTED)
+  if (status <= CHATTY_DISCONNECTED)
     return;
 
   password = g_strdup (chatty_account_get_password (CHATTY_ACCOUNT (self)));

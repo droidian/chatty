@@ -43,6 +43,7 @@
 #include "chatty-ma-account-details.h"
 #include "chatty-pp-account-details.h"
 #include "chatty-settings-dialog.h"
+#include "chatty-log.h"
 
 /**
  * @short_description: Chatty settings Dialog
@@ -96,7 +97,9 @@ struct _ChattySettingsDialog
   GtkWidget      *matrix_homeserver_dialog;
   GtkWidget      *matrix_homeserver_entry;
   GtkWidget      *matrix_accept_button;
+  GtkWidget      *matrix_homeserver_spinner;
   GtkWidget      *matrix_cancel_button;
+  GtkWidget      *matrix_error_label;
 
   ChattySettings *settings;
   ChattyAccount  *selected_account;
@@ -455,6 +458,8 @@ settings_homeserver_entry_changed (ChattySettingsDialog *self,
   g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
   g_assert (GTK_IS_ENTRY (entry));
 
+  gtk_label_set_text (GTK_LABEL (self->matrix_error_label), "");
+
   server = gtk_entry_get_text (entry);
   valid = server && g_str_has_prefix (server, "https://");
 
@@ -466,6 +471,118 @@ settings_homeserver_entry_changed (ChattySettingsDialog *self,
   }
 
   gtk_widget_set_sensitive (self->matrix_accept_button, valid);
+}
+
+static void
+settings_matrix_cancel_clicked_cb (ChattySettingsDialog *self)
+{
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  if (self->cancellable)
+    g_cancellable_cancel (self->cancellable);
+  g_clear_object (&self->cancellable);
+
+  gtk_dialog_response (GTK_DIALOG (self->matrix_homeserver_dialog), GTK_RESPONSE_CANCEL);
+}
+
+static void
+settings_matrix_api_get_version_cb (GObject      *obj,
+                                    GAsyncResult *result,
+                                    gpointer      user_data)
+{
+  ChattySettingsDialog *self = user_data;
+  g_autoptr(JsonNode) root = NULL;
+  g_autoptr(GError) error = NULL;
+  JsonObject *object;
+  JsonArray *array;
+  gboolean verified = FALSE;
+
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  root = matrix_utils_read_uri_finish (result, &error);
+
+  if (!error)
+    error = matrix_utils_json_node_get_error (root);
+
+  /* Since GTask can't have timeout, We cancel the cancellable to fake timeout */
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT))
+    g_clear_object (&self->cancellable);
+
+  gtk_spinner_stop (GTK_SPINNER (self->matrix_homeserver_spinner));
+  gtk_widget_set_sensitive (self->matrix_homeserver_entry, TRUE);
+
+  if (error) {
+    gtk_label_set_text (GTK_LABEL (self->matrix_error_label), error->message);
+    CHATTY_TRACE_MSG ("Error verifying home server: %s", error->message);
+    return;
+  }
+
+  gtk_widget_set_sensitive (self->matrix_accept_button, TRUE);
+
+  object = json_node_get_object (root);
+  array = matrix_utils_json_object_get_array (object, "versions");
+
+  if (array) {
+    g_autoptr(GString) versions = NULL;
+    const char *homeserver;
+    guint length;
+
+    homeserver = gtk_entry_get_text (GTK_ENTRY (self->matrix_homeserver_entry));
+    versions = g_string_new ("");
+    length = json_array_get_length (array);
+
+    for (guint i = 0; i < length; i++) {
+      const char *version;
+
+      version = json_array_get_string_element (array, i);
+      g_string_append_printf (versions, " %s", version);
+
+      /* We have tested only with r0.6.x and r0.5.0 */
+      if (g_str_has_prefix (version, "r0.5.") ||
+          g_str_has_prefix (version, "r0.6.")) {
+        verified = TRUE;
+        break;
+      }
+    }
+
+    CHATTY_TRACE_MSG ("homeserver: %s, verified: %d", homeserver, verified);
+
+    gtk_widget_set_sensitive (self->matrix_accept_button, verified);
+
+    if (!verified)
+      gtk_label_set_text (GTK_LABEL (self->matrix_error_label),
+                          /* TRANSLATORS: Don't translate "r0.5.x", "r0.6.x" strings */
+                          _("Chatty requires Client-Server API to be ‘r0.5.x’ or ‘r0.6.x’"));
+  }
+
+  if (verified)
+    gtk_dialog_response (GTK_DIALOG (self->matrix_homeserver_dialog), GTK_RESPONSE_ACCEPT);
+}
+
+static void
+settings_matrix_accept_clicked_cb (ChattySettingsDialog *self)
+{
+  g_autofree char *uri = NULL;
+  const char *home_server;
+
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  if (self->cancellable)
+    g_cancellable_cancel (self->cancellable);
+
+  g_clear_object (&self->cancellable);
+  self->cancellable = g_cancellable_new ();
+
+  gtk_spinner_start (GTK_SPINNER (self->matrix_homeserver_spinner));
+  gtk_widget_set_sensitive (self->matrix_accept_button, FALSE);
+  gtk_widget_set_sensitive (self->matrix_homeserver_entry, FALSE);
+
+  home_server = gtk_entry_get_text (GTK_ENTRY (self->matrix_homeserver_entry));
+  CHATTY_TRACE_MSG ("verifying homeserver %s", home_server);
+  uri = g_strconcat (home_server, "/_matrix/client/versions", NULL);
+  matrix_utils_read_uri_async (uri, 60,
+                               self->cancellable,
+                               settings_matrix_api_get_version_cb, self);
 }
 
 static void
@@ -769,6 +886,9 @@ chatty_settings_dialog_finalize (GObject *object)
 {
   ChattySettingsDialog *self = (ChattySettingsDialog *)object;
 
+  if (self->cancellable)
+    g_cancellable_cancel (self->cancellable);
+  g_clear_object (&self->cancellable);
   g_clear_object (&self->settings);
 
   G_OBJECT_CLASS (chatty_settings_dialog_parent_class)->finalize (object);
@@ -828,8 +948,10 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_homeserver_dialog);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_homeserver_entry);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_homeserver_spinner);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_accept_button);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_cancel_button);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, matrix_error_label);
 
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_add_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_save_clicked_cb);
@@ -843,6 +965,9 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, settings_protocol_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_pw_entry_icon_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_homeserver_entry_changed);
+
+  gtk_widget_class_bind_template_callback (widget_class, settings_matrix_cancel_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, settings_matrix_accept_clicked_cb);
 }
 
 static void

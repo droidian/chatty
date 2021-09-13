@@ -160,6 +160,7 @@
                         <property name="visible">True</property>
                         <property name="hexpand">True</property>
                         <property name="valign">center</property>
+                        <property name="sensitive">False</property>
                         <property name="wrap-mode">GTK_WRAP_WORD_CHAR</property>
                         <property name="buffer">message_input_buffer</property>
                         <signal name="focus-in-event" handler="chat_view_input_focus_in_cb" swapped="yes"/>

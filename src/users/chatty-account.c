@@ -364,7 +364,7 @@ chatty_account_class_init (ChattyAccountClass *klass)
     g_param_spec_int ("status",
                       "status",
                       "The status of the Account",
-                      CHATTY_DISCONNECTED,
+                      CHATTY_UNKNOWN,
                       CHATTY_CONNECTED,
                       CHATTY_DISCONNECTED,
                       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
