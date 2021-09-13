@@ -14,6 +14,7 @@
 
 #include "chatty-avatar.h"
 #include "chatty-chat.h"
+#include "chatty-mm-chat.h"
 #include "chatty-pp-chat.h"
 #include "chatty-history.h"
 #include "chatty-utils.h"
@@ -64,7 +65,7 @@ struct _ChattyChatView
 G_DEFINE_TYPE (ChattyChatView, chatty_chat_view, GTK_TYPE_BOX)
 
 
-const char *emoticons[][15] = {
+const char *emoticons[][2] = {
   {":)", "🙂"},
   {";)", "😉"},
   {":(", "🙁"},
@@ -390,16 +391,12 @@ view_send_message_async_cb (GObject      *object,
 static void
 chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 {
-  PurpleConversation *conv = NULL;
   ChattyAccount *account;
   g_autoptr(ChattyMessage) msg = NULL;
   g_autofree char *message = NULL;
   GtkTextIter    start, end;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
-
-  if (CHATTY_IS_PP_CHAT (self->chat))
-    conv = chatty_pp_chat_get_purple_conv (CHATTY_PP_CHAT (self->chat));
 
   gtk_text_buffer_get_bounds (self->message_input_buffer, &start, &end);
   message = gtk_text_buffer_get_text (self->message_input_buffer, &start, &end, FALSE);
@@ -417,9 +414,6 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
     return;
 
   gtk_widget_grab_focus (self->message_input);
-
-  if (conv)
-    purple_idle_touch ();
 
   if (gtk_text_buffer_get_char_count (self->message_input_buffer)) {
     g_autofree char *escaped = NULL;
@@ -557,6 +551,7 @@ chat_view_update_header_func (ChattyMessageRow *row,
                               ChattyMessageRow *before,
                               gpointer          user_data)
 {
+  ChattyChatView *self = user_data;
   ChattyMessage *a, *b;
   time_t a_time, b_time;
 
@@ -570,6 +565,13 @@ chat_view_update_header_func (ChattyMessageRow *row,
 
   if (chatty_message_user_matches (a, b))
     chatty_message_row_hide_user_detail (row);
+
+  /* Don't hide footers in outgoing SMS as it helps understanding
+   * the delivery status of the message
+   */
+  if (CHATTY_IS_MM_CHAT (self->chat) &&
+      chatty_message_get_msg_direction (a) == CHATTY_DIRECTION_OUT)
+    return;
 
   /* Hide footer of the previous message if both have same time (in minutes) */
   if (a_time / 60 == b_time / 60)
@@ -681,7 +683,7 @@ chatty_chat_view_init (ChattyChatView *self)
                           G_CALLBACK (chat_view_file_requested_cb), self);
   gtk_list_box_set_header_func (GTK_LIST_BOX (self->message_list),
                                 (GtkListBoxUpdateHeaderFunc)chat_view_update_header_func,
-                                NULL, NULL);
+                                g_object_ref (self), g_object_unref);
 
   gspell_view = gspell_text_view_get_from_gtk_text_view (GTK_TEXT_VIEW (self->message_input));
   gspell_text_view_basic_setup (gspell_view);
@@ -714,11 +716,18 @@ chatty_chat_view_set_chat (ChattyChatView *self,
     g_clear_object (&self->history_binding);
   }
 
+  gtk_widget_set_sensitive (self->message_input, !!chat);
+  gtk_widget_set_visible (self->empty_view, !!chat);
+  gtk_widget_set_visible (self->empty_view, !!chat);
+
   if (!g_set_object (&self->chat, chat))
     return;
 
-  if (!chat)
+  if (!chat) {
+    gtk_list_box_bind_model (GTK_LIST_BOX (self->message_list),
+                             NULL, NULL, NULL, NULL);
     return;
+  }
 
   messages = chatty_chat_get_messages (chat);
   account = chatty_chat_get_account (chat);

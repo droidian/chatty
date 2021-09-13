@@ -520,6 +520,53 @@
     <property name="title" translatable="yes">Matrix Home Server</property>
     <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
 
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <property name="visible">True</property>
+
+        <!-- Cancel button -->
+        <child>
+          <object class="GtkButton" id="matrix_cancel_button">
+            <property name="visible">True</property>
+            <property name="use-underline">True</property>
+            <property name="label" translatable="yes">_Cancel</property>
+            <signal name="clicked" handler="settings_matrix_cancel_clicked_cb" swapped="yes"/>
+          </object>
+        </child>
+
+        <!-- Spinner -->
+        <child>
+          <object class="GtkSpinner" id="matrix_homeserver_spinner">
+            <property name="visible">True</property>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+
+        <!-- Accept button -->
+        <child>
+          <object class="GtkButton" id="matrix_accept_button">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-default">True</property>
+            <property name="use-underline">True</property>
+            <property name="label" translatable="yes">_Accept</property>
+            <signal name="clicked" handler="settings_matrix_accept_clicked_cb" swapped="yes"/>
+            <style>
+              <class name="suggested-action"/>
+            </style>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+
+      </object>
+    </child>
+
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="border-width">0</property>
@@ -543,32 +590,20 @@
             <signal name="changed" handler="settings_homeserver_entry_changed" swapped="yes"/>
           </object>
         </child>
+        <child>
+          <object class="GtkLabel" id="matrix_error_label">
+            <property name="visible">True</property>
+            <property name="wrap">True</property>
+            <property name="max-width-chars">35</property>
+            <property name="xalign">0.0</property>
+            <style>
+              <class name="error"/>
+            </style>
+          </object>
+        </child>
       </object>
     </child>
 
-    <!-- Accept button -->
-    <child type="action">
-      <object class="GtkButton" id="matrix_accept_button">
-        <property name="visible">True</property>
-        <property name="can-default">True</property>
-        <property name="use-underline">True</property>
-        <property name="label" translatable="yes">_Accept</property>
-      </object>
-    </child>
-
-    <!-- Cancel button -->
-    <child type="action">
-      <object class="GtkButton" id="matrix_cancel_button">
-        <property name="visible">True</property>
-        <property name="use-underline">True</property>
-        <property name="label" translatable="yes">_Cancel</property>
-      </object>
-    </child>
-
-    <action-widgets>
-      <action-widget response="accept" default="true">matrix_accept_button</action-widget>
-      <action-widget response="cancel">matrix_cancel_button</action-widget>
-    </action-widgets>
   </object>
 
 </interface>

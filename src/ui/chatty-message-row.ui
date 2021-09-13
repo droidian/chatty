@@ -47,6 +47,7 @@
             <property name="valign">start</property>
             <property name="no-show-all">True</property>
             <property name="margin-top">3</property>
+            <property name="ellipsize">end</property>
             <style>
               <class name="dim-label"/>
             </style>

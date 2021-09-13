@@ -461,10 +461,10 @@ add_message (ChattyHistory      *history,
              ChattyMsgType       type,
              PurpleMessageFlags  flags)
 {
+  g_autofree char *uid = NULL;
   GPtrArray *msg_array;
   Message *msg;
   GTask *task;
-  char *uid;
   int time_stamp;
   gboolean success;
 
@@ -472,17 +472,15 @@ add_message (ChattyHistory      *history,
   g_assert_nonnull (account);
 
   if (!uuid)
-    uuid = g_uuid_string_random ();
+    uid = g_uuid_string_random ();
+  else
+    uid = g_strdup (uuid);
 
-  uid = g_strdup (uuid);
   msg = new_message (account, who, message, uid, flags, when, type, room);
   success = chatty_history_add_message (history, msg->chat, msg->message);
   g_assert_true (success);
   g_assert_nonnull (uid);
   g_ptr_array_add (test_msg_array, msg);
-
-  if (msg->uuid == NULL)
-    msg->uuid = uid;
 
   task = g_task_new (NULL, NULL, NULL, NULL);
   chatty_history_get_messages_async (history, msg->chat, NULL, -1, finish_pointer_cb, task);
@@ -577,6 +575,7 @@ add_chatty_message (ChattyHistory      *history,
   chatty_contact_set_name (contact, chatty_chat_get_chat_name (chat));
   chatty_contact_set_value (contact, chatty_chat_get_chat_name (chat));
   message = chatty_message_new (CHATTY_ITEM (contact), what, uuid, when, type, direction, status);
+  g_clear_pointer (&uuid, g_free);
   g_assert (CHATTY_IS_MESSAGE (message));
   g_ptr_array_add (msg_array, message);
 

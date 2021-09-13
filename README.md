@@ -22,16 +22,6 @@ Libhandy (libhandy-1-dev) is available in [PureOS][0] and  Debian's
 [experimental distribution][1].  If you don't want to fetch it from there you
 can [build it from souce][2].
 
-### Build and install the SMS plugin
-``` bash
-git clone git@source.puri.sm:Librem5/purple-mm-sms.git
-cd purple-mm-sms
-make
-make install
-```
-
-This can be skipped if SMS support is not needed.
-
 ### Build and install the 'carbons' plugin
 Message synchronization between devices according to XEP-0280
 
@@ -95,12 +85,6 @@ In a messaging conversation (except SMS conversations) the following commands ca
 - '/lurch show fp own': Displays this device's key fingerprint.
 - '/lurch show fp conv': Displays the fingerprints of all participating devices.
 - '/lurch remove id <id>': Removes a device ID from the own devicelist.
-
-
-### purple-mm-sms plugin
-
-- '/mm-sms help': Displays a list with available commands.
-- '/mm-sms status': Show modem status.
 
 
 ## XMPP account

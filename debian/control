@@ -35,7 +35,6 @@ Depends:
 Recommends:
  purple-xmpp-carbons,
  purple-lurch,
- purple-mm-sms,
  purple-xmpp-http-upload,
 Suggests:
  calls,

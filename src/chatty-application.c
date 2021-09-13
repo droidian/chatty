@@ -242,6 +242,7 @@ chatty_application_open_chat (GSimpleAction *action,
                               gpointer       user_data)
 {
   ChattyApplication *self = user_data;
+  g_autoptr(GString) str = NULL;
   const char *room_id, *account_id;
   ChattyChat *chat;
 
@@ -253,7 +254,12 @@ chatty_application_open_chat (GSimpleAction *action,
   chat = chatty_manager_find_chat_with_name (self->manager, account_id, room_id);
   g_return_if_fail (chat);
 
-  CHATTY_DEBUG_MSG ("Opening chat %s, account: %s", room_id, account_id);
+  str = g_string_new (NULL);
+  g_string_append (str, "Opening chat:");
+  chatty_log_anonymize_value (str, room_id);
+  g_string_append (str, ", account:");
+  chatty_log_anonymize_value (str, account_id);
+  CHATTY_DEBUG_MSG ("%s", str->str);
 
   self->show_window = TRUE;
   g_application_activate (G_APPLICATION (self));
