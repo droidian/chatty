@@ -67,6 +67,7 @@ struct _ChattyWindow
   GtkWidget *menu_new_message_button;
   GtkWidget *menu_new_group_message_button;
   GtkWidget *header_add_chat_button;
+  GtkWidget *call_button;
   GtkWidget *header_sub_menu_button;
   GtkWidget *leave_button;
   GtkWidget *delete_button;
@@ -295,6 +296,23 @@ window_chat_row_activated_cb (GtkListBox    *box,
 }
 
 static void
+window_call_button_clicked_cb (ChattyWindow *self)
+{
+  g_autoptr(GError) error = NULL;
+  g_autofree char *uri = NULL;
+
+  g_assert (CHATTY_IS_WINDOW (self));
+  g_return_if_fail (CHATTY_IS_MM_CHAT (self->selected_item));
+
+  uri = g_strconcat ("tel://",
+                     chatty_chat_get_chat_name (CHATTY_CHAT (self->selected_item)),
+                     NULL);
+
+  if (!gtk_show_uri_on_window (NULL, uri, GDK_CURRENT_TIME, &error))
+    g_warning ("Failed to launch call: %s", error->message);
+}
+
+static void
 window_search_changed_cb (ChattyWindow *self,
                           GtkEntry     *entry)
 {
@@ -477,7 +495,12 @@ window_delete_buddy_clicked_cb (ChattyWindow *self)
     }
 
     window_set_item (self, NULL);
-    chatty_window_chat_list_select_first (self);
+    gtk_widget_hide (self->call_button);
+    gtk_widget_set_sensitive (self->header_sub_menu_button, FALSE);
+    chatty_chat_view_set_chat (CHATTY_CHAT_VIEW (self->chat_view), NULL);
+
+    if (!hdy_leaflet_get_folded (HDY_LEAFLET (self->content_box)))
+      chatty_window_chat_list_select_first (self);
   }
 
   gtk_widget_destroy (dialog);
@@ -782,6 +805,7 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, menu_new_message_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, menu_new_group_message_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_add_chat_button);
+  gtk_widget_class_bind_template_child (widget_class, ChattyWindow, call_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_sub_menu_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, leave_button);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, delete_button);
@@ -811,6 +835,7 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, window_add_contact_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_leave_chat_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_delete_buddy_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, window_call_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_search_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_chat_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_window_show_settings_dialog);
@@ -908,6 +933,7 @@ chatty_window_open_chat (ChattyWindow *self,
   gtk_widget_set_visible (self->delete_button, can_delete);
   hdy_leaflet_set_visible_child (HDY_LEAFLET (self->content_box), self->chat_view);
   gtk_widget_hide (self->menu_add_contact_button);
+  gtk_widget_hide (self->call_button);
 
   if (chatty_window_get_active_chat (self))
     chatty_chat_set_unread_count (chat, 0);
@@ -922,8 +948,13 @@ chatty_window_open_chat (ChattyWindow *self,
     if (g_list_model_get_n_items (users) == 1 &&
         chatty_utils_username_is_valid (name, CHATTY_PROTOCOL_MMS_SMS)) {
       g_autoptr(ChattyMmBuddy) buddy = NULL;
+      g_autoptr(GAppInfo) app_info = NULL;
 
+      app_info = g_app_info_get_default_for_uri_scheme ("tel");
       buddy = g_list_model_get_item (users, 0);
+
+      if (app_info)
+        gtk_widget_show (self->call_button);
 
       if (!chatty_mm_buddy_get_contact (buddy))
         gtk_widget_show (self->menu_add_contact_button);

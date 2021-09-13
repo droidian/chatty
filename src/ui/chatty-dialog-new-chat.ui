@@ -92,6 +92,16 @@
                     <property name="pack_type">end</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkSpinner" id="open_contact_spinner">
+                    <property name="margin-end">6</property>
+                    <property name="visible" bind-source="add_contact_button" bind-property="visible" bind-flags="invert-boolean"/>
+                    <property name="active" bind-source="add_in_contacts_button" bind-property="sensitive" bind-flags="invert-boolean"/>
+                  </object>
+                  <packing>
+                    <property name="pack_type">end</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="name">view-new-contact</property>

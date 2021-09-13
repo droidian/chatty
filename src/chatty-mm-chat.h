@@ -48,5 +48,6 @@ void              chatty_mm_chat_add_users              (ChattyMmChat   *self,
                                                          GPtrArray      *users);
 void              chatty_mm_chat_delete                 (ChattyMmChat   *self);
 void              chatty_mm_chat_show_notification      (ChattyMmChat   *self);
+void              chatty_mm_chat_refresh                (ChattyMmChat    *self);
 
 G_END_DECLS

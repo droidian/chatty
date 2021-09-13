@@ -90,18 +90,6 @@ struct _ChattyManager
 
 G_DEFINE_TYPE (ChattyManager, chatty_manager, G_TYPE_OBJECT)
 
-/* XXX: A copy from purple-mm-sms */
-enum {
-  PUR_MM_STATE_NO_MANAGER,
-  PUR_MM_STATE_MANAGER_FOUND,
-  PUR_MM_STATE_NO_MODEM,
-  PUR_MM_STATE_MODEM_FOUND,
-  PUR_MM_STATE_NO_MESSAGING_MODEM,
-  PUR_MM_STATE_MODEM_DISABLED,
-  PUR_MM_STATE_MODEM_UNLOCK_ERROR,
-  PUR_MM_STATE_READY
-} e_purple_connection;
-
 enum {
   PROP_0,
   PROP_ACTIVE_PROTOCOLS,
@@ -1177,9 +1165,9 @@ manager_account_changed_cb (PurpleAccount *pp_account,
   ChattyPpAccount *account;
 
   account = chatty_pp_account_get_object (pp_account);
-  g_return_if_fail (account);
 
-  g_object_notify (G_OBJECT (account), "enabled");
+  if (account)
+    g_object_notify (G_OBJECT (account), "enabled");
 }
 
 static void
@@ -2495,12 +2483,27 @@ chatty_manager_find_chat_with_name (ChattyManager *self,
                                     const char    *account_id,
                                     const char    *chat_id)
 {
+  ChattyAccount *mm_account;
   GListModel *accounts, *chat_list;
   const char *id;
   guint n_accounts, n_items;
 
   g_return_val_if_fail (CHATTY_IS_MANAGER (self), NULL);
   g_return_val_if_fail (chat_id && *chat_id, NULL);
+
+  mm_account = chatty_manager_get_mm_account (self);
+  chat_list = chatty_mm_account_get_chat_list (CHATTY_MM_ACCOUNT (mm_account));
+  n_items = g_list_model_get_n_items (chat_list);
+
+  for (guint i = 0; i < n_items; i++) {
+    g_autoptr(ChattyChat) chat = NULL;
+
+    chat = g_list_model_get_item (chat_list, i);
+    id = chatty_chat_get_chat_name (chat);
+
+    if (g_strcmp0 (id, chat_id) == 0)
+      return chat;
+  }
 
   chat_list = G_LIST_MODEL (self->chat_list);
   n_items = g_list_model_get_n_items (chat_list);

@@ -18,6 +18,7 @@ test_items = [
   'matrix-db',
   'matrix-enc',
   'matrix-utils',
+  'mm-account',
 ]
 
 foreach item: test_items

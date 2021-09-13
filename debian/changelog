@@ -1,3 +1,10 @@
+chatty (0.4.0-1) unstable; urgency=medium
+
+  * New upstream version 0.4.0
+  * d/control: Bump standards version (no changes needed)
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Mon, 13 Sep 2021 09:36:31 +0200
+
 chatty (0.4.0~beta2-1) experimental; urgency=medium
 
   * New upstream version 0.4.0~beta2

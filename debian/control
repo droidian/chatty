@@ -29,7 +29,7 @@ Build-Depends:
  meson,
  xauth,
  xvfb,
-Standards-Version: 4.5.1
+Standards-Version: 4.6.0
 Homepage: https://source.puri.sm/Librem5/chatty
 Vcs-Browser: https://salsa.debian.org/DebianOnMobile-team/chatty
 Vcs-Git: https://salsa.debian.org/DebianOnMobile-team/chatty.git

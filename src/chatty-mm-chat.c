@@ -80,6 +80,39 @@ chatty_mm_chat_set_data (ChattyChat *chat,
   g_set_object (&self->history_db, history_db);
 }
 
+static void
+chatty_mm_chat_update_contact (ChattyMmChat *self)
+{
+  guint n_items;
+
+  g_assert (CHATTY_IS_MM_CHAT (self));
+
+  if (!self->chatty_eds)
+    return;
+
+  n_items = g_list_model_get_n_items (G_LIST_MODEL (self->chat_users));
+
+  for (guint i = 0; i < n_items; i++) {
+    g_autoptr(ChattyMmBuddy) buddy = NULL;
+    ChattyContact *contact;
+    const char *phone;
+
+    buddy = g_list_model_get_item (G_LIST_MODEL (self->chat_users), i);
+    phone = chatty_mm_buddy_get_number (buddy);
+    contact = chatty_eds_find_by_number (self->chatty_eds, phone);
+    if (contact) {
+      chatty_mm_buddy_set_contact (buddy, contact);
+
+      if (n_items == 1) {
+        g_free (self->name);
+        self->name = g_strdup (chatty_item_get_name (CHATTY_ITEM (contact)));
+        g_object_notify (G_OBJECT (self), "name");
+        g_signal_emit_by_name (self, "avatar-changed");
+      }
+    }
+  }
+}
+
 static gboolean
 chatty_mm_chat_is_im (ChattyChat *chat)
 {
@@ -131,7 +164,9 @@ mm_chat_load_db_messages_cb (GObject      *object,
     g_list_store_splice (self->message_store, 0, 0, messages->pdata, messages->len);
     self->last_notify_message = g_object_ref (messages->pdata[messages->len - 1]);
     g_signal_emit_by_name (self, "changed", 0);
-  } else if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+  } else if (error &&
+             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) &&
+             !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
     g_warning ("Error fetching messages: %s,", error->message);
   }
 }
@@ -371,7 +406,8 @@ chatty_mm_chat_send_message_async (ChattyChat          *chat,
 
   task = g_task_new (self, NULL, callback, user_data);
   g_task_set_task_data (task, g_object_ref (message), g_object_unref);
-  g_queue_push_head (self->message_queue, task);
+  chatty_mm_chat_append_message (CHATTY_MM_CHAT (chat), message);
+  g_queue_push_tail (self->message_queue, task);
 
   mm_chat_send_message_from_queue (self);
 }
@@ -439,6 +475,7 @@ chatty_mm_chat_finalize (GObject *object)
   g_clear_object (&self->last_notify_message);
   g_clear_object (&self->history_db);
   g_clear_object (&self->chatty_eds);
+  g_clear_object (&self->account);
   g_object_unref (self->message_store);
   g_object_unref (self->chat_users);
   g_free (self->last_message);
@@ -505,35 +542,13 @@ void
 chatty_mm_chat_set_eds (ChattyMmChat *self,
                         ChattyEds    *chatty_eds)
 {
-  guint n_items;
-
   g_return_if_fail (CHATTY_IS_MM_CHAT (self));
   g_return_if_fail (!chatty_eds || CHATTY_IS_EDS (chatty_eds));
 
   if (!g_set_object (&self->chatty_eds, chatty_eds))
     return;
 
-  n_items = g_list_model_get_n_items (G_LIST_MODEL (self->chat_users));
-
-  for (guint i = 0; i < n_items; i++) {
-    g_autoptr(ChattyMmBuddy) buddy = NULL;
-    ChattyContact *contact;
-    const char *phone;
-
-    buddy = g_list_model_get_item (G_LIST_MODEL (self->chat_users), i);
-    phone = chatty_mm_buddy_get_number (buddy);
-    contact = chatty_eds_find_by_number (self->chatty_eds, phone);
-    if (contact) {
-      chatty_mm_buddy_set_contact (buddy, contact);
-
-      if (n_items == 1) {
-        g_free (self->name);
-        self->name = g_strdup (chatty_item_get_name (CHATTY_ITEM (contact)));
-        g_object_notify (G_OBJECT (self), "name");
-        g_signal_emit_by_name (self, "avatar-changed");
-      }
-    }
-  }
+  chatty_mm_chat_update_contact (self);
 }
 
 ChattyMessage *
@@ -682,4 +697,40 @@ chatty_mm_chat_show_notification (ChattyMmChat *self)
 
   if (g_set_object (&self->last_notify_message, message))
     chatty_notification_show_message (self->notification, chat, message, NULL);
+}
+
+/*
+ * In the past, we were not storing thread members in db,
+ * which was fixed in b5d4f448ecdfef3189d794c2c136ed869e48f59f
+ * but the chats created before the fix had empty members,
+ * Let's work around by adding the members if that's the case
+ */
+void
+chatty_mm_chat_refresh (ChattyMmChat *self)
+{
+  g_autoptr(ChattyMmBuddy) buddy = NULL;
+  g_autofree char *number = NULL;
+  ChattySettings *settings;
+  const char *name, *country;
+
+  g_return_if_fail (CHATTY_IS_MM_CHAT (self));
+
+  if (g_list_model_get_n_items (G_LIST_MODEL (self->chat_users)) > 0)
+    return;
+
+  settings = chatty_settings_get_default ();
+  country = chatty_settings_get_country_iso_code (settings);
+  name = chatty_chat_get_chat_name (CHATTY_CHAT (self));
+
+  if (country)
+    number = chatty_utils_check_phonenumber (name, country);
+  if (!number)
+    number = g_strdup (name);
+
+  CHATTY_DEBUG (number, "Updating chat member in db, number:");
+
+  buddy = chatty_mm_buddy_new (number, chatty_item_get_name (CHATTY_ITEM (self)));
+  chatty_mm_chat_add_user (self, buddy);
+  chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
+  chatty_mm_chat_update_contact (self);
 }

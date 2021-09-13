@@ -82,7 +82,7 @@ chatty_utils_check_phonenumber (const char *phone_number,
   char              *result;
   g_autoptr(GError)  err = NULL;
 
-  g_debug ("%s number %s", G_STRLOC, phone_number);
+  CHATTY_DEBUG (phone_number, "checking number");
 
   if (!phone_number || !*phone_number)
     return NULL;

@@ -18,6 +18,7 @@
 #include "users/chatty-pp-buddy.h"
 #include "chatty-settings.h"
 #include "chatty-chat.h"
+#include "chatty-mm-chat.h"
 #include "chatty-pp-chat.h"
 #include "matrix/chatty-ma-buddy.h"
 #include "matrix/chatty-ma-chat.h"
@@ -60,6 +61,20 @@ avatar_changed_cb (ChattyAvatar *self)
     avatar = (GLoadableIcon *)chatty_item_get_avatar (self->item);
 
   hdy_avatar_set_loadable_icon (HDY_AVATAR (self->avatar), avatar);
+}
+
+static void
+item_name_changed_cb (ChattyAvatar *self)
+{
+  chatty_avatar_set_title (self, chatty_item_get_name (self->item));
+
+  if (CHATTY_IS_MM_CHAT (self->item)) {
+    gboolean has_name;
+
+    has_name = !g_str_equal (chatty_item_get_name (self->item),
+                             chatty_chat_get_chat_name (CHATTY_CHAT (self->item)));
+    hdy_avatar_set_show_initials (HDY_AVATAR (self->avatar), has_name);
+  }
 }
 
 static void
@@ -161,6 +176,9 @@ chatty_avatar_set_item (ChattyAvatar *self,
     g_signal_handlers_disconnect_by_func (self->item,
                                           avatar_changed_cb,
                                           self);
+    g_signal_handlers_disconnect_by_func (self->item,
+                                          item_name_changed_cb,
+                                          self);
   }
 
   if (!g_set_object (&self->item, item))
@@ -173,11 +191,14 @@ chatty_avatar_set_item (ChattyAvatar *self,
   /* We don’t emit notify signals as we don’t need it */
   if (self->item)
     {
-      chatty_avatar_set_title (self, chatty_item_get_name (self->item));
       g_signal_connect_swapped (self->item, "deleted",
                                 G_CALLBACK (g_clear_object), &self->item);
+      g_signal_connect_object (self->item, "notify::name",
+                               G_CALLBACK (item_name_changed_cb), self,
+                               G_CONNECT_SWAPPED);
       g_signal_connect_object (self->item, "avatar-changed",
                                G_CALLBACK (avatar_changed_cb), self,
                                G_CONNECT_SWAPPED);
+      item_name_changed_cb (self);
     }
 }

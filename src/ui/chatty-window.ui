@@ -323,6 +323,30 @@
                     </child>
                   </object>
                   <packing>
+                    <property name="position">0</property>
+                    <property name="pack_type">end</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="call_button">
+                    <property name="visible">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="receives-default">False</property>
+                    <signal name="clicked" handler="window_call_button_clicked_cb" swapped="yes"/>
+                    <child internal-child="accessible">
+                      <object class="AtkObject">
+                        <property name="accessible-name" translatable="yes">Call</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="visible">True</property>
+                        <property name="icon-name">call-start-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
                     <property name="pack_type">end</property>
                   </packing>
                 </child>
