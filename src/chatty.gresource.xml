@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/sm/puri/Chatty">
+    <file alias="matrix-filter.json">matrix/matrix-filter.json</file>
+    <file preprocess="xml-stripblanks" alias="gtk/help-overlay.ui">ui/help-overlay.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-selectable-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-fp-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-list-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-chat-view.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-contact-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-file-item.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-image-item.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-message-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-ma-chat-info.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-pp-chat-info.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-mm-chat-info.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-info-dialog.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-ma-account-details.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-pp-account-details.ui</file>
@@ -18,6 +23,8 @@
     <file preprocess="xml-stripblanks">ui/chatty-window.ui</file>
     <file preprocess="xml-stripblanks">icons/eye-not-looking-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/eye-open-negative-filled-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/send-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/send-encrypted-symbolic.svg</file>
     <file>css/style.css</file>
   </gresource>
 </gresources>

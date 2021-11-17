@@ -11,6 +11,8 @@
 
 #include <time.h>
 #include <glib/gi18n.h>
+#include <libgd/gd.h>
+
 #include "chatty-application.h"
 #include "chatty-manager.h"
 #include "chatty-log.h"
@@ -23,6 +25,8 @@ main (int   argc,
   g_autoptr(ChattyApplication) application = NULL;
 
   chatty_log_init ();
+  gd_ensure_types ();
+
   textdomain (GETTEXT_PACKAGE);
   bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
   bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");

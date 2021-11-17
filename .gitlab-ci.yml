@@ -2,6 +2,9 @@ include:
  - 'https://source.puri.sm/Librem5/librem5-ci/raw/master/librem5-pipeline-definitions.yml'
  - 'https://source.puri.sm/Librem5/librem5-ci/raw/master/librem5-pipeline-byzantium-jobs.yml'
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
 stages:
   - build
   - test
@@ -15,6 +18,16 @@ stages:
 before_script:
   - export DEBIAN_FRONTEND=noninteractive
   - apt-get -y update
+
+build-pureos-gcc-byzantium-no-purple:
+  <<: *tags
+  image: pureos/byzantium
+  stage: build
+  script:
+    - apt-get -y build-dep .
+    - export LC_ALL=C.UTF-8
+    - meson . _build -Dpurple=disabled
+    - ninja -C _build
 
 build-pureos-gcc-byzantium:
   <<: *tags

@@ -23,8 +23,8 @@
 #include <olm/olm.h>
 #include <sys/random.h>
 
-#include "matrix/matrix-utils.h"
-#include "matrix/matrix-enc.h"
+#include "matrix-utils.h"
+#include "matrix-enc.h"
 
 typedef struct EncData {
   char *user_id;

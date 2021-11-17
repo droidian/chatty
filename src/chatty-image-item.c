@@ -13,8 +13,6 @@
 
 #include <glib/gi18n.h>
 
-#include "chatty-avatar.h"
-#include "chatty-utils.h"
 #include "chatty-chat-view.h"
 #include "chatty-image-item.h"
 

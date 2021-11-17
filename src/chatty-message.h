@@ -13,7 +13,7 @@
 
 #include <glib-object.h>
 
-#include "users/chatty-item.h"
+#include "chatty-item.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS

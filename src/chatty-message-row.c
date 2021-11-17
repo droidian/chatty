@@ -39,6 +39,8 @@ struct _ChattyMessageRow
   GtkGesture *longpress_gesture;
   GtkGesture *activate_gesture;
 
+  GBinding   *name_binding;
+
   ChattyMessage *message;
   ChattyProtocol protocol;
   gboolean       is_im;
@@ -164,6 +166,15 @@ message_row_update_message (ChattyMessageRow *self)
 
     if (alias)
       gtk_label_set_label (GTK_LABEL (self->author_label), alias);
+
+    g_clear_object (&self->name_binding);
+
+    if (chatty_message_get_user (self->message))
+      self->name_binding = g_object_bind_property (chatty_message_get_user (self->message), "name",
+                                                   self->author_label, "label",
+                                                   G_BINDING_SYNC_CREATE);
+
+    alias = gtk_label_get_label (GTK_LABEL (self->author_label));
     gtk_widget_set_visible (self->author_label, alias && *alias);
   }
 }

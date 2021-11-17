@@ -78,6 +78,35 @@
           </packing>
         </child>
 
+        <!-- Save button MMS Carrier Settings-->
+        <child>
+          <object class="GtkButton" id="mms_save_button">
+            <property name="visible">0</property>
+            <property name="use-underline">1</property>
+            <property name="label" translatable="yes">_Apply</property>
+            <signal name="clicked" handler="mms_carrier_settings_apply_button_clicked_cb" swapped="yes"/>
+            <style>
+              <class name="default" />
+            </style>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+          </packing>
+        </child>
+
+        <!-- Cancel button MMS Carrier Settings-->
+        <child>
+          <object class="GtkButton" id="mms_cancel_button">
+            <property name="visible">0</property>
+            <property name="use-underline">1</property>
+            <property name="label" translatable="yes">_Cancel</property>
+            <signal name="clicked" handler="mms_carrier_settings_cancel_button_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="pack-type">start</property>
+          </packing>
+        </child>
+
         <child>
           <object class="GtkSpinner" id="matrix_spinner">
             <property name="visible">1</property>
@@ -103,6 +132,7 @@
           <object class="GtkStack" id="main_stack">
             <property name="visible">True</property>
             <property name="transition_type">slide-left-right</property>
+            <signal name="notify::visible-child" handler="settings_dialog_page_changed_cb" swapped="yes" after="yes"/>
             <child>
               <object class="HdyPreferencesPage">
                 <property name="visible">True</property>
@@ -121,8 +151,9 @@
                             <property name="visible">True</property>
                             <property name="activatable">True</property>
                             <property name="selectable">False</property>
-                            <property name="title" translatable="yes">Message Settings</property>
+                            <property name="title" translatable="yes">_Message Settings</property>
                             <property name="subtitle" translatable="yes">SMS/MMS Settings</property>
+                            <property name="use-underline">True</property>
                             <signal name="activated" handler="sms_mms_settings_row_activated_cb" swapped="yes"/>
                           </object>
                         </child>
@@ -137,9 +168,35 @@
                     <property name="visible">True</property>
                     <property name="title" translatable="yes">Accounts</property>
                     <child>
+                      <object class="GtkListBox">
+                        <property name="visible">True</property>
+                        <property name="margin-bottom">12</property>
+                        <style>
+                          <class name="content"/>
+                        </style>
+                        <child>
+                          <object class="HdyActionRow" id="enable_purple_row">
+                            <property name="visible">True</property>
+                            <property name="activatable">True</property>
+                            <property name="selectable">False</property>
+                            <property name="title" translatable="yes">Enable purple accounts</property>
+                            <property name="subtitle" translatable="yes">Enable purple plugin</property>
+                            <property name="activatable-widget">enable_purple_switch</property>
+                            <child>
+                              <object class="GtkSwitch" id="enable_purple_switch">
+                                <property name="visible">True</property>
+                                <property name="valign">center</property>
+                                <signal name="notify::active" handler="settings_dialog_purple_changed_cb" swapped="yes"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
                       <object class="GtkListBox" id="accounts_list_box">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="expand">True</property>
                         <property name="selection-mode">none</property>
                         <signal name="row-activated" handler="account_list_row_activated_cb" swapped="yes"/>
@@ -149,7 +206,8 @@
                         <child>
                           <object class="HdyActionRow" id="add_account_row">
                             <property name="visible">True</property>
-                            <property name="title" translatable="yes">Add new account…</property>
+                            <property name="title" translatable="yes">Add _new account…</property>
+                            <property name="use-underline">True</property>
                             <property name="activatable">True</property>
                           </object>
                         </child>
@@ -180,7 +238,7 @@
                     </child>
                     <child>
                       <object class="HdyActionRow">
-                        <property name="visible">True</property>
+                        <property name="visible" bind-source="message_archive_switch" bind-property="visible" bind-flags="sync-create"/>
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Message Archive Management</property>
                         <property name="subtitle" translatable="yes">Sync conversations with chat server</property>
@@ -195,7 +253,7 @@
                     </child>
                     <child>
                       <object class="HdyActionRow" id="message_carbons_row">
-                        <property name="visible">True</property>
+                        <property name="visible" bind-source="message_carbons_switch" bind-property="visible" bind-flags="sync-create"/>
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Message Carbon Copies</property>
                         <property name="subtitle" translatable="yes">Share chat history among devices</property>
@@ -313,13 +371,13 @@
                 <child>
                   <object class="HdyPreferencesGroup">
                     <property name="visible">True</property>
-                    <property name="title" translatable="yes">SMS Settings</property>
+                    <property name="title" translatable="yes">SMS/MMS Settings</property>
                     <child>
                       <object class="HdyActionRow">
                         <property name="visible">True</property>
                         <property name="selectable">False</property>
                         <property name="title" translatable="yes">Delivery Reports</property>
-                        <property name="subtitle" translatable="yes">Request delivery reports for SMS messages</property>
+                        <property name="subtitle" translatable="yes">Request delivery reports for SMS and MMS</property>
                         <property name="activatable-widget">delivery_reports_switch</property>
                         <child>
                           <object class="GtkSwitch" id="delivery_reports_switch">
@@ -329,9 +387,73 @@
                         </child>
                       </object>
                     </child>
-
+                    <child>
+                      <object class="HdyActionRow">
+                        <property name="visible">True</property>
+                        <property name="selectable">False</property>
+                        <property name="title" translatable="yes">SMIL for MMS</property>
+                        <property name="activatable-widget">handle_smil_switch</property>
+                        <child>
+                          <object class="GtkSwitch" id="handle_smil_switch">
+                            <property name="visible">True</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
+
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible">True</property>
+                    <property name="title" translatable="yes">MMS Carrier Settings</property>
+                      <child>
+                        <object class="HdyActionRow">
+                          <property name="visible">True</property>
+                          <property name="title" translatable="yes">MMSC</property>
+                          <child>
+                            <object class="GtkEntry" id="carrier_mmsc_entry">
+                              <property name="visible">True</property>
+                              <property name="valign">center</property>
+                              <property name="width-chars">25</property>
+                              <property name="placeholder-text">http://carriermmsc.invalid/</property>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+
+                      <child>
+                        <object class="HdyActionRow">
+                          <property name="visible">True</property>
+                          <property name="title" translatable="yes">APN</property>
+                          <child>
+                            <object class="GtkEntry" id="mms_apn_entry">
+                              <property name="visible">True</property>
+                              <property name="valign">center</property>
+                              <property name="width-chars">25</property>
+                              <property name="placeholder-text">apn.invalid</property>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+
+                      <child>
+                        <object class="HdyActionRow">
+                          <property name="visible">True</property>
+                          <property name="title" translatable="yes">Proxy</property>
+                          <child>
+                            <object class="GtkEntry" id="mms_proxy_entry">
+                              <property name="visible">True</property>
+                              <property name="width-chars">25</property>
+                              <property name="valign">center</property>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                  </object>
+                </child>
+
               </object>
               <packing>
                 <property name="name">message-settings-view</property>
@@ -370,7 +492,6 @@
                     <child>
                       <object class="GtkListBox" id="protocol_list">
                         <property name="visible">False</property>
-                        <property name="can_focus">False</property>
                         <property name="selection-mode">none</property>
                         <property name="margin-bottom">24</property>
                         <style>
@@ -378,13 +499,12 @@
                         </style>
                         <child>
                           <object class="HdyActionRow">
+                            <property name="visible" bind-source="xmpp_radio_button" bind-property="visible" bind-flags="sync-create"/>
                             <property name="activatable_widget">xmpp_radio_button</property>
                             <property name="title" translatable="yes">XMPP</property>
-                            <property name="visible">True</property>
                             <child type="prefix">
                               <object class="GtkRadioButton" id="xmpp_radio_button">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
                                 <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
                               </object>
                             </child>
@@ -398,7 +518,6 @@
                             <child type="prefix">
                               <object class="GtkRadioButton" id="matrix_radio_button">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
                                 <property name="group">xmpp_radio_button</property>
                                 <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
                               </object>
@@ -413,7 +532,6 @@
                             <child type="prefix">
                               <object class="GtkRadioButton" id="telegram_radio_button">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
                                 <property name="group">xmpp_radio_button</property>
                                 <signal name="toggled" handler="settings_protocol_changed_cb" swapped="yes"/>
                               </object>
@@ -430,7 +548,6 @@
                     <child>
                       <object class="GtkListBox" id="new_account_settings_list">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="expand">True</property>
                         <property name="selection-mode">none</property>
                         <property name="margin-bottom">24</property>
@@ -442,7 +559,6 @@
                             <property name="selectable">False</property>
                             <property name="activatable">False</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
                             <child type="prefix">
                               <object class="GtkLabel">
                                 <property name="label" translatable="no">User ID</property>
@@ -468,7 +584,6 @@
                             <property name="selectable">False</property>
                             <property name="activatable">False</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
                             <child type="prefix">
                               <object class="GtkLabel">
                                 <property name="label" translatable="yes">Password</property>

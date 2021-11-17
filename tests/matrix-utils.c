@@ -17,7 +17,7 @@
 
 #include <glib.h>
 
-#include "matrix/matrix-utils.h"
+#include "matrix-utils.h"
 
 static JsonObject *
 get_json_object_for_file (const char *dir,

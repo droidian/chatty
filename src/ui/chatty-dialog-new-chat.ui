@@ -45,6 +45,31 @@
                     <property name="pack_type">end</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkButton" id="cancel_button">
+                    <property name="visible">0</property>
+                    <property name="use-underline">1</property>
+                    <property name="label" translatable="yes">_Cancel</property>
+                    <signal name="clicked" handler="cancel_button_clicked_cb" swapped="yes"/>
+                  </object>
+                  <packing>
+                    <property name="pack-type">start</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="start_button">
+                    <property name="visible">0</property>
+                    <property name="use-underline">1</property>
+                    <property name="label" translatable="yes">_Create</property>
+                    <signal name="clicked" handler="start_button_clicked_cb" swapped="yes"/>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="pack-type">end</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="name">view-new-chat</property>
@@ -156,6 +181,7 @@
                                 <property name="has_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="placeholder-text" translatable="yes">Send To:</property>
+                                <signal name="activate" handler="contact_search_entry_activated_cb" swapped="yes"/>
                                 <signal name="search-changed" handler="contact_search_entry_changed_cb" swapped="yes"/>
                               </object>
                             </child>
@@ -166,6 +192,18 @@
                         <property name="expand">False</property>
                         <property name="fill">True</property>
                       </packing>
+                    </child>
+                    <child>
+                      <object class="GtkListBox" id="contacts_listbox">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="expand">False</property>
+                        <property name="selection-mode">none</property>
+                        <signal name="row-activated" handler="selected_contact_row_activated_cb" swapped="yes"/>
+                        <style>
+                         <class name="frame"/>
+                        </style>
+                      </object>
                     </child>
 
                     <child>
@@ -213,43 +251,12 @@
 
                         <!-- Empty search results view -->
                         <child>
-                          <object class="GtkBox" id="empty_search_view">
+                          <object class="HdyStatusPage" id="empty_search_view">
                             <property name="visible">True</property>
-                            <property name="valign">center</property>
-                            <property name="halign">center</property>
-                            <property name="hexpand">False</property>
-                            <property name="margin-bottom">18</property>
-                            <property name="orientation">vertical</property>
-                            <property name="spacing">6</property>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="visible">True</property>
-                                <property name="icon-name">system-search-symbolic</property>
-                                <property name="pixel-size">64</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="label" translatable="yes">No Search Results</property>
-                                <attributes>
-                                  <attribute name="weight" value="bold"/>
-                                  <attribute name="scale" value="1.2"/>
-                                </attributes>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="wrap">True</property>
-                                <property name="max-width-chars">24</property>
-                                <property name="justify">center</property>
-                                <property name="label" translatable="yes">Try different search, or type a valid number to create new chat</property>
-                                <style>
-                                 <class name="dim-label"/>
-                                </style>
-                              </object>
-                            </child>
+                            <property name="expand">True</property>
+                            <property name="icon-name">system-search-symbolic</property>
+                            <property name="title" translatable="yes">No Search Results</property>
+                            <property name="description" translatable="yes">Try different search, or type a valid number to create new chat</property>
                           </object>
                         </child>
 

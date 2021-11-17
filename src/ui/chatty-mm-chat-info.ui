@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyMmChatInfo" parent="ChattyChatInfo">
+    <signal name="delete-event" handler="gtk_widget_hide_on_delete" swapped="yes"/>
+      <!-- Group Title -->
+      <child>
+        <object class="HdyPreferencesGroup">
+          <property name="visible">True</property>
+            <child>
+              <object class="ChattyAvatar" id="avatar">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="size">96</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+              </packing>
+            </child>
+         </object>
+       </child>
+
+      <!-- Group Title -->
+      <child>
+        <object class="HdyPreferencesGroup" id="title_group">
+          <property name="visible">True</property>
+          <property name="title" translatable="yes">Title</property>
+          <child>
+            <object class="GtkEntry" id="title_entry">
+              <property name="visible">1</property>
+              <property name="placeholder-text" translatable="yes">Blank for default</property>
+            </object>
+          </child>
+         </object>
+       </child>
+
+       <!-- Add Contact -->
+       <child>
+         <object class="HdyPreferencesGroup">
+           <property name="visible">True</property>
+           <property name="title" translatable="yes">Group Members</property>
+             <child>
+               <object class="GtkListBox" id="contacts_list_box">
+                 <property name="visible">True</property>
+                 <property name="can_focus">False</property>
+                 <property name="expand">True</property>
+                 <property name="selection-mode">none</property>
+                   <style>
+                     <class name="content"/>
+                   </style>
+               </object>
+             </child>
+           </object>
+         </child>
+
+  </template>
+</interface>

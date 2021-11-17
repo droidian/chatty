@@ -13,7 +13,7 @@
 
 #include <glib.h>
 
-#include "users/chatty-account.h"
+#include "chatty-account.h"
 
 #define CHATTY_USERNAME_ATTRIBUTE  "username"
 #define CHATTY_SERVER_ATTRIBUTE    "server"

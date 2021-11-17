@@ -14,7 +14,7 @@
 #include <glib-object.h>
 #include <json-glib/json-glib.h>
 
-#include "users/chatty-item.h"
+#include "chatty-item.h"
 #include "matrix-api.h"
 #include "matrix-enc.h"
 

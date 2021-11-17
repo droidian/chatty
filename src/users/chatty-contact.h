@@ -14,7 +14,7 @@
 #include <glib-object.h>
 #include <libebook-contacts/libebook-contacts.h>
 
-#include "users/chatty-item.h"
+#include "chatty-item.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS

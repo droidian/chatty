@@ -11,7 +11,6 @@
 #include <gtk/gtk.h>
 
 #include "chatty-chat.h"
-#include "chatty-settings.h"
 
 G_BEGIN_DECLS
 

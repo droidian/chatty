@@ -25,15 +25,15 @@
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
+# include "version.h"
 #endif
 
 #include <glib/gi18n.h>
 #include <handy.h>
 
 #include "chatty-window.h"
-#include "chatty-utils.h"
-#include "users/chatty-pp-account.h"
 #include "chatty-manager.h"
+#include "chatty-purple.h"
 #include "chatty-application.h"
 #include "chatty-settings.h"
 #include "chatty-history.h"
@@ -60,12 +60,8 @@ struct _ChattyApplication
   char *uri;
   guint open_uri_id;
 
-  gulong   delete_id;
-  gulong   open_chat_id;
-
   gboolean daemon;
   gboolean show_window;
-  gboolean enable_debug;
 };
 
 G_DEFINE_TYPE (ChattyApplication, chatty_application, GTK_TYPE_APPLICATION)
@@ -93,110 +89,7 @@ cmd_verbose_cb (const char  *option_name,
 {
   chatty_log_increase_verbosity ();
 
-  purple_debug_set_enabled (TRUE);
-  purple_debug_set_verbose (TRUE);
-
   return TRUE;
-}
-
-static int
-run_dialog_and_destroy (GtkDialog *dialog)
-{
-  int response;
-
-  gtk_dialog_set_default_response (dialog, GTK_RESPONSE_CANCEL);
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-
-  response = gtk_dialog_run (dialog);
-
-  gtk_widget_destroy (GTK_WIDGET (dialog));
-
-  return response;
-}
-
-static int
-application_authorize_buddy_cb (ChattyApplication *self,
-                                ChattyPpAccount   *account,
-                                const char        *remote_user,
-                                const char        *name)
-{
-  GtkWidget *dialog;
-  GtkWindow *window;
-
-  g_assert (CHATTY_IS_APPLICATION (self));
-  g_assert (CHATTY_IS_PP_ACCOUNT (account));
-
-  window = gtk_application_get_active_window (GTK_APPLICATION (self));
-  dialog = gtk_message_dialog_new (window,
-                                   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                   GTK_MESSAGE_QUESTION,
-                                   GTK_BUTTONS_NONE,
-                                   _("Authorize %s?"),
-                                   name);
-
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog),
-                          _("Reject"),
-                          GTK_RESPONSE_REJECT,
-                          _("Accept"),
-                          GTK_RESPONSE_ACCEPT,
-                          NULL);
-
-  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                            _("Add %s to contact list"),
-                                            remote_user);
-
-  return run_dialog_and_destroy (GTK_DIALOG (dialog));
-}
-
-static void
-application_buddy_added_cb (ChattyApplication *self,
-                            ChattyPpAccount   *account,
-                            const char        *remote_user,
-                            const char        *id)
-{
-  GtkWindow *window;
-  GtkWidget *dialog;
-
-  g_assert (CHATTY_IS_APPLICATION (self));
-  g_assert (CHATTY_IS_ACCOUNT (account));
-
-  window = gtk_application_get_active_window (GTK_APPLICATION (self));
-  dialog = gtk_message_dialog_new (window,
-                                   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                   GTK_MESSAGE_INFO,
-                                   GTK_BUTTONS_OK,
-                                   _("Contact added"));
-
-  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-                                            _("User %s has added %s to the contacts"),
-                                            remote_user, id);
-
-  run_dialog_and_destroy (GTK_DIALOG (dialog));
-}
-
-static void
-application_show_connection_error (ChattyApplication *self,
-                                   ChattyPpAccount   *account,
-                                   const char        *message)
-{
-  GtkWindow *window;
-  GtkWidget *dialog;
-
-  g_assert (CHATTY_IS_APPLICATION (self));
-  window = gtk_application_get_active_window (GTK_APPLICATION (self));
-  dialog = gtk_message_dialog_new (window,
-                                   GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                   GTK_MESSAGE_ERROR,
-                                   GTK_BUTTONS_OK,
-                                   _("Login failed"));
-
-  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG(dialog),
-                                            "%s: %s\n\n%s",
-                                            message,
-                                            chatty_item_get_username (CHATTY_ITEM (account)),
-                                            _("Please check ID and password"));
-
-  run_dialog_and_destroy (GTK_DIALOG (dialog));
 }
 
 static void
@@ -214,6 +107,8 @@ static gboolean
 application_open_uri (ChattyApplication *self)
 {
   g_clear_handle_id (&self->open_uri_id, g_source_remove);
+
+  CHATTY_INFO (self->uri, "Opening uri:");
 
   if (self->main_window && self->uri)
     chatty_window_set_uri (CHATTY_WINDOW (self->main_window), self->uri);
@@ -242,24 +137,28 @@ chatty_application_open_chat (GSimpleAction *action,
                               gpointer       user_data)
 {
   ChattyApplication *self = user_data;
-  g_autoptr(GString) str = NULL;
   const char *room_id, *account_id;
   ChattyChat *chat;
+  ChattyProtocol protocol;
 
   g_assert (CHATTY_IS_APPLICATION (self));
 
-  g_variant_get (parameter, "(ss)", &room_id, &account_id);
+  g_variant_get (parameter, "(ssi)", &room_id, &account_id, &protocol);
   g_return_if_fail (room_id && account_id);
 
-  chat = chatty_manager_find_chat_with_name (self->manager, account_id, room_id);
+  chat = chatty_manager_find_chat_with_name (self->manager, protocol, account_id, room_id);
   g_return_if_fail (chat);
 
-  str = g_string_new (NULL);
-  g_string_append (str, "Opening chat:");
-  chatty_log_anonymize_value (str, room_id);
-  g_string_append (str, ", account:");
-  chatty_log_anonymize_value (str, account_id);
-  CHATTY_DEBUG_MSG ("%s", str->str);
+  if (chatty_log_get_verbosity () > 1) {
+    g_autoptr(GString) str = NULL;
+
+    str = g_string_new (NULL);
+    g_string_append (str, "Opening chat:");
+    chatty_log_anonymize_value (str, room_id);
+    g_string_append (str, ", account:");
+    chatty_log_anonymize_value (str, account_id);
+    g_info ("%s", str->str);
+  }
 
   self->show_window = TRUE;
   g_application_activate (G_APPLICATION (self));
@@ -267,12 +166,32 @@ chatty_application_open_chat (GSimpleAction *action,
 }
 
 static void
+main_window_focus_changed_cb (ChattyApplication *self)
+{
+  ChattyChat *chat = NULL;
+  GtkWindow *window;
+
+  g_assert (CHATTY_IS_APPLICATION (self));
+
+  if (!self->main_window)
+    return;
+
+  window = GTK_WINDOW (self->main_window);
+
+  if (gtk_application_get_active_window (GTK_APPLICATION (self)) != window)
+    return;
+
+  if (gtk_window_has_toplevel_focus (window))
+    chat = chatty_application_get_active_chat (self);
+
+  if (chat)
+    chatty_chat_set_unread_count (chat, 0);
+}
+
+static void
 chatty_application_finalize (GObject *object)
 {
   ChattyApplication *self = (ChattyApplication *)object;
-
-  g_clear_signal_handler (&self->open_chat_id, self->manager);
-  g_clear_signal_handler (&self->delete_id, self->main_window);
 
   g_clear_handle_id (&self->open_uri_id, g_source_remove);
   g_clear_object (&self->manager);
@@ -318,11 +237,10 @@ chatty_application_command_line (GApplication            *application,
   if (g_variant_dict_contains (options, "nologin"))
     chatty_manager_disable_auto_login (chatty_manager_get_default (), TRUE);
 
+#ifdef PURPLE_ENABLED
   if (g_variant_dict_contains (options, "debug"))
-    self->enable_debug = TRUE;
-
-  purple_debug_set_enabled (self->enable_debug);
-  purple_debug_set_verbose (chatty_log_get_verbosity () > 0);
+    chatty_purple_enable_debug ();
+#endif
 
   arguments = g_application_command_line_get_arguments (command_line, &argc);
 
@@ -346,7 +264,7 @@ chatty_application_startup (GApplication *application)
   g_autofree char *db_path = NULL;
   g_autofree char *dir = NULL;
   static const GActionEntry app_entries[] = {
-    { "open-chat", chatty_application_open_chat, "(ss)" },
+    { "open-chat", chatty_application_open_chat, "(ssi)" },
     { "show-window", chatty_application_show_window },
   };
 
@@ -365,13 +283,18 @@ chatty_application_startup (GApplication *application)
   g_mkdir_with_parents (dir, S_IRWXU);
 
   lfb_init (CHATTY_APP_ID, NULL);
-  db_path =  g_build_filename (purple_user_dir(), "chatty", "db", NULL);
+  db_path =  g_build_filename (chatty_utils_get_purple_dir (), "chatty", "db", NULL);
   chatty_history_open (chatty_manager_get_history (self->manager),
                        db_path, "chatty-history.db");
 
   self->settings = chatty_settings_get_default ();
   if (chatty_settings_get_experimental_features (self->settings))
     g_warning ("Experimental features enabled");
+
+  g_signal_connect_object (self->manager, "open-chat",
+                           G_CALLBACK (application_open_chat),
+                           self, G_CONNECT_SWAPPED);
+  chatty_manager_load (self->manager);
 
   provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_resource (provider,
@@ -382,16 +305,6 @@ chatty_application_startup (GApplication *application)
 
   g_action_map_add_action_entries (G_ACTION_MAP (self), app_entries,
                                    G_N_ELEMENTS (app_entries), self);
-
-  g_signal_connect_object (self->manager, "authorize-buddy",
-                           G_CALLBACK (application_authorize_buddy_cb), self,
-                           G_CONNECT_SWAPPED);
-  g_signal_connect_object (self->manager, "notify-added",
-                           G_CALLBACK (application_buddy_added_cb), self,
-                           G_CONNECT_SWAPPED);
-  g_signal_connect_object (self->manager, "connection-error",
-                           G_CALLBACK (application_show_connection_error), self,
-                           G_CONNECT_SWAPPED);
 }
 
 
@@ -403,22 +316,14 @@ chatty_application_activate (GApplication *application)
 
   g_assert (GTK_IS_APPLICATION (app));
 
-  if (!self->main_window) {
-    self->main_window = chatty_window_new (app);
+  if (!self->main_window && self->show_window) {
+    g_set_weak_pointer (&self->main_window, chatty_window_new (app));
+    g_info ("New main window created");
 
-    chatty_manager_purple (self->manager);
-    g_object_add_weak_pointer (G_OBJECT (self->main_window), (gpointer *)&self->main_window);
+    g_signal_connect_object (self->main_window, "notify::has-toplevel-focus",
+                             G_CALLBACK (main_window_focus_changed_cb),
+                             self, G_CONNECT_SWAPPED);
   }
-
-  if (self->daemon && !self->delete_id)
-    self->delete_id = g_signal_connect (self->main_window, "delete-event",
-                                        G_CALLBACK (gtk_widget_hide_on_delete),
-                                        NULL);
-
-  if (!self->open_chat_id)
-    self->open_chat_id = g_signal_connect_swapped (self->manager, "open-chat",
-                                                   G_CALLBACK (application_open_chat),
-                                                   self);
 
   if (self->show_window)
     gtk_window_present (GTK_WINDOW (self->main_window));

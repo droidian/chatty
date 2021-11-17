@@ -17,9 +17,9 @@
 
 #include <libebook/libebook.h>
 
-#include "users/chatty-contact.h"
-#include "users/chatty-contact-private.h"
+#include "chatty-contact-private.h"
 #include "chatty-contact-provider.h"
+#include "chatty-log.h"
 
 /**
  * SECTION: chatty-eds
@@ -73,6 +73,8 @@ chatty_app_run_cb (GObject      *object,
   g_assert (G_IS_TASK (task));
 
   variant = g_dbus_connection_call_finish (connection, result, &error);
+
+  g_info ("Opening contacts finish %s", CHATTY_LOG_SUCESS (!error));
 
   if (error) {
     g_dbus_error_strip_remote_error (error);
@@ -227,6 +229,27 @@ chatty_eds_remove_contact (ChattyEds  *self,
 }
 
 static void
+chatty_eds_log (EBookClientView *view,
+                const GSList    *objects,
+                const char      *action)
+{
+  EBookClient *client;
+  ESource *source;
+  guint count;
+
+  if (chatty_log_get_verbosity () <= 3)
+    return;
+
+  client = e_book_client_view_ref_client (view);
+  source = e_client_get_source (E_CLIENT (client));
+  count = objects ? g_slist_length ((gpointer)objects) : 0;
+
+  g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE, "%u Objects %s. Source name: %s",
+         count, action, e_source_get_display_name (source));
+  g_object_unref (client);
+}
+
+static void
 chatty_eds_objects_added_cb (ChattyEds       *self,
                              const GSList    *objects,
                              EBookClientView *view)
@@ -246,6 +269,8 @@ chatty_eds_objects_added_cb (ChattyEds       *self,
       if (self->protocols & CHATTY_PROTOCOL_XMPP)
         chatty_eds_load_contact (self, l->data, E_CONTACT_IM_JABBER);
     }
+
+  chatty_eds_log (view, objects, "added");
 }
 
 static void
@@ -260,6 +285,7 @@ chatty_eds_objects_modified_cb (ChattyEds       *self,
     chatty_eds_remove_contact (self, e_contact_get_const (l->data, E_CONTACT_UID));
 
   chatty_eds_objects_added_cb (self, objects, view);
+  chatty_eds_log (view, objects, "modified");
 }
 
 static void
@@ -272,12 +298,15 @@ chatty_eds_objects_removed_cb (ChattyEds       *self,
 
   for (GSList *node = (GSList *)objects; node; node = node->next)
     chatty_eds_remove_contact (self, node->data);
+  chatty_eds_log (view, objects, "removed");
 }
 
 static void
 chatty_eds_load_complete_cb (ChattyEds *self)
 {
   g_autoptr(GPtrArray) array = NULL;
+
+  g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE, "Loading eds complete");
 
   if (!self->contacts_array || !self->contacts_array->len)
     return;
@@ -303,6 +332,10 @@ chatty_eds_get_view_cb (GObject      *object,
   g_assert (E_IS_BOOK_CLIENT (client));
 
   e_book_client_get_view_finish (E_BOOK_CLIENT (client), result, &client_view, &error);
+
+  g_debug ("Loading eds, getting ebook client view '%s' %s",
+           e_source_get_display_name (e_client_get_source (E_CLIENT (client))),
+           CHATTY_LOG_SUCESS (!error));
 
   if (error)
     {
@@ -347,6 +380,10 @@ chatty_eds_client_connected_cb (GObject      *object,
   g_assert (CHATTY_IS_EDS (self));
 
   client = e_book_client_connect_finish (result, &error);
+
+  g_debug ("Loading eds, getting ebook client '%s' %s",
+           e_source_get_display_name (e_client_get_source (client)),
+           CHATTY_LOG_SUCESS (!error));
 
   if (!error)
     {
@@ -396,6 +433,8 @@ chatty_eds_load_contacts (ChattyEds *self)
 
   for (GList *l = sources; l != NULL; l = l->next)
     {
+      g_debug ("Loading eds source: %s", e_source_get_display_name (l->data));
+
       self->providers_to_load++;
       e_book_client_connect (l->data,
                              -1,    /* timeout seconds */
@@ -420,6 +459,8 @@ chatty_eds_registry_new_finish_cb (GObject      *object,
 
   self->source_registry = e_source_registry_new_finish (result, &error);
 
+  g_debug ("Loading eds, get source registry %s", CHATTY_LOG_SUCESS (!error));
+
   if (!error)
     chatty_eds_load_contacts (self);
   else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
@@ -432,6 +473,8 @@ chatty_eds_load (ChattyEds *self)
 {
   g_assert (CHATTY_IS_EDS (self));
   g_assert (G_IS_CANCELLABLE (self->cancellable));
+
+  g_debug ("Loading eds");
 
   e_source_registry_new (self->cancellable,
                          chatty_eds_registry_new_finish_cb,
@@ -662,6 +705,8 @@ chatty_eds_open_contacts_app (ChattyEds           *self,
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
   task = g_task_new (self, cancellable, callback, user_data);
+
+  g_info ("Opening contacts");
 
   g_bus_get (G_BUS_TYPE_SESSION,
              cancellable,

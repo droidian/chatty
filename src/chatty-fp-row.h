@@ -14,8 +14,6 @@
 #include <gtk/gtk.h>
 #include <handy.h>
 
-#include "users/chatty-item.h"
-
 G_BEGIN_DECLS
 
 #define CHATTY_TYPE_FP_ROW (chatty_fp_row_get_type ())

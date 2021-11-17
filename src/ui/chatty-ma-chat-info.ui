@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ChattyMaChatInfo" parent="HdyPreferencesPage">
+  <template class="ChattyMaChatInfo" parent="ChattyChatInfo">
     <property name="visible">1</property>
 
     <child>
@@ -8,22 +8,10 @@
         <property name="visible">1</property>
 
         <child>
-          <object class="GtkButton" id="avatar_button">
-            <property name="visible" bind-source="avatar" bind-property="visible"
-                      bind-flags="sync-create"/>
-            <property name="hexpand">1</property>
-            <property name="halign">center</property>
-            <property name="can-focus">0</property>
-            <property name="sensitive">0</property>
-            <property name="focus-on-click">0</property>
-            <property name="receives_default">0</property>
+          <object class="ChattyAvatar" id="avatar">
+            <property name="visible">1</property>
+            <property name="size">96</property>
             <property name="margin-bottom">24</property>
-            <child>
-              <object class="ChattyAvatar" id="avatar">
-                <property name="visible">1</property>
-                <property name="size">96</property>
-              </object>
-            </child>
           </object>
         </child>
 
@@ -97,41 +85,62 @@
               </packing>
             </child>
 
+            <child>
+              <object class="GtkLabel" id="settings_label">
+                <property name="visible">1</property>
+                <property name="halign">start</property>
+                <property name="margin-top">12</property>
+                <property name="label" translatable="yes">Chat settings</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
+              </object>
+            </child>
+
+            <child>
+              <object class="GtkListBox">
+                <property name="visible">1</property>
+                <property name="expand">1</property>
+                <property name="selection-mode">none</property>
+                <style>
+                  <class name="content"/>
+                </style>
+                <child>
+                  <object class="HdyActionRow">
+                    <property name="visible">1</property>
+                    <property name="activatable" bind-source="encryption_switch" bind-property="active"
+                              bind-flags="sync-create|invert-boolean"/>
+                    <property name="title" translatable="yes">Encryption</property>
+                    <property name="subtitle" translatable="yes">Encrypt Messages</property>
+                    <property name="activatable-widget">encryption_switch</property>
+                    <child>
+                      <object class="GtkSpinner" id="encryption_spinner">
+                        <property name="visible">1</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSwitch" id="encryption_switch">
+                        <property name="visible">1</property>
+                        <property name="sensitive" bind-source="encryption_switch" bind-property="active"
+                                  bind-flags="sync-create|invert-boolean"/>
+                        <property name="valign">center</property>
+                        <signal name="notify::active" handler="ma_chat_info_encryption_switch_changed_cb" swapped="yes"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="width">2</property>
+              </packing>
+            </child>
+
           </object>
         </child>
       </object>
     </child>
 
   </template>
-  <object class="GtkFileChooserDialog" id="avatar_chooser_dialog">
-    <property name="modal">1</property>
-    <property name="filter">image_filter</property>
-    <property name="title" translatable="yes">Set Avatar</property>
-    <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
-    <child type="action">
-      <object class="GtkButton" id="avatar_cancel_button">
-        <property name="visible">1</property>
-        <property name="label" translatable="yes">Cancel</property>
-      </object>
-    </child>
-    <child type="action">
-      <object class="GtkButton" id="avatar_apply_button">
-        <property name="visible">1</property>
-        <property name="can-default">1</property>
-        <property name="label" translatable="yes">Open</property>
-      </object>
-    </child>
-    <action-widgets>
-      <action-widget response="cancel">avatar_cancel_button</action-widget>
-      <action-widget response="apply" default="true">avatar_apply_button</action-widget>
-    </action-widgets>
-  </object>
-
-  <object class="GtkFileFilter" id="image_filter">
-    <mime-types>
-      <mime-type>image/*</mime-type>
-    </mime-types>
-  </object>
 
   <object class="GtkTextBuffer" id="topic_buffer"/>
 

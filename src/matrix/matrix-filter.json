@@ -1,0 +1,10 @@
+{
+  "room": {
+    "timeline": {
+      "limit": 20
+    },
+    "state": {
+      "lazy_load_members": true
+    }
+  }
+}

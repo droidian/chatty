@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ChattyPpChatInfo" parent="HdyPreferencesPage">
+  <template class="ChattyPpChatInfo" parent="ChattyChatInfo">
     <property name="visible">1</property>
 
     <child>
@@ -10,7 +10,7 @@
         <!-- Room name -->
         <child>
           <object class="GtkLabel" id="room_name">
-            <property name="visible" bind-source="avatar_button" bind-property="visible"
+            <property name="visible" bind-source="avatar" bind-property="visible"
                       bind-flags="invert-boolean|bidirectional|sync-create"/>
             <attributes>
               <attribute name="scale" value="2"/>
@@ -19,22 +19,71 @@
         </child>
 
         <child>
-          <object class="GtkButton" id="avatar_button">
+          <object class="GtkOverlay">
             <property name="visible" bind-source="avatar" bind-property="visible"
                       bind-flags="sync-create"/>
-            <property name="hexpand">1</property>
             <property name="halign">center</property>
-            <property name="can-focus">0</property>
-            <property name="focus-on-click">0</property>
-            <property name="receives_default">0</property>
-            <property name="margin-bottom">24</property>
-            <signal name="clicked" handler="pp_info_avatar_button_clicked_cb" swapped="yes"/>
+            <property name="valign">center</property>
+
             <child>
               <object class="ChattyAvatar" id="avatar">
                 <property name="visible">1</property>
                 <property name="size">96</property>
               </object>
             </child>
+
+            <child type="overlay">
+              <object class="GtkButton" id="edit_avatar_button">
+                <property name="visible">1</property>
+                <property name="halign">end</property>
+                <property name="valign">start</property>
+                <signal name="clicked" handler="pp_info_edit_avatar_button_clicked_cb" swapped="yes"/>
+                <child internal-child="accessible">
+                  <object class="AtkObject">
+                    <property name="accessible-name" translatable="yes">Change Avatar</property>
+                  </object>
+                </child>
+                <style>
+                  <class name="image-button"/>
+                </style>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">1</property>
+                    <property name="icon-name">document-edit-symbolic</property>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular"/>
+                </style>
+              </object>
+            </child>
+
+            <child type="overlay">
+              <object class="GtkButton" id="delete_avatar_button">
+                <property name="visible">1</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <signal name="clicked" handler="pp_info_delete_avatar_button_clicked_cb" swapped="yes"/>
+                <child internal-child="accessible">
+                  <object class="AtkObject">
+                    <property name="accessible-name" translatable="yes">Delete Avatar</property>
+                  </object>
+                </child>
+                <style>
+                  <class name="image-button"/>
+                </style>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">1</property>
+                    <property name="icon-name">user-trash-symbolic</property>
+                  </object>
+                </child>
+                <style>
+                  <class name="circular"/>
+                </style>
+              </object>
+            </child>
+
           </object>
         </child>
 
@@ -369,35 +418,6 @@
     </child>
 
   </template>
-  <object class="GtkFileChooserDialog" id="avatar_chooser_dialog">
-    <property name="modal">1</property>
-    <property name="filter">image_filter</property>
-    <property name="title" translatable="yes">Set Avatar</property>
-    <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
-    <child type="action">
-      <object class="GtkButton" id="avatar_cancel_button">
-        <property name="visible">1</property>
-        <property name="label" translatable="yes">Cancel</property>
-      </object>
-    </child>
-    <child type="action">
-      <object class="GtkButton" id="avatar_apply_button">
-        <property name="visible">1</property>
-        <property name="can-default">1</property>
-        <property name="label" translatable="yes">Open</property>
-      </object>
-    </child>
-    <action-widgets>
-      <action-widget response="cancel">avatar_cancel_button</action-widget>
-      <action-widget response="apply" default="true">avatar_apply_button</action-widget>
-    </action-widgets>
-  </object>
-
-  <object class="GtkFileFilter" id="image_filter">
-    <mime-types>
-      <mime-type>image/*</mime-type>
-    </mime-types>
-  </object>
 
   <object class="GtkTextBuffer" id="topic_buffer"/>
 

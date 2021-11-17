@@ -14,7 +14,7 @@
 #include <glib-object.h>
 #include <gdk/gdk.h>
 
-#include "users/chatty-contact.h"
+#include "chatty-contact.h"
 
 G_BEGIN_DECLS
 

@@ -19,7 +19,6 @@
 
 #include "contrib/gtk.h"
 #include "chatty-history.h"
-#include "chatty-notification.h"
 #include "chatty-utils.h"
 #include "matrix-api.h"
 #include "matrix-db.h"
@@ -58,7 +57,6 @@ struct _ChattyMaChat
   GListStore          *buddy_list;
   GListStore          *message_list;
   GtkSortListModel    *sorted_message_list;
-  ChattyNotification  *notification;
 
   /* Pending messages to be sent.  Queue messages here when
      @self is busy (eg: claiming keys for encrypted chat) */
@@ -1055,7 +1053,8 @@ get_room_name_cb (GObject      *obj,
   object = matrix_api_get_room_name_finish (self->matrix_api, result, &error);
 
   if (error) {
-    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) &&
+        !g_error_matches (error, MATRIX_ERROR, M_NOT_FOUND))
       g_warning ("error getting room name: %s", error->message);
     return;
   }
@@ -1178,6 +1177,7 @@ matrix_chat_set_json_data (ChattyMaChat *self,
 
     old_count = self->unread_count;
     self->unread_count = matrix_utils_json_object_get_int (object, "notification_count");
+    chatty_chat_show_notification (CHATTY_CHAT (self), NULL);
     g_signal_emit_by_name (self, "changed", 0);
 
     /* Reset notification state on new messages */
@@ -1308,6 +1308,7 @@ ma_chat_load_db_messages_cb (GObject      *object,
 
   if (messages && messages->len) {
     g_list_store_splice (self->message_list, 0, 0, messages->pdata, messages->len);
+    chatty_chat_show_notification (CHATTY_CHAT (self), NULL);
     g_signal_emit_by_name (self, "changed", 0);
     g_task_return_boolean (task, TRUE);
   } else if (!messages && self->prev_batch) {
@@ -1426,21 +1427,69 @@ chatty_ma_chat_get_encryption (ChattyChat *chat)
 }
 
 static void
-chatty_ma_chat_set_encryption (ChattyChat *chat,
-                               gboolean    enable)
+ma_chat_set_encryption_cb (GObject      *object,
+                           GAsyncResult *result,
+                           gpointer      user_data)
 {
-  ChattyMaChat *self = (ChattyMaChat *)chat;
+  ChattyMaChat *self;
+  g_autoptr(GTask) task = user_data;
+  GError *error = NULL;
+  gboolean ret;
 
+  g_assert (G_IS_TASK (task));
+
+  self = g_task_get_source_object (task);
   g_assert (CHATTY_IS_MA_CHAT (self));
 
-  /* If encryption is already enabled, we can't change it */
-  if (self->encryption)
+  ret = matrix_api_set_room_encryption_finish (self->matrix_api, result, &error);
+  CHATTY_DEBUG (self->room_id, "Setting encryption, success: %d, room:", ret);
+
+  if (error) {
+    g_warning ("Failed to set encryption: %s", error->message);
+    g_task_return_error (task, error);
+  } else {
+    if (ret)
+      self->encryption = g_strdup ("encrypted");
+
+    g_object_notify (G_OBJECT (self), "encrypt");
+    g_task_return_boolean (task, ret);
+  }
+}
+
+static void
+chatty_ma_chat_set_encryption_async (ChattyChat          *chat,
+                                     gboolean             enable,
+                                     GAsyncReadyCallback  callback,
+                                     gpointer             user_data)
+{
+  ChattyMaChat *self = (ChattyMaChat *)chat;
+  g_autoptr(GTask) task = NULL;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+  g_assert (self->matrix_api);
+
+  task = g_task_new (self, NULL, callback, user_data);
+
+  if (!enable) {
+    g_task_return_new_error (task,
+                             G_IO_ERROR,
+                             G_IO_ERROR_NOT_SUPPORTED,
+                             "Disabling encryption not allowed");
     return;
+  }
 
-  if (enable)
-    self->encryption = g_strdup ("encrypted");
+  if (enable &&
+      chatty_chat_get_encryption (chat) == CHATTY_ENCRYPTION_ENABLED) {
+    g_debug ("Encryption is already enabled");
+    g_task_return_boolean (task, TRUE);
 
-  g_object_notify (G_OBJECT (self), "encrypt");
+    return;
+  }
+
+  CHATTY_DEBUG (self->room_id, "Setting encryption for room:");
+  matrix_api_set_room_encryption_async (self->matrix_api, self->room_id,
+                                        ma_chat_set_encryption_cb,
+                                        g_steal_pointer (&task));
 }
 
 static const char *
@@ -1518,29 +1567,9 @@ chatty_ma_chat_set_unread_count (ChattyChat *chat,
                                       chat_set_read_marker_cb, self);
   } else {
     self->unread_count = unread_count;
+    chatty_chat_show_notification (CHATTY_CHAT (chat), NULL);
     g_signal_emit_by_name (self, "changed", 0);
   }
-}
-
-static time_t
-chatty_ma_chat_get_last_msg_time (ChattyChat *chat)
-{
-  ChattyMaChat *self = (ChattyMaChat *)chat;
-  g_autoptr(ChattyMessage) message = NULL;
-  GListModel *model;
-  guint n_items;
-
-  g_assert (CHATTY_IS_MA_CHAT (self));
-
-  model = G_LIST_MODEL (self->message_list);
-  n_items = g_list_model_get_n_items (model);
-
-  if (n_items == 0)
-    return 0;
-
-  message = g_list_model_get_item (model, n_items - 1);
-
-  return chatty_message_get_time (message);
 }
 
 static void
@@ -1618,6 +1647,20 @@ chatty_ma_chat_set_typing (ChattyChat *chat,
   self->self_typing = is_typing;
   self->self_typing_set_time = g_get_monotonic_time ();
   matrix_api_set_typing (self->matrix_api, self->room_id, is_typing);
+}
+
+static void
+chatty_ma_chat_show_notification (ChattyChat *chat,
+                                  const char *name)
+{
+  ChattyMaChat *self = (ChattyMaChat *)chat;
+
+  g_assert (CHATTY_IS_MA_CHAT (self));
+
+  if (!self->unread_count || self->notification_shown)
+    return;
+
+  CHATTY_CHAT_CLASS (chatty_ma_chat_parent_class)->show_notification (chat, name);
 }
 
 static const char *
@@ -1758,8 +1801,6 @@ chatty_ma_chat_finalize (GObject *object)
   g_clear_object (&self->buddy_list);
   g_clear_object (&self->matrix_api);
   g_clear_object (&self->matrix_enc);
-  g_clear_object (&self->account);
-  g_clear_object (&self->notification);
   g_clear_object (&self->self_buddy);
   g_clear_pointer (&self->avatar_file, chatty_file_info_free);
   g_clear_object (&self->avatar);
@@ -1805,15 +1846,15 @@ chatty_ma_chat_class_init (ChattyMaChatClass *klass)
   chat_class->get_messages = chatty_ma_chat_get_messages;
   chat_class->get_account  = chatty_ma_chat_get_account;
   chat_class->get_encryption = chatty_ma_chat_get_encryption;
-  chat_class->set_encryption = chatty_ma_chat_set_encryption;
+  chat_class->set_encryption_async = chatty_ma_chat_set_encryption_async;
   chat_class->get_last_message = chatty_ma_chat_get_last_message;
   chat_class->get_unread_count = chatty_ma_chat_get_unread_count;
   chat_class->set_unread_count = chatty_ma_chat_set_unread_count;
-  chat_class->get_last_msg_time = chatty_ma_chat_get_last_msg_time;
   chat_class->send_message_async = chatty_ma_chat_send_message_async;
   chat_class->get_files_async = chatty_ma_chat_get_files_async;
   chat_class->get_buddy_typing = chatty_ma_chat_get_buddy_typing;
   chat_class->set_typing = chatty_ma_chat_set_typing;
+  chat_class->show_notification = chatty_ma_chat_show_notification;
 
   properties[PROP_JSON_DATA] =
     g_param_spec_boxed ("json-data",
@@ -1843,14 +1884,14 @@ chatty_ma_chat_init (ChattyMaChat *self)
   self->sorted_message_list = gtk_sort_list_model_new (G_LIST_MODEL (self->message_list), sorter);
   self->buddy_list = g_list_store_new (CHATTY_TYPE_MA_BUDDY);
   self->message_queue = g_queue_new ();
-  self->notification  = chatty_notification_new ();
   self->avatar_cancellable = g_cancellable_new ();
 }
 
 ChattyMaChat *
 chatty_ma_chat_new (const char     *room_id,
                     const char     *name,
-                    ChattyFileInfo *avatar)
+                    ChattyFileInfo *avatar,
+                    gboolean        encrypted)
 {
   ChattyMaChat *self;
 
@@ -1860,6 +1901,8 @@ chatty_ma_chat_new (const char     *room_id,
                        "room-id", room_id, NULL);
   self->room_name = g_strdup (name);
   self->avatar_file = avatar;
+  if (encrypted)
+    self->encryption = g_strdup ("encrypted");
 
   return self;
 }
@@ -1905,7 +1948,7 @@ chatty_ma_chat_set_data (ChattyMaChat  *self,
   g_return_if_fail (CHATTY_IS_MA_CHAT (self));
   g_return_if_fail (MATRIX_IS_API (api));
 
-  g_set_object (&self->account, account);
+  g_set_weak_pointer (&self->account, account);
   g_set_object (&self->matrix_api, api);
   g_set_object (&self->matrix_enc, enc);
 
@@ -1993,32 +2036,4 @@ chatty_ma_chat_add_messages (ChattyMaChat *self,
   if (messages && messages->len)
     g_list_store_splice (self->message_list, 0, 0,
                          messages->pdata, messages->len);
-}
-
-/**
- * chatty_ma_chat_show_notification:
- * @self: A #ChattyMaChat
- *
- * Show notification for the last unread #ChattyMessage,
- * if any.
- *
- */
-void
-chatty_ma_chat_show_notification (ChattyMaChat *self)
-{
-  g_autoptr(ChattyMessage) message = NULL;
-  ChattyChat *chat;
-  guint n_items;
-
-  g_return_if_fail (CHATTY_IS_MA_CHAT (self));
-
-  if (!self->unread_count || self->notification_shown)
-    return;
-
-  chat = CHATTY_CHAT (self);
-  self->notification_shown = TRUE;
-
-  n_items = g_list_model_get_n_items (chatty_chat_get_messages (chat));
-  message = g_list_model_get_item (chatty_chat_get_messages (chat), n_items - 1);
-  chatty_notification_show_message (self->notification, chat, message, NULL);
 }

@@ -14,7 +14,7 @@
 #include <glib-object.h>
 
 #include "chatty-chat.h"
-#include "users/chatty-account.h"
+#include "chatty-account.h"
 #include "chatty-message.h"
 #include "matrix-enc.h"
 #include "matrix-enums.h"
@@ -37,6 +37,9 @@ void           matrix_api_set_enc                (MatrixApi      *self,
 const char    *matrix_api_get_username           (MatrixApi      *self);
 void           matrix_api_set_username           (MatrixApi      *self,
                                                   const char     *username);
+const char    *matrix_api_get_login_username     (MatrixApi      *self);
+void           matrix_api_set_login_username     (MatrixApi      *self,
+                                                  const char     *username);
 
 const char    *matrix_api_get_password           (MatrixApi      *self);
 void           matrix_api_set_password           (MatrixApi      *self,
@@ -56,6 +59,7 @@ void           matrix_api_set_next_batch         (MatrixApi      *self,
 void          matrix_api_set_sync_callback       (MatrixApi      *self,
                                                   MatrixCallback  callback,
                                                   gpointer        object);
+gboolean      matrix_api_is_sync                 (MatrixApi      *self);
 void          matrix_api_start_sync              (MatrixApi      *self);
 void          matrix_api_stop_sync               (MatrixApi      *self);
 void          matrix_api_set_upload_key          (MatrixApi      *self,
@@ -91,6 +95,14 @@ void          matrix_api_get_room_encryption_async  (MatrixApi   *self,
 char         *matrix_api_get_room_encryption_finish (MatrixApi   *self,
                                                      GAsyncResult *result,
                                                      GError     **error);
+void          matrix_api_set_room_encryption_async  (MatrixApi   *self,
+                                                     const char  *room_id,
+                                                     GAsyncReadyCallback callback,
+                                                     gpointer     user_data);
+gboolean      matrix_api_set_room_encryption_finish (MatrixApi   *self,
+                                                     GAsyncResult *result,
+                                                     GError     **error);
+
 void          matrix_api_get_members_async       (MatrixApi      *self,
                                                   const char *room_id,
                                                   GAsyncReadyCallback callback,

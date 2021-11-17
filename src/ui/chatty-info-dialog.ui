@@ -10,7 +10,7 @@
       <object class="HdyTitleBar">
         <property name="visible">1</property>
         <child>
-          <object class="GtkHeaderBar">
+          <object class="GtkHeaderBar" id="header_bar">
             <property name="visible">1</property>
             <property name="show-close-button" bind-source="invite_button" bind-property="visible"
                       bind-flags="invert-boolean|sync-create"/>
@@ -44,6 +44,32 @@
                 <property name="label" translatable="yes">Cancel</property>
                 <signal name="clicked" handler="info_dialog_cancel_clicked_cb" swapped="yes"/>
               </object>
+            </child>
+
+            <!--MMS Cancel button -->
+            <child>
+              <object class="GtkButton" id="cancel_button">
+                <property name="visible">0</property>
+                <property name="sensitive">1</property>
+                <property name="label" translatable="yes">Cancel</property>
+                <signal name="clicked" handler="cancel_button_clicked_cb" swapped="yes"/>
+              </object>
+            </child>
+
+            <!--MMS Apply button -->
+            <child>
+              <object class="GtkButton" id="apply_button">
+                <property name="visible">0</property>
+                <property name="sensitive">1</property>
+                <property name="label" translatable="yes">Apply</property>
+                <signal name="clicked" handler="apply_button_clicked_cb" swapped="yes"/>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+              <packing>
+                <property name="pack-type">end</property>
+              </packing>
             </child>
 
             <!-- Invite button -->
@@ -84,12 +110,12 @@
               <object class="GtkStack" id="chat_type_stack">
                 <property name="visible">1</property>
                 <child>
-                  <object class="ChattyPpChatInfo" id="pp_chat_info">
+                  <object class="ChattyMaChatInfo" id="ma_chat_info">
                     <property name="visible">1</property>
                   </object>
                 </child>
                 <child>
-                  <object class="ChattyMaChatInfo" id="ma_chat_info">
+                  <object class="ChattyMmChatInfo" id="mm_chat_info">
                     <property name="visible">1</property>
                   </object>
                 </child>
@@ -178,37 +204,6 @@
     </child>
 
   </template>
-
-  <object class="GtkFileChooserDialog" id="avatar_chooser_dialog">
-    <property name="modal">1</property>
-    <property name="transient-for">ChattyInfoDialog</property>
-    <property name="filter">image_filter</property>
-    <property name="title" translatable="yes">Set Avatar</property>
-    <signal name="delete-event" handler="gtk_widget_hide_on_delete"/>
-    <child type="action">
-      <object class="GtkButton" id="avatar_cancel_button">
-        <property name="visible">1</property>
-        <property name="label" translatable="yes">Cancel</property>
-      </object>
-    </child>
-    <child type="action">
-      <object class="GtkButton" id="avatar_apply_button">
-        <property name="visible">1</property>
-        <property name="can-default">1</property>
-        <property name="label" translatable="yes">Open</property>
-      </object>
-    </child>
-    <action-widgets>
-      <action-widget response="cancel">avatar_cancel_button</action-widget>
-      <action-widget response="apply" default="true">avatar_apply_button</action-widget>
-    </action-widgets>
-  </object>
-
-  <object class="GtkFileFilter" id="image_filter">
-    <mime-types>
-      <mime-type>image/*</mime-type>
-    </mime-types>
-  </object>
 
   <object class="GtkTextBuffer" id="topic_buffer"/>
 
