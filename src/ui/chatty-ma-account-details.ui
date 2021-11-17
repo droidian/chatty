@@ -12,31 +12,17 @@
             <property name="halign">center</property>
             <property name="valign">center</property>
             <child>
-              <object class="GtkButton">
+              <object class="ChattyAvatar" id="avatar_image">
                 <property name="visible">1</property>
-                <property name="hexpand">1</property>
-                <property name="sensitive">0</property>
-                <property name="halign">center</property>
-                <property name="can-focus">0</property>
-                <property name="focus-on-click">0</property>
-                <property name="receives_default">0</property>
-                <property name="margin-bottom">24</property>
-                <signal name="clicked" handler="ma_details_avatar_button_clicked_cb" swapped="yes"/>
-                <child>
-                  <object class="ChattyAvatar" id="avatar_image">
-                    <property name="visible">1</property>
-                    <property name="size">96</property>
-                  </object>
-                </child>
+                <property name="size">96</property>
               </object>
             </child>
+
             <child type="overlay">
               <object class="GtkButton" id="delete_avatar_button">
                 <property name="visible">1</property>
                 <property name="halign">end</property>
                 <property name="valign">end</property>
-                <property name="margin-bottom">27</property>
-                <property name="margin-end">3</property>
                 <signal name="clicked" handler="ma_details_delete_avatar_button_clicked_cb" swapped="yes"/>
                 <child>
                   <object class="GtkStack" id="delete_button_stack">
@@ -63,6 +49,7 @@
                 </style>
               </object>
             </child>
+
           </object>
         </child>
 

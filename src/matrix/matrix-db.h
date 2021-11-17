@@ -13,7 +13,7 @@
 
 #include <glib.h>
 
-#include "users/chatty-account.h"
+#include "chatty-account.h"
 #include "chatty-message.h"
 
 G_BEGIN_DECLS

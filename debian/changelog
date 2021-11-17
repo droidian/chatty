@@ -1,3 +1,409 @@
+chatty (0.5.0~beta) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * manager: Remove no longer required code
+  * new-chat-dialog: Avoid an unnecessary filter
+  * tests: Include chatty-contact.h
+  * pp-buddy: Remove unused methods
+  * Remove debug code
+  * pp-account: Remove an unsed method and related tests
+  * pp-chat: Remove no longer used methods
+  * pp-chat: fixup
+  * utils: Use #pragma once
+  * ma-account-details: Remove commented code
+  * chat-view: Remove unused struct member
+  * text-item: Don't use markup for matrix messages
+  * pp-account-details: Improve avatar
+  * pp-account: Allow deleting avatars
+  * pp-chat-info: Improve avatar
+  * pp-buddy: Emit avatar-changed when existing icon is deleted
+  * ma-account-details: Improve delete button state on deleting avatar
+  * history: Delete existing avatar when deleted
+  * ma-account: Update avatar after avatar changes
+  * ma-acccount-details: Improve avatar
+  * ma-chat-info: Don't pack avatar inside a button
+  * ma-account: Delete existing file when avatar is deleted
+  * new-muc-dialog: Don't warn non existing accounts
+  * Add ChattySelectableRow
+  * manager: Add API to check if telegram plugin is loaded
+  * window: Add search protocol filter
+  * chat-view: Use HdyStatusPage to show empty label
+  * chat-view: Show empty status page if no chat is selected
+  * chat-view: Fix indentation
+  * window: Add empty view for chat search
+  * window: Don't update sidebar view twice on model changes
+  * new-chat-dialog: Use HdyStatusPage for empty view
+  * tests: Add more utils tests
+  * mm-account: Fix memory leaks
+  * matrix-api: Use weak ref to keep track of object
+  * tests: Fix various memory leaks in history
+  * tests: Fix memory leaks in matrix-db
+  * ma-chat: Use weak ref to keep track of account
+  * matrix-net: Fix a memory leak
+  * message: Fix a memory leak
+  * tests: Fix a memory leak in mm-account
+  * README: Add how to run over ssh
+  * matrix-api: Set access token details only if non NULL
+  * matrix: Separate username from login username
+  * Add CHATTY_PROTOCOL_EMAIL enum item
+  * settings-dialog: Support matrix login with email
+  * ma-account: Add an API to get login username
+  * secret-store: Use the provided username when saving account
+  * matrix-db: Don't store to db if matrix id is not present
+  * settings-dialog: Use login username for matrix accounts
+  * secret-store: Store username when saving matrix accounts
+  * ma-account: Set matrix username if available when loading
+  * matrix-db: Don't load account if username not set
+  * media: Use g_autoptr() to auto cleanup
+  * media: Properly set task data
+  * media: Trivial style fix
+  * media: Fix a typo in a comment
+  * media: Use the same type in declaration and definition
+  * chatty-media: Rename a variable
+  * media: Use MIN() and MAX() macros to find ratio
+  * media: Use G_FILE_ATTRIBUTE_STANDARD_SIZE to query size
+  * media: Use gsize for size
+  * media: Set destroy func for task
+  * media: Add a method to finish async resize
+  * media: Fix indentation
+  * media: Use the same variable name in declaration and definition
+  * media: Use 'chatty-media' as log domain
+  * media: Improve image resize strategy
+  * mmsd: Add API to get if mmsd is ready
+  * mm-account: Use the new API to check if mms feature present
+  * mm: Remove unused code
+  * d/control: Depend on libgnome-desktop
+  * chatty-utils: Add API to generate thumbnails
+  * Add chatty-file-item
+  * Add chatty-attachments-view
+  * chat-view: Add support for selecting multiple files
+  * settings-dialog: Set appropriate title on page change
+  * d/changelog: Fix Invalid email addresses
+  * chat-view: Fix send button style
+  * chat: Add API to show notifications
+  * ma-chat: Use the new notification API
+  * mm-account: Use the new API to show notification
+  * manager: Use the new API to show notification
+  * mm-chat: Remove no longer used code
+  * ma-chat: Remove no longer used code
+  * manager: Remove unused code
+  * notification: Let notifications be made per chat
+  * notification: Withdraw notification when message is read
+  * pp-chat-info: Set transient window
+  * ma-chat: Set encryption when chat is created
+  * ma-chat: Remove set_encryption()
+  * chat: Add API to set encryption async
+  * matrix-api: Implement setting room encryption
+  * ma-chat: Implement setting encryption
+  * ma-chat-info: Add UI to set matrix encryption
+  * mm-chat: Implement history loading status
+  * chat-view: Disconnect status callback when chat changes
+  * chat-view: Hide scroll down button when chat is set
+  * chat-view: Reset variable to scroll to bottom on chat change
+  * chat-view: Update spinner opacity on history loading change
+  * window: Simplify getting active chat
+  * application: Reset chat unread count on window focus
+  * mmsd: Create hash table in init()
+  * mmsd: Don't update mm object if not changed
+  * mmsd: Fix finding self number
+  * mmsd: Avoid an unnecessary cast
+  * mmsd: Fix a memory leak
+  * mmsd: Simplify string free
+  * mmsd: Set a weak pointer for mm-account
+  * mm-account: Add some methods to access device
+  * mmsd: Use the new API to handle device changes
+  * Add chatty-purple
+  * manager: Remove code copied to chatty-purple
+  * application: Use the new API to load manager
+  * manager: Remove no longer used code
+  * xeps: Improve logging
+  * log: Fix spacing when not anonymized
+  * log: Add API for detailed logs
+  * mm-account: Rename a variable
+  * mmsd: Simplify creating message content text file
+  * mmsd: Rename some variables
+  * icons: Add icons for send message button
+  * chat-view: Use the new icons for message send buttons
+  * chat-view: Simplify updating scrolledwindow view
+  * chat-view: Update adjustment on OSK visiblity change
+  * chat-view: Scroll less on adjustment change
+  * purple: Use dialogs as needed instead of using signals
+  * manager: Remove no longer used code
+  * application: Remove no longer used code
+  * ma-chat: Show notifications on unread messages
+  * manager: Remove obsolete code
+  * manager: Remove no longer needed code
+  * purple: Enable debug if set when loading
+  * application: Improving setting purple debug
+  * window: Use chatty-purple to check for plugins
+  * settings-dialog: Use chatty-purple for checking plugins
+  * manager: Remove no longer used code
+  * purple: Rename a function
+  * purple: Add API to start buddy chat
+  * window: Use the new purple API to start purple chat
+  * manager: Remove no longer used code
+  * purple-request: Avoid setting custom directory for file chooser
+  * manager: Remove an unused macro
+  * log: Add API to convert bool to string
+  * application: Improve debug logs
+  * secret-store: Improve debug logs
+  * manager: Improve debug logs
+  * window: Improve debug logs
+  * purple: Improve debug logs
+  * pp-chat: Improve logs
+  * purple: Improve log
+  * contact-provider: Improve logs
+  * manager: Improve logs
+  * secret-store: Improve logs
+  * settings: Add API to toggle purple plugin
+  * purple: Load purple on settings change
+  * settings-dialog: Add UI to toggle purple plugin
+  * matrix-api: Add an API to check if in sync
+  * matrix-api: Run callback on common errors
+  * ma-account: Update status if matrix not in sync
+  * matrix-api: Fix getting joined rooms task
+  * matrix: Improve debug logs
+  * ma-account: Simplify updating status
+  * ma-account: Don't Update status when getting joined rooms
+  * ma-account: Emit notify status on change
+  * matrix: Add matrix sync filter
+  * matrix-api: Upload filter and use it for sync
+  * history: Mark group MM chat as MMS
+  * matrix-net: Don't log error on cancel
+  * matrix-api: Stop sync on cancel
+  * ma-account: Fix resync on reconnect
+  * ma-chat: Don't warn if room name not found
+  * purple: Add 'enabled' property
+  * settings-dialog: Hide XMPP if purple is disabled
+  * purple: Fix is_loaded()
+  * settings-dialog: Hide new account row if not supported
+  * mm-chat: Allow setting custom names
+  * mm-chat: Update name from contacts only if no name set
+  * po: Update POTFILES.in
+  * application: Create window only when required
+  * purple: Add API to find chat
+  * notification: Pass protocol when notification is created
+  * window: Update '+' button when window is created
+  * chat: Simplify getting last message time
+  * chat: Remove no longer used code
+  * manager: Populate chats immediately after creating accounts
+  * chat: Add message-added signal
+  * purple: Emit message-added signal on new messages
+  * mm-chat: Emit message-added signal on new messages
+  * pp-chat: Emit message-added signal on new messages
+  * manager: Update chat list on new messages
+  * window: Simplify creating search filter row
+  * window: Set minimum width and height
+  * window: Improve filter
+  * window: Update protocols in constructed()
+  * pp-account-details: Avoid an unnecessary check
+  * Fix include headers
+  * window: Don't update protocols early
+  * window: Select first only if non folded
+  * window: Use chat from chat-view
+  * window: Improve translatable strings
+  * window: Don’t deselect when back is clicked
+  * window: Allow only selecting ChattyChat
+  * window: Don’t set chat immediately when chat is selected
+  * window: Don’t set chat when opening an item
+  * history: Warn if self is not valid
+  * purple: Set history db before adding to list
+  * purple: Add API to create and join chat
+  * purple: Make a function static
+  * window: Simplify opening purple chat
+  * window: Update chat-view when setting item
+  * window: Improve empty view description
+  * window: Fix selection on search changes
+  * window: Update selection on startup
+  * manager: Fix a memory leak
+  * manager: Rearrange some code
+  * window: Rename a function
+  * Add chatty-matrix
+  * manager: Use chatty-matrix for matrix accounts
+  * settings-dialog: Improve keyboard navigation
+  * settings-dialog: Add some mnemonics
+  * Add keyboard shortcuts window
+  * new-chat-dialog: Open first match on search activate
+  * window: Open the first match on search activate
+  * window: Update view and selection only on map
+  * chat-view: Fix some criticals
+  * settings-dialog: Allow non-https homeserver URIs
+  * settings-dialog: Avoid an unnecessary check
+  * purple: Add API to find matching account
+  * matrix: Add API to find matching account
+  * manager: Add API to find matching account
+  * settings-dialog: Don't allow adding same account again
+  * settings-dialog: Fix visiblity of XMPP account row
+  * purple: Add API to delete account
+  * manager: Handle deleting purple accounts
+  * settings-dialog: Simplify deleting accounts
+  * pp-chat: Add API to reset buddy
+  * purple: Reset associated chat when a buddy is deleted
+  * mmsd: Disable MMS support when mmsdtng disappears
+  * tests: Add tests for multi user mm-chat
+  * mm-account: Use sorted name when creating chats
+  * mm-account: Simplify finding matching chat
+  * various: Avoid path in include headers
+  * Move purple code to purple directory
+  * matrix: Improve build
+  * mm: Improve build
+  * new-chat-dialog: Fix multi selection mode in large lists
+  * window: Use a model button for new chat menu
+  * new-chat-dialog: Use GPtrArray to store selected items
+  * purple: Fix enabling debug logs
+  * window: Reduce minimum height
+  * mm-chat-info: Show 'Add to contacts button' only for valid numbers
+  * mm-chat: Add API to find buddy by number
+  * mm-account: Fix finding chat buddy
+  * mm-chat: Improve updating name
+  * mm-chat: Set contact when a buddy is added
+  * mm-chat: Remove no longer used method
+  * mm-buddy: Notify when contact is updated
+  * mm-buddy: Return contact name if available
+  * message-row: Bind author label with item name
+  * mm-chat: Add API to check if custom name is set
+  * history: Save mm-chat name only if custom
+  * mm-chat: Mark as custom name set only if not empty
+  * messge: Fix to return the right username
+  * Remove unneeded include headers
+  * history: Set domain only if not set
+  * tests: Remove purple specific code from history tests
+  * text-item: Don't escape sms messages
+  * utils: Add API to get purple user dir
+  * purple: Add chatty-pp-utils and use it
+  * utils: Remove no longer used code
+  * Add chatty-chat-info
+  * Derive info pages from chatty-info
+  * settings-dialog: Move purple specific code to a block
+  * chat-view: Improve escape pp-chat messages
+  * window: Allow deleting non-MaChat
+  * Make libpurple optional
+  * ci: Add a build with libpurple disabled
+  * message: Avoid a pp-buddy usage
+  * mmsd: Fix a crash when no image attachments are present
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+  * Settings-dialog: Fix typo (Carrrier)
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+  [ Vittorio Monti ]
+  * po: Update Italian translation
+  * po: Update Italian translation
+  * po: Update Italian translation
+  * po: Update Italian translation
+
+  [ Chris Talbot ]
+  * Add chatty-media
+  * Add chatty-mmsd
+  * mm-account: Splice in loading and unloading chatty-mmsd
+  * mm-account: Make MMS support an experimental feature
+  * README: Annotate MMS being an experimental feature
+  * mm-account: Update chatty_mm_account_find_chat () to include group MMS
+  * mm-account: Add logic to receive and send MMS
+  * mm-account: Incorporate logic to decide sending MMS vs SMS
+  * mm-account: Set mms-feature to true when mmsd-tng service loads
+  * settings: Add MMS settings
+  * mmsd: Sync settings from chatty to mmsd-tng
+  * Settings-dialog: Add MMS UI Settings
+  * mm-chat: do not append an MMS
+  * mmsd: send "NULL" if carrier proxy setting is ""
+  * settings: convert mmsd mmsc, apn, and proxy to GObject Properites
+  * settings-dialog: conver const char to autofree
+  * mmsd: convert const char to autofree
+  * mmsd: monitor mms carrier properties
+  * mmsd: wait to notify changed carrier settings
+  * settings: remove "mms-settings-changed" signal
+  * settings: fix indentation
+  * mm-account: enable file upload
+  * Utils: create function chatty_file_info_new_for_path ()
+  * attachments-view: have chatty_attachments_view_get_files return list compatible with chatty_message
+  * chat-view: attach files to message if attachment-view has files
+  * mmsd: Remove unneeded debug messages
+  * mm-chat: fix logic error
+  * mmsd: rename variables
+  * mmsd: replace +1; with ++;
+  * mm-account: replace "+1;" with "++;"
+  * chat-view: hide scroll down button after it is clicked
+  * chat-view: Hide scroll down button if page size reports itself as zero
+  * mm-account: Fix memory leaks
+  * mm-account: modify chatty_mm_account_start_chat () for MMS
+  * mm-account: Edit comment to make sense
+  * mm-account: Ensure correct sender for outgoing SMS
+  * mm_account: merge SMS and MMS appending message
+  * mmsd: Fix memory leaks
+  * mmsd: Always connect to "SettingsChanged" Signal
+  * mm-account: Append history when MMS status is updated
+  * mmsd: Unref Chatty Message when deleting payload
+  * mmsd: Process MMS payload before deleting
+  * mmsd: use GDateTime for time
+  * mm-account: Add phone number to new buddy
+  * mm-chat: Set Group MMS title
+  * window: don't hide "add contact" if there is an error
+  * new-chat-dialog: Show dummy contact if length is less than 3 and greater than 0
+  * mm-account: Show chat name in notification
+  * mm-chat: connect to eds GListModel
+  * Add mm-chat detail
+  * info-dialog: Incorporate mm-chat detail
+  * mm-account: don't initialize name in Group MMS
+  * mm-chat: Update contacts even with custom names
+  * listrow: Add checkbox
+  * new-chat-dialog: support selecting multiple users for MMS
+  * window: support selecting multiple users for MMS
+  * manager: allow multiple numbers in set_uri
+  * list-row: add "Add Contact" button
+  * mm-chat-info: Show add contact button for Unknown Contacts
+  * window: remove "Add Contact" button
+  * mm-account: Load chatty-mmsd by default
+  * README: Remove MMS annotation for experimental features
+
+  [ Evangelos Ribeiro Tzaras ]
+  * run: Allow debugging by setting CHATTY_GDB=1
+  * README: Document how to debug using the runscript
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+  * po: Update Romanian translation
+  * po: Update Romanian translation
+
+  [ Luna Jernberg ]
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+
+  [ Sebastian Krzyszkowiak ]
+  * info-dialog: Clean up unused GtkFileChooserDialog
+  * ma-chat-info: Clean up unused GtkFileChooserDialog
+  * {ma,pp}-account-details: Show only images in avatar file chooser
+  * {ma,pp}-account-details: Set file chooser as modal and transient for parent window
+  * pp-chat-info: Use GtkFileChooserNative
+
+  [ tor sorensen ]
+  * build: Update flatpak manifest
+
+  [ Morgan McMillian ]
+  * xep-0313: use default archive preference from server
+
+  [ Matthew Via ]
+  * media: Attempt multiple JPEG qualities to stay below desired_size
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Tue, 16 Nov 2021 21:57:13 +0530
+
 chatty (0.4.0) byzantium; urgency=medium
 
   * mm-chat: Fix a memory leak
@@ -2053,7 +2459,7 @@ chatty (0.1.2) amber-phone; urgency=medium
   * Show jabber status independentlly from lurch
   * Mitigate phonenumber parsing message
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Tue, 19 Nov 2019 13:01:39 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Tue, 19 Nov 2019 13:01:39 +0100
 
 chatty (0.1.1) amber-phone; urgency=medium
 
@@ -2143,7 +2549,7 @@ chatty (0.1.1) amber-phone; urgency=medium
   * Update po files
   * Add debian gpb.conf
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Mon, 04 Nov 2019 09:45:56 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Mon, 04 Nov 2019 09:45:56 +0100
 
 chatty (0.1.0) amber-phone; urgency=medium
 
@@ -2186,7 +2592,7 @@ chatty (0.0.7) purple; urgency=medium
   * Chatty won't start anymore if another libpurple client, like Pidgin, 
     is running already
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Tue, 16 Apr 2019 10:12:34 +0200
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Tue, 16 Apr 2019 10:12:34 +0200
 
 chatty (0.0.6) purple; urgency=medium
 
@@ -2197,7 +2603,7 @@ chatty (0.0.6) purple; urgency=medium
   * Improved css styling of message panel
   * Shows 'close' button when leaflet is foldet
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Thu, 07 Mar 2019 19:05:43 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Thu, 07 Mar 2019 19:05:43 +0100
 
 chatty (0.0.5) purple; urgency=medium
 
@@ -2210,7 +2616,7 @@ chatty (0.0.5) purple; urgency=medium
   * Fixed issue #54 'New accounts should be enabled'
   * Added bugfix: return to contacts list after new contact has been added 
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Mon, 04 Mar 2019 16:13:51 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Mon, 04 Mar 2019 16:13:51 +0100
 
 chatty (0.0.4) purple; urgency=medium
 
@@ -2222,7 +2628,7 @@ chatty (0.0.4) purple; urgency=medium
   * Indicated selected chat in chats-list when msg-view is unfolded
   * Introduced XMPP multi user chat
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Wed, 30 Jan 2019 19:15:11 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Wed, 30 Jan 2019 19:15:11 +0100
 
 chatty (0.0.3) purple; urgency=medium
 	
@@ -2237,7 +2643,7 @@ chatty (0.0.3) purple; urgency=medium
   * Added emoticon translation
   * Added support for sending typing messages
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Mon, 07 Jan 2019 14:20:14 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Mon, 07 Jan 2019 14:20:14 +0100
 
 chatty (0.0.2) purple; urgency=medium
 
@@ -2250,7 +2656,7 @@ chatty (0.0.2) purple; urgency=medium
   * Replaced GtkSearchBar with HdySearchBar
   * Added handling for XMPP authorization requests
 
- -- Andrea Schaefer <andrea@localhost.localdomain>  Fri, 14 Dec 2018 18:55:21 +0100
+ -- Andrea Schaefer <andrea.schaefer@puri.sm>  Fri, 14 Dec 2018 18:55:21 +0100
 
 chatty (0.0.1) purple; urgency=low
 

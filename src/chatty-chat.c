@@ -18,6 +18,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 
+#include "chatty-notification.h"
 #include "chatty-history.h"
 #include "chatty-chat.h"
 
@@ -37,6 +38,9 @@ typedef struct
   gpointer account;
   gpointer history;
 
+  ChattyMessage *last_message;
+  ChattyNotification *notification;
+
   gboolean is_im;
 } ChattyChatPrivate;
 
@@ -52,6 +56,7 @@ enum {
 
 enum {
   CHANGED,
+  MESSAGE_ADDED,
   N_SIGNALS
 };
 
@@ -168,12 +173,6 @@ chatty_chat_real_set_unread_count (ChattyChat *self,
   /* Do nothing */
 }
 
-static time_t
-chatty_chat_real_get_last_msg_time (ChattyChat *self)
-{
-  return 0;
-}
-
 static void
 chatty_chat_real_send_message_async (ChattyChat          *self,
                                      ChattyMessage       *message,
@@ -234,6 +233,40 @@ chatty_chat_real_get_encryption (ChattyChat *self)
   return CHATTY_ENCRYPTION_UNKNOWN;
 }
 
+static void
+chatty_chat_real_set_encryption (ChattyChat *self,
+                                 gboolean    enable)
+{
+  /* Do nothing */
+}
+
+static void
+chatty_chat_real_set_encryption_async (ChattyChat          *self,
+                                       gboolean             enable,
+                                       GAsyncReadyCallback  callback,
+                                       gpointer             user_data)
+{
+  g_assert (CHATTY_IS_CHAT (self));
+
+  g_task_report_new_error (self, callback, user_data,
+                           chatty_chat_real_set_encryption_async,
+                           G_IO_ERROR,
+                           G_IO_ERROR_NOT_SUPPORTED,
+                           "Setting encryption not supported");
+}
+
+
+static gboolean
+chatty_chat_real_set_encryption_finish (ChattyChat   *self,
+                                        GAsyncResult *result,
+                                        GError       **error)
+{
+  g_assert (CHATTY_IS_CHAT (self));
+  g_assert (G_IS_TASK (result));
+
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+
 static gboolean
 chatty_chat_real_get_buddy_typing (ChattyChat *self)
 {
@@ -274,6 +307,37 @@ chatty_chat_real_invite_finish (ChattyChat   *self,
   g_assert (G_IS_TASK (result));
 
   return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+static void
+chatty_chat_real_show_notification (ChattyChat *self,
+                                    const char *name)
+{
+  ChattyChatPrivate *priv = chatty_chat_get_instance_private (self);
+  g_autoptr(ChattyMessage) message = NULL;
+  GListModel *messages;
+  guint n_items;
+
+  g_assert (CHATTY_IS_CHAT (self));
+
+  messages = chatty_chat_get_messages (self);
+  n_items = g_list_model_get_n_items (messages);
+
+  if (!n_items)
+    return;
+
+  message = g_list_model_get_item (messages, n_items - 1);
+
+  if (message == priv->last_message)
+    return;
+
+  priv->last_message = message;
+  g_set_weak_pointer (&priv->last_message, message);
+
+  if (!priv->notification)
+    priv->notification = chatty_notification_new (self);
+
+  chatty_notification_show_message (priv->notification, message, name);
 }
 
 static const char *
@@ -363,6 +427,9 @@ chatty_chat_finalize (GObject *object)
   g_clear_object (&priv->account);
   g_clear_object (&priv->history);
 
+  priv->last_message = NULL;
+  g_clear_object (&priv->notification);
+
   G_OBJECT_CLASS (chatty_chat_parent_class)->finalize (object);
 }
 
@@ -393,16 +460,19 @@ chatty_chat_class_init (ChattyChatClass *klass)
   klass->get_last_message = chatty_chat_real_get_last_message;
   klass->get_unread_count = chatty_chat_real_get_unread_count;
   klass->set_unread_count = chatty_chat_real_set_unread_count;
-  klass->get_last_msg_time = chatty_chat_real_get_last_msg_time;
   klass->send_message_async = chatty_chat_real_send_message_async;
   klass->send_message_finish = chatty_chat_real_send_message_finish;
   klass->get_files_async = chatty_chat_real_get_files_async;
   klass->get_files_finish = chatty_chat_real_get_files_finish;
   klass->get_encryption = chatty_chat_real_get_encryption;
+  klass->set_encryption = chatty_chat_real_set_encryption;
+  klass->set_encryption_async = chatty_chat_real_set_encryption_async;
+  klass->set_encryption_finish = chatty_chat_real_set_encryption_finish;
   klass->get_buddy_typing = chatty_chat_real_get_buddy_typing;
   klass->set_typing = chatty_chat_real_set_typing;
   klass->invite_async = chatty_chat_real_invite_async;
   klass->invite_finish = chatty_chat_real_invite_finish;
+  klass->show_notification = chatty_chat_real_show_notification;
 
   properties[PROP_ENCRYPT] =
     g_param_spec_boolean ("encrypt",
@@ -435,6 +505,19 @@ chatty_chat_class_init (ChattyChatClass *klass)
    */
   signals [CHANGED] =
     g_signal_new ("changed",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  0, NULL, NULL, NULL,
+                  G_TYPE_NONE, 0);
+
+  /**
+   * ChattyChat::message-added:
+   * @self: a #ChattyChat
+   *
+   * Emitted when new message is added
+   */
+  signals [MESSAGE_ADDED] =
+    g_signal_new ("message-added",
                   G_TYPE_FROM_CLASS (klass),
                   G_SIGNAL_RUN_LAST,
                   0, NULL, NULL, NULL,
@@ -621,9 +704,21 @@ chatty_chat_set_unread_count (ChattyChat *self,
 time_t
 chatty_chat_get_last_msg_time (ChattyChat *self)
 {
+  g_autoptr(ChattyMessage) message = NULL;
+  GListModel *model;
+  guint n_items;
+
   g_return_val_if_fail (CHATTY_IS_CHAT (self), 0);
 
-  return CHATTY_CHAT_GET_CLASS (self)->get_last_msg_time (self);
+  model = chatty_chat_get_messages (self);
+  n_items = g_list_model_get_n_items (model);
+
+  if (n_items == 0)
+    return 0;
+
+  message = g_list_model_get_item (model, n_items - 1);
+
+  return chatty_message_get_time (message);
 }
 
 void
@@ -701,6 +796,41 @@ chatty_chat_set_encryption (ChattyChat *self,
 }
 
 /**
+ * chatty_chat_set_encryption_async:
+ * @self: A #ChattyChat
+ * @enable: Whether to enable/disable encryption
+ * @callback: A #GAsyncReadyCallback
+ * @user_data: user data for @callback
+ *
+ * Enable/disable encryption for the chat.  Please note that
+ * not all protocols may have async support.  See
+ * chatty_chat_set_encryption().
+ * Also, some protocols doesn't allow disabling encryption
+ * once enabled.
+ */
+void
+chatty_chat_set_encryption_async (ChattyChat          *self,
+                                  gboolean             enable,
+                                  GAsyncReadyCallback  callback,
+                                  gpointer             user_data)
+{
+  g_return_if_fail (CHATTY_IS_CHAT (self));
+
+  CHATTY_CHAT_GET_CLASS (self)->set_encryption_async (self, !!enable, callback, user_data);
+}
+
+gboolean
+chatty_chat_set_encryption_finish (ChattyChat    *self,
+                                   GAsyncResult  *result,
+                                   GError       **error)
+{
+  g_return_val_if_fail (CHATTY_IS_CHAT (self), FALSE);
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+
+  return CHATTY_CHAT_GET_CLASS (self)->set_encryption_finish (self, result, error);
+}
+
+/**
  * chatty_chat_set_typing:
  * @self: A #ChattyChat
  * @is_typing: Whether self is typing or not
@@ -751,4 +881,22 @@ chatty_chat_invite_finish (ChattyChat    *self,
   g_return_val_if_fail (G_IS_ASYNC_RESULT (result), FALSE);
 
   return CHATTY_CHAT_GET_CLASS (self)->invite_finish (self, result, error);
+}
+
+/**
+ * chatty_chat_show_notification:
+ * @self: A #ChattyChat
+ * @name: (nullable): Name of last message sender
+ *
+ * Show the last message in chat as notification.
+ * @name can be set if you want to override the sender
+ * name.
+ */
+void
+chatty_chat_show_notification (ChattyChat *self,
+                               const char *name)
+{
+  g_return_if_fail (CHATTY_IS_CHAT (self));
+
+  CHATTY_CHAT_GET_CLASS (self)->show_notification (self, name);
 }

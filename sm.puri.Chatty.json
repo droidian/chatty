@@ -14,7 +14,8 @@
         "--talk-name=org.gnome.evolution.dataserver.AddressBook10",
         "--talk-name=org.gnome.evolution.dataserver.Sources5",
         "--talk-name=im.pidgin.purple.PurpleService",
-        "--talk-name=org.gnome.evolution.dataserver.Subprocess.Backend.*"
+        "--talk-name=org.gnome.evolution.dataserver.Subprocess.Backend.*",
+        "--env=SSL_CERT_DIR=/etc/ssl/certs"
     ],
     "cleanup-commands": [ "rm -rf /app/lib/debug/ /app/include/boost" ],
     "cleanup": [
@@ -33,9 +34,6 @@
     "modules": [
         {
             "name": "intltool",
-            "cleanup": [
-                "*"
-            ],
             "sources": [
                 {
                     "type": "archive",
@@ -61,8 +59,8 @@
             "sources": [
                 {
                     "type": "archive",
-                    "url": "http://downloads.sourceforge.net/pidgin/pidgin-2.13.0.tar.bz2",
-                    "sha256": "2747150c6f711146bddd333c496870bfd55058bab22ffb7e4eb784018ec46d8f"
+                    "url": "http://downloads.sourceforge.net/pidgin/pidgin-2.14.7.tar.bz2",
+                    "sha256": "fea6ab4f0572fe24646049c2b3fecbdca27abca6d06e95bd655e44db99bd69fe"
                 }
             ]
         },
@@ -89,21 +87,35 @@
             ]
         },
         {
+            "name": "gnome-desktop",
+            "buildsystem": "meson",
+            "config-opts": [
+              "-Ddebug_tools=false",
+              "-Dudev=disabled",
+              "-Dgtk_doc=false",
+              "-Ddesktop_docs=false"
+            ],
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://gitlab.gnome.org/GNOME/gnome-desktop.git"
+                }
+            ]
+        },
+        {
             "name": "boost",
             "buildsystem": "simple",
             "sources": [
                 {
                     "type": "archive",
-                    "url": "https://dl.bintray.com/boostorg/release/1.67.0/source/boost_1_67_0.tar.bz2",
-                    "sha256": "2684c972994ee57fc5632e03bf044746f6eb45d4920c343937a465fd67a5adba"
+                    "url": "https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz",
+                    "sha256": "aeb26f80e80945e82ee93e5939baebdca47b9dee80a07d3144be1e1a6a66dd6a"
                 }
             ],
             "build-commands": [
                 "./bootstrap.sh --prefix=${FLATPAK_DEST} --with-libraries=date_time,thread,system",
+                "./b2 -j ${FLATPAK_BUILDER_N_JOBS} headers",
                 "./b2 -j ${FLATPAK_BUILDER_N_JOBS} install"
-            ],
-            "cleanup": [
-                "*"
             ]
         },
         {
@@ -234,7 +246,7 @@
                 {
                     "type" : "archive",
                     "url" : "https://download.gnome.org/sources/gspell/1.8/gspell-1.8.1.tar.xz",
-		    "sha256" : "819a1d23c7603000e73f5e738bdd284342e0cd345fb0c7650999c31ec741bbe5"
+                    "sha256" : "819a1d23c7603000e73f5e738bdd284342e0cd345fb0c7650999c31ec741bbe5"
                 }
             ]
         },

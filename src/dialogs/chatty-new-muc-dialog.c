@@ -8,11 +8,14 @@
 
 #define G_LOG_DOMAIN "chatty-new-muc-dialog"
 
+#include "config.h"
+
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <glib-object.h>
+
 #include "chatty-window.h"
-#include "users/chatty-pp-account.h"
+#include "chatty-purple.h"
 #include "chatty-utils.h"
 #include "chatty-manager.h"
 #include "chatty-new-muc-dialog.h"
@@ -30,13 +33,14 @@ struct _ChattyNewMucDialog
   GtkWidget *entry_group_chat_pw;
   GtkWidget *dummy_prefix_radio;
 
-  ChattyPpAccount *selected_account;
+  ChattyAccount *selected_account;
 };
 
 
 G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, GTK_TYPE_DIALOG)
 
 
+#ifdef PURPLE_ENABLED
 static void
 join_new_chat_cb (GObject      *object,
                   GAsyncResult *result,
@@ -46,10 +50,12 @@ join_new_chat_cb (GObject      *object,
 
   g_assert (CHATTY_IS_NEW_MUC_DIALOG (self));
 }
+#endif
 
 static void
 button_join_chat_clicked_cb (ChattyNewMucDialog *self)
 {
+#ifdef PURPLE_ENABLED
   ChattyChat *chat;
 
   g_assert (CHATTY_IS_NEW_MUC_DIALOG(self));
@@ -61,6 +67,7 @@ button_join_chat_clicked_cb (ChattyNewMucDialog *self)
                                       gtk_entry_get_text (GTK_ENTRY(self->entry_group_chat_pw)));
   chatty_account_join_chat_async (CHATTY_ACCOUNT (self->selected_account), chat,
                                   join_new_chat_cb, g_object_ref (self));
+#endif
 }
 
 
@@ -83,7 +90,7 @@ account_list_row_activated_cb (ChattyNewMucDialog *self,
                                GtkListBoxRow      *row,
                                GtkListBox         *box)
 {
-  ChattyPpAccount *account;
+  ChattyAccount *account;
   GtkWidget       *prefix_radio;
 
   g_assert (CHATTY_IS_NEW_MUC_DIALOG(self));
@@ -96,6 +103,7 @@ account_list_row_activated_cb (ChattyNewMucDialog *self,
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(prefix_radio), TRUE);
 }
 
+#ifdef PURPLE_ENABLED
 static void
 chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
                                     ChattyPpAccount    *account)
@@ -141,25 +149,28 @@ chatty_new_muc_add_account_to_list (ChattyNewMucDialog *self,
 
   gtk_widget_show (GTK_WIDGET(row));
 }
+#endif
 
 
 static gboolean
 chatty_new_muc_populate_account_list (ChattyNewMucDialog *self)
 {
-  GList         *l;
   gboolean       ret = FALSE;
   HdyActionRow  *row;
 
   g_return_val_if_fail (CHATTY_IS_NEW_MUC_DIALOG(self), FALSE);
 
-  for (l = purple_accounts_get_all (); l != NULL; l = l->next) {
+#ifdef PURPLE_ENABLED
+  for (GList *l = purple_accounts_get_all (); l != NULL; l = l->next) {
     ChattyPpAccount *account;
     ret = TRUE;
 
     account = chatty_pp_account_get_object (l->data);
 
-    chatty_new_muc_add_account_to_list (self, account);
+    if (account)
+      chatty_new_muc_add_account_to_list (self, account);
   }
+#endif
 
   row = HDY_ACTION_ROW(gtk_list_box_get_row_at_index (GTK_LIST_BOX(self->accounts_list), 0));
 

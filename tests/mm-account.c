@@ -9,14 +9,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "users/chatty-mm-account.c"
+#include "chatty-mm-account.c"
 
 static void
 test_mm_account_find_chat (void)
 {
   ChattyMmAccount *account;
   ChattyHistory *history;
-  GListModel *chat_list;
+  GListModel *chat_list, *users;
+  ChattyChat *chat;
 
   account = chatty_mm_account_new ();
   g_assert_true (CHATTY_IS_MM_ACCOUNT (account));
@@ -33,6 +34,10 @@ test_mm_account_find_chat (void)
 
   chatty_mm_account_start_chat (account, "9633-111-222");
   g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 2);
+  chat = g_list_model_get_item (chat_list, 1);
+  users = chatty_chat_get_users (chat);
+  g_assert_cmpint (g_list_model_get_n_items (users), ==, 1);
+  g_object_unref (chat);
 
   /* The same number above with different formating */
   chatty_mm_account_start_chat (account, "9633111222");
@@ -53,8 +58,43 @@ test_mm_account_find_chat (void)
   chatty_mm_account_start_chat (account, "Purism");
   g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 5);
 
+  chatty_mm_account_start_chat (account, "123,456");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 6);
+
+  chatty_mm_account_start_chat (account, "456,123");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 6);
+
+  /* Duplicate numbers should be removed */
+  chatty_mm_account_start_chat (account, "123,456,123");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 6);
+
+  /* The name should be a concatenated string of numbers in ascending order */
+  chat = g_list_model_get_item (chat_list, 5);
+  g_assert_cmpstr (chatty_chat_get_chat_name (chat), ==, "123,456");
+  users = chatty_chat_get_users (chat);
+  g_assert_cmpint (g_list_model_get_n_items (users), ==, 2);
+  g_object_unref (chat);
+
+  chatty_mm_account_start_chat (account, "456,123,789");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 7);
+
+  chatty_mm_account_start_chat (account, "456,789,123");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 7);
+
+  /* The space after "123," is intentional */
+  chatty_mm_account_start_chat (account, "123, 456,789");
+  g_assert_cmpint (g_list_model_get_n_items (chat_list), ==, 7);
+
+  /* The name should be a concatenated string of numbers in ascending order */
+  chat = g_list_model_get_item (chat_list, 6);
+  g_assert_cmpstr (chatty_chat_get_chat_name (chat), ==, "123,456,789");
+  users = chatty_chat_get_users (chat);
+  g_assert_cmpint (g_list_model_get_n_items (users), ==, 3);
+  g_object_unref (chat);
+
   g_list_store_remove_all (G_LIST_STORE (chat_list));
   g_assert_finalize_object (account);
+  g_assert_finalize_object (history);
 }
 
 static void

@@ -1,36 +1,120 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ChattyChatView" parent="GtkBox">
+  <template class="ChattyChatView" parent="GtkStack">
     <property name="visible">True</property>
     <property name="expand">True</property>
-    <property name="orientation">vertical</property>
 
     <child>
-      <object class="GtkOverlay">
+      <object class="GtkBox" id="message_view">
         <property name="visible">True</property>
-        <child type="overlay">
-          <object class="GtkRevealer">
+        <property name="expand">True</property>
+        <property name="orientation">vertical</property>
+
+        <child>
+          <object class="GtkOverlay">
             <property name="visible">True</property>
-            <property name="reveal-child">True</property>
-            <property name="halign">end</property>
-            <property name="valign">end</property>
+            <child type="overlay">
+              <object class="GtkRevealer">
+                <property name="visible">True</property>
+                <property name="reveal-child">True</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <child>
+                  <object class="GtkButton" id="scroll_down_button">
+                    <property name="visible">False</property>
+                    <property name="margin-bottom">18</property>
+                    <property name="margin-end">18</property>
+                    <signal name="clicked" handler="chat_view_scroll_down_clicked_cb" swapped="yes"/>
+                    <style>
+                      <class name="osd"/>
+                      <class name="circular"/>
+                      <class name="suggested-action"/>
+                    </style>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="visible">True</property>
+                        <property name="icon-name">go-bottom-symbolic</property>
+                        <property name="width-request">32</property>
+                        <property name="height-request">32</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkRevealer" id="attachment_revealer">
+                <property name="visible">true</property>
+                <property name="reveal-child">False</property>
+                <property name="halign">fill</property>
+                <property name="valign">end</property>
+                <signal name="notify::reveal-child" handler="chat_view_attachment_revealer_notify_cb" swapped="yes"/>
+
+                <child>
+                  <object class="ChattyAttachmentsView" id="attachment_view">
+                    <property name="visible">true</property>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
             <child>
-              <object class="GtkButton" id="scroll_down_button">
-                <property name="visible">False</property>
-                <property name="margin-bottom">18</property>
-                <property name="margin-end">18</property>
-                <signal name="clicked" handler="chat_view_scroll_down_clicked_cb" swapped="yes"/>
+              <object class="GtkScrolledWindow" id="scroll">
+                <property name="visible">True</property>
+                <property name="hscrollbar-policy">never</property>
+                <property name="vadjustment">vadjustment</property>
+                <signal name="edge-overshot" handler="chat_view_edge_overshot_cb" swapped="yes"/>
                 <style>
-                  <class name="osd"/>
-                  <class name="circular"/>
-                  <class name="suggested-action"/>
+                  <class name="view"/>
                 </style>
                 <child>
-                  <object class="GtkImage">
+                  <object class="HdyClamp">
                     <property name="visible">True</property>
-                    <property name="icon-name">go-bottom-symbolic</property>
-                    <property name="width-request">32</property>
-                    <property name="height-request">32</property>
+                    <property name="margin-start">12</property>
+                    <property name="margin-end">12</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="orientation">vertical</property>
+
+                        <!-- Loading spinner -->
+                        <child>
+                          <object class="GtkSpinner" id="loading_spinner">
+                            <property name="visible">True</property>
+                            <property name="margin-top">6</property>
+                            <property name="margin-bottom">6</property>
+                          </object>
+                        </child>
+
+                        <!-- Chat message list -->
+                        <child>
+                          <object class="GtkListBox" id="message_list">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="vexpand">True</property>
+                            <property name="valign">end</property>
+                            <property name="selection-mode">none</property>
+                          </object>
+                        </child>
+
+                        <!-- Typing indicator -->
+                        <child>
+                          <object class="GtkRevealer" id="typing_revealer">
+                            <property name="visible">True</property>
+                            <child>
+                              <object class="GtkDrawingArea" id="typing_indicator">
+                                <property name="visible">True</property>
+                                <property name="width-request">60</property>
+                                <property name="height-request">40</property>
+                                <signal name="draw" handler="chat_view_typing_indicator_draw_cb" swapped="yes"/>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
                   </object>
                 </child>
               </object>
@@ -39,54 +123,72 @@
         </child>
 
         <child>
-          <object class="GtkScrolledWindow" id="scroll">
+          <object class="GtkSeparator">
             <property name="visible">True</property>
-            <property name="hscrollbar-policy">never</property>
-            <property name="vadjustment">vadjustment</property>
-            <signal name="edge-overshot" handler="chat_view_edge_overshot_cb" swapped="yes"/>
             <style>
-              <class name="view"/>
+              <class name="sidebar"/>
             </style>
+          </object>
+        </child>
+
+        <child>
+          <object class="HdyClamp">
+            <property name="visible">True</property>
+            <property name="margin">6</property>
             <child>
-              <object class="HdyClamp">
+              <object class="GtkBox">
                 <property name="visible">True</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
+                <property name="orientation">horizontal</property>
+
+                <!-- Send file button -->
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkButton" id="send_file_button">
+                    <property name="visible">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">end</property>
+                    <property name="focus_on_click">False</property>
+                    <property name="margin-right">6</property>
+                    <signal name="clicked" handler="chat_view_send_file_button_clicked_cb" swapped="yes"/>
+                    <style>
+                      <class name="image-button"/>
+                    </style>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="visible">True</property>
+                        <property name="icon-name">mail-attachment-symbolic</property>
+                        <property name="icon-size">1</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Chat text entry -->
+                <child>
+                  <object class="GtkBox" id="input_frame">
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
-
-                    <!-- Loading spinner -->
+                    <property name="orientation">horizontal</property>
                     <child>
-                      <object class="GtkSpinner" id="loading_spinner">
+                      <object class="GtkScrolledWindow" id="scrolled_window">
                         <property name="visible">True</property>
-                        <property name="margin-top">6</property>
-                        <property name="margin-bottom">6</property>
-                      </object>
-                    </child>
-
-                    <!-- Chat message list -->
-                    <child>
-                      <object class="GtkListBox" id="message_list">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="vexpand">True</property>
-                        <property name="valign">end</property>
-                        <property name="selection-mode">none</property>
-                      </object>
-                    </child>
-
-                    <!-- Typing indicator -->
-                    <child>
-                      <object class="GtkRevealer" id="typing_revealer">
-                        <property name="visible">True</property>
+                        <property name="max_content_height">96</property>
+                        <property name="propagate_natural_height">True</property>
+                        <style>
+                          <class name="view"/>
+                          <class name="frame"/>
+                        </style>
                         <child>
-                          <object class="GtkDrawingArea" id="typing_indicator">
+                          <object class="GtkTextView" id="message_input">
                             <property name="visible">True</property>
-                            <property name="width-request">60</property>
-                            <property name="height-request">40</property>
-                            <signal name="draw" handler="chat_view_typing_indicator_draw_cb" swapped="yes"/>
+                            <property name="hexpand">True</property>
+                            <property name="valign">center</property>
+                            <property name="sensitive">False</property>
+                            <property name="wrap-mode">GTK_WRAP_WORD_CHAR</property>
+                            <property name="buffer">message_input_buffer</property>
+                            <property name="left-margin">6</property>
+                            <property name="right-margin">6</property>
+                            <property name="top-margin">6</property>
+                            <property name="bottom-margin">6</property>
+                            <signal name="key-press-event" handler="chat_view_input_key_pressed_cb" swapped="yes"/>
                           </object>
                         </child>
                       </object>
@@ -94,124 +196,45 @@
                   </object>
                 </child>
 
-              </object>
-            </child>
-          </object>
-        </child>
-      </object>
-    </child>
-
-    <child>
-      <object class="GtkSeparator">
-        <property name="visible">True</property>
-        <style>
-          <class name="sidebar"/>
-        </style>
-      </object>
-    </child>
-
-    <child>
-      <object class="HdyClamp">
-        <property name="visible">True</property>
-        <property name="margin">6</property>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="orientation">horizontal</property>
-
-            <!-- Send file button -->
-            <child>
-              <object class="GtkButton" id="send_file_button">
-                <property name="visible">False</property>
-                <property name="can-focus">False</property>
-                <property name="valign">end</property>
-                <property name="focus_on_click">False</property>
-                <property name="margin-right">6</property>
-                <signal name="clicked" handler="chat_view_send_file_button_clicked_cb" swapped="yes"/>
-                <style>
-                  <class name="image-button"/>
-                </style>
+                <!-- Send message button -->
                 <child>
-                  <object class="GtkImage">
-                    <property name="visible">True</property>
-                    <property name="icon-name">mail-attachment-symbolic</property>
-                    <property name="icon-size">1</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-
-            <!-- Chat text entry -->
-            <child>
-              <object class="GtkBox" id="input_frame">
-                <property name="visible">True</property>
-                <property name="orientation">horizontal</property>
-                <style>
-                  <class name="view"/>
-                  <class name="msg_entry_defocused"/>
-                </style>
-                <child>
-                  <object class="GtkScrolledWindow" id="scrolled_window">
-                    <property name="visible">True</property>
-                    <property name="max_content_height">96</property>
-                    <property name="propagate_natural_height">True</property>
+                  <object class="GtkButton" id="send_message_button">
+                    <property name="visible">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">end</property>
+                    <property name="no-show-all">True</property>
+                    <property name="visible">False</property>
+                    <property name="focus_on_click">False</property>
+                    <property name="margin-left">6</property>
+                    <signal name="clicked" handler="chat_view_send_message_button_clicked_cb" swapped="yes"/>
                     <child>
-                      <object class="GtkTextView" id="message_input">
+                      <object class="GtkImage" id="send_button_icon">
+                        <property name="icon-name">send-symbolic</property>
+                        <property name="icon-size">1</property>
                         <property name="visible">True</property>
-                        <property name="hexpand">True</property>
-                        <property name="valign">center</property>
-                        <property name="sensitive">False</property>
-                        <property name="wrap-mode">GTK_WRAP_WORD_CHAR</property>
-                        <property name="buffer">message_input_buffer</property>
-                        <signal name="focus-in-event" handler="chat_view_input_focus_in_cb" swapped="yes"/>
-                        <signal name="focus-out-event" handler="chat_view_input_focus_out_cb" swapped="yes"/>
-                        <signal name="key-press-event" handler="chat_view_input_key_pressed_cb" swapped="yes"/>
                       </object>
                     </child>
                   </object>
+                  <packing>
+                    <property name="pack_type">end</property>
+                  </packing>
                 </child>
-                <child>
-                  <object class="GtkImage" id="encrypt_icon">
-                    <property name="visible">False</property>
-                    <property name="valign">end</property>
-                    <property name="margin-right">3</property>
-                    <property name="margin-top">3</property>
-                    <property name="margin-bottom">3</property>
-                    <property name="icon_name">changes-allow-symbolic</property>
-                    <property name="icon-size">1</property>
-                  </object>
-                </child>
+
               </object>
             </child>
-
-            <!-- Send message button -->
-            <child>
-              <object class="GtkButton" id="send_message_button">
-                <property name="visible">False</property>
-                <property name="can-focus">False</property>
-                <property name="valign">end</property>
-                <property name="no-show-all">True</property>
-                <property name="visible">False</property>
-                <property name="focus_on_click">False</property>
-                <property name="margin-left">6</property>
-                <signal name="clicked" handler="chat_view_send_message_button_clicked_cb" swapped="yes"/>
-                <child>
-                  <object class="GtkImage">
-                    <property name="icon-name">mail-send-symbolic</property>
-                    <property name="icon-size">1</property>
-                    <property name="visible">True</property>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="pack_type">end</property>
-              </packing>
-            </child>
-
-          </object>
+          </object> <!-- ./HdyClamp -->
         </child>
-      </object> <!-- ./HdyClamp -->
+      </object>
     </child>
+
+    <child>
+      <object class="HdyStatusPage" id="empty_view">
+        <property name="visible">True</property>
+        <property name="icon-name">sm.puri.Chatty-symbolic</property>
+        <property name="title" translatable="yes">No chat selected</property>
+      </object>
+    </child>
+
   </template>
 
   <object class="GtkTextBuffer" id="message_input_buffer">
@@ -224,26 +247,9 @@
   </object>
 
   <!-- Disclaimer label -->
-  <object class="GtkBox" id="empty_view">
-    <property name="visible">True</property>
-    <property name="orientation">vertical</property>
-    <child>
-      <object class="GtkLabel" id="empty_label0">
-        <property name="visible">True</property>
-        <property name="wrap">True</property>
-        <property name="justify">center</property>
-        <style>
-          <class name="label_disclaim"/>
-        </style>
-      </object>
-    </child>
-    <child>
-      <object class="GtkLabel" id="empty_label1">
-        <property name="visible">True</property>
-        <property name="wrap">True</property>
-        <property name="justify">center</property>
-      </object>
-    </child>
+  <object class="HdyStatusPage" id="no_message_status">
+    <property name="visible">False</property>
+    <property name="icon-name">sm.puri.Chatty-symbolic</property>
   </object>
 
 </interface>

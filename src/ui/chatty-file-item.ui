@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyFileItem" parent="GtkBox">
+    <property name="margin-bottom">9</property>
+    <property name="margin-start">9</property>
+    <property name="margin-end">9</property>
+
+    <child>
+      <object class="GtkOverlay" id="overlay">
+        <property name="visible">1</property>
+        <property name="valign">end</property>
+
+        <child type="overlay">
+          <object class="GtkButton" id="remove_button">
+            <property name="visible">1</property>
+            <property name="halign">end</property>
+            <property name="valign">start</property>
+            <signal name="clicked" handler="gtk_widget_destroy" swapped="yes"/>
+            <style>
+              <class name="destructive-action"/>
+              <class name="delete-button"/>
+              <class name="image-button"/>
+              <class name="circular"/>
+              <class name="osd"/>
+            </style>
+            <child internal-child="accessible">
+              <object class="AtkObject">
+                <property name="accessible-name" translatable="yes">Remove Attachment</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">1</property>
+                <property name="icon-name">edit-delete-symbolic</property>
+                <property name="pixel-size">18</property>
+              </object>
+            </child>
+          </object>
+        </child>
+
+      </object>
+    </child>
+  </template>
+
+</interface>

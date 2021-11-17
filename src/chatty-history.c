@@ -9,7 +9,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#ifndef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "chatty-history"
+#endif
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -17,13 +19,13 @@
 
 #include <sqlite3.h>
 
-#include "matrix/chatty-ma-account.h"
-#include "matrix/chatty-ma-chat.h"
+#include "chatty-ma-account.h"
+#include "chatty-ma-chat.h"
 
 #include "chatty-utils.h"
 #include "chatty-settings.h"
-#include "users/chatty-mm-account.h"
-#include "users/chatty-mm-buddy.h"
+#include "chatty-mm-account.h"
+#include "chatty-mm-buddy.h"
 #include "chatty-mm-chat.h"
 #include "chatty-history.h"
 
@@ -57,6 +59,10 @@
 #define PROTOCOL_SIP       6
 
 /* Chat thread type */
+/* For SMS/MMS, if it's THREAD_GROUP_CHAT it's always MMS,
+ * If it's THREAD_DIRECT_CHAT with 2+ members, it's always
+ * SMS.
+ */
 #define THREAD_DIRECT_CHAT 0
 #define THREAD_GROUP_CHAT  1
 
@@ -174,6 +180,7 @@ history_protocol_to_value (ChattyProtocol protocol)
   case CHATTY_PROTOCOL_ANY:
   case CHATTY_PROTOCOL_NONE:
   case CHATTY_PROTOCOL_CALL:
+  case CHATTY_PROTOCOL_EMAIL:
   case CHATTY_PROTOCOL_DELTA:
   case CHATTY_PROTOCOL_THREEPL:
   default:
@@ -199,6 +206,7 @@ history_protocol_to_type_value (ChattyProtocol protocol)
   case CHATTY_PROTOCOL_CALL:
   case CHATTY_PROTOCOL_ANY:
   case CHATTY_PROTOCOL_NONE:
+  case CHATTY_PROTOCOL_EMAIL:
   case CHATTY_PROTOCOL_DELTA:
   case CHATTY_PROTOCOL_THREEPL:
   default:
@@ -859,7 +867,9 @@ insert_or_ignore_thread (ChattyHistory *self,
                       "DO UPDATE SET alias=?2, visibility=?5, encrypted=?6, avatar_id=?7",
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, chatty_chat_get_chat_name (chat), "binding when adding thread");
-  history_bind_text (stmt, 2, chatty_item_get_name (CHATTY_ITEM (chat)), "binding when adding thread");
+
+  if (CHATTY_IS_MM_CHAT (chat) && chatty_mm_chat_has_custom_name (CHATTY_MM_CHAT (chat)))
+    history_bind_text (stmt, 2, chatty_item_get_name (CHATTY_ITEM (chat)), "binding when adding thread");
   history_bind_int (stmt, 3, account_id, "binding when adding thread");
   history_bind_int (stmt, 4, chatty_chat_is_im (chat) ? THREAD_DIRECT_CHAT : THREAD_GROUP_CHAT,
                     "binding when adding thread");
@@ -2371,7 +2381,8 @@ history_get_chats (ChattyHistory *self,
     protocol = PROTOCOL_MMS_SMS;
 
   sqlite3_prepare_v2 (self->db,
-                      "SELECT threads.id,threads.name,threads.alias,threads.encrypted,"
+                      /*           0           1             2              3                4  */
+                      "SELECT threads.id,threads.name,threads.alias,threads.encrypted,threads.type,"
                       "files.url,files.path "
                       "FROM threads "
                       "INNER JOIN accounts ON accounts.id=threads.account_id "
@@ -2398,15 +2409,16 @@ history_get_chats (ChattyHistory *self,
     alias = (const char *)sqlite3_column_text (stmt, 2);
     encrypted = sqlite3_column_int (stmt, 3);
 
-    if (sqlite3_column_text (stmt, 4)) {
+    if (sqlite3_column_text (stmt, 5)) {
       file = g_new0 (ChattyFileInfo, 1);
-      file->url = g_strdup ((const char *)sqlite3_column_text (stmt, 4));
-      file->path = g_strdup ((const char *)sqlite3_column_text (stmt, 5));
+      file->url = g_strdup ((const char *)sqlite3_column_text (stmt, 5));
+      file->path = g_strdup ((const char *)sqlite3_column_text (stmt, 6));
     }
 
     if (CHATTY_IS_MA_ACCOUNT (account)) {
-      chat = (gpointer)chatty_ma_chat_new (name, alias, file);
-      chatty_chat_set_encryption (CHATTY_CHAT (chat), encrypted);
+      chat = (gpointer)chatty_ma_chat_new (name, alias, file, encrypted);
+    } else if (sqlite3_column_int (stmt, 4) == THREAD_GROUP_CHAT) {
+      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS, FALSE);
     } else {
       chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS_SMS, TRUE);
     }
@@ -2500,13 +2512,8 @@ history_update_user (ChattyHistory *self,
   file_info = chatty_item_get_avatar_file (CHATTY_ITEM (account));
   file_id = add_file_info (self, file_info);
 
-  if (!file_id) {
-    g_task_return_boolean (task, TRUE);
-    return;
-  }
-
   sqlite3_prepare_v2 (self->db,
-                      "UPDATE users SET avatar_id=?1 "
+                      "UPDATE users SET avatar_id=iif(?1 = 0, null, ?1) "
                       "WHERE users.id=?2",
                       -1, &stmt, NULL);
   history_bind_int (stmt, 1, file_id, "binding when setting avatar");
@@ -3454,6 +3461,7 @@ chatty_history_get_im_timestamp (ChattyHistory *self,
   g_autoptr(GTask) task = NULL;
   int time_stamp;
 
+  g_return_val_if_fail (CHATTY_IS_HISTORY (self), 0);
   g_return_val_if_fail (uuid, 0);
   g_return_val_if_fail (account, 0);
 
@@ -3504,6 +3512,7 @@ chatty_history_get_last_message_time (ChattyHistory *self,
   g_autoptr(GTask) task = NULL;
   int time_stamp;
 
+  g_return_val_if_fail (CHATTY_IS_HISTORY (self), 0);
   g_return_val_if_fail (account, 0);
   g_return_val_if_fail (room, 0);
   g_return_val_if_fail (self->db, 0);

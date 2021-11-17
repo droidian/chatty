@@ -23,9 +23,8 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (ChattyNotification, chatty_notification, CHATTY, NOTIFICATION, GObject)
 
-ChattyNotification *chatty_notification_new          (void);
+ChattyNotification *chatty_notification_new          (ChattyChat         *chat);
 void                chatty_notification_show_message (ChattyNotification *self,
-                                                      ChattyChat         *chat,
                                                       ChattyMessage      *message,
                                                       const char         *name);
 

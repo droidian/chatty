@@ -9,7 +9,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "matrix/matrix-api.h"
+#include "matrix-api.h"
 
 static void
 test_matrix_api_new (void)
@@ -21,14 +21,14 @@ test_matrix_api_new (void)
   api = matrix_api_new (NULL);
   g_assert (MATRIX_IS_API (api));
   g_assert_cmpstr (matrix_api_get_username (api), ==, NULL);
-  matrix_api_set_username (api, name);
-  g_assert_cmpstr (matrix_api_get_username (api), ==, name);
+  matrix_api_set_login_username (api, name);
+  g_assert_cmpstr (matrix_api_get_login_username (api), ==, name);
   g_object_unref (api);
 
   name = "@alice:example.org";
   api = matrix_api_new (name);
   g_assert (MATRIX_IS_API (api));
-  g_assert_cmpstr (matrix_api_get_username (api), ==, name);
+  g_assert_cmpstr (matrix_api_get_login_username (api), ==, name);
   g_assert_cmpstr (matrix_api_get_password (api), ==, NULL);
   g_assert_cmpstr (matrix_api_get_homeserver (api), ==, NULL);
 

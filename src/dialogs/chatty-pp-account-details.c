@@ -32,7 +32,6 @@
 
 #include "chatty-avatar.h"
 #include "chatty-fp-row.h"
-#include "matrix/chatty-ma-account.h"
 #include "chatty-pp-account-details.h"
 #include "chatty-log.h"
 
@@ -43,6 +42,9 @@ struct _ChattyPpAccountDetails
   ChattyAccount *account;
 
   GtkWidget     *avatar_image;
+  GtkWidget     *delete_avatar_button;
+  GtkWidget     *edit_avatar_button;
+
   GtkWidget     *account_id_label;
   GtkWidget     *account_protocol_label;
   GtkWidget     *status_label;
@@ -54,6 +56,7 @@ struct _ChattyPpAccountDetails
 
   guint          modified : 1;
   gulong         status_id;
+  gulong         avatar_changed_id;
 };
 
 enum {
@@ -76,6 +79,7 @@ static char *
 pp_account_show_dialog_load_avatar (ChattyPpAccountDetails *self)
 {
   g_autoptr(GtkFileChooserNative) dialog = NULL;
+  GtkFileFilter *filter;
   GtkWidget *window;
   int response;
 
@@ -85,6 +89,13 @@ pp_account_show_dialog_load_avatar (ChattyPpAccountDetails *self)
                                         GTK_FILE_CHOOSER_ACTION_OPEN,
                                         _("Open"),
                                         _("Cancel"));
+  gtk_native_dialog_set_transient_for (GTK_NATIVE_DIALOG (dialog), GTK_WINDOW (window));
+  gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
+
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_add_mime_type (filter, "image/*");
+  gtk_file_filter_set_name (filter, _("Images"));
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
 
   response = gtk_native_dialog_run (GTK_NATIVE_DIALOG (dialog));
 
@@ -95,7 +106,16 @@ pp_account_show_dialog_load_avatar (ChattyPpAccountDetails *self)
 }
 
 static void
-pp_details_avatar_button_clicked_cb (ChattyPpAccountDetails *self)
+pp_details_delete_avatar_button_clicked_cb (ChattyPpAccountDetails *self)
+{
+  g_assert (CHATTY_IS_PP_ACCOUNT_DETAILS (self));
+
+  chatty_item_set_avatar_async (CHATTY_ITEM (self->account),
+                                NULL, NULL, NULL, NULL);
+}
+
+static void
+pp_details_edit_avatar_button_clicked_cb (ChattyPpAccountDetails *self)
 {
   g_autofree char *file_name = NULL;
 
@@ -162,6 +182,20 @@ pp_details_status_changed_cb (ChattyPpAccountDetails *self)
     status_text = _("disconnected");
 
   gtk_label_set_text (GTK_LABEL (self->status_label), status_text);
+}
+
+static void
+pp_details_avatar_changed_cb (ChattyPpAccountDetails *self)
+{
+  GdkPixbuf *avatar;
+
+  g_assert (CHATTY_IS_PP_ACCOUNT_DETAILS (self));
+
+  if (!self->account)
+    return;
+
+  avatar = chatty_item_get_avatar (CHATTY_ITEM (self->account));
+  gtk_widget_set_visible (self->delete_avatar_button, !!avatar);
 }
 
 static void
@@ -258,6 +292,9 @@ chatty_pp_account_details_class_init (ChattyPpAccountDetailsClass *klass)
                                                "ui/chatty-pp-account-details.ui");
 
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, avatar_image);
+  gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, delete_avatar_button);
+  gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, edit_avatar_button);
+
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, account_id_label);
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, account_protocol_label);
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, status_label);
@@ -267,7 +304,8 @@ chatty_pp_account_details_class_init (ChattyPpAccountDetailsClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, device_fp);
   gtk_widget_class_bind_template_child (widget_class, ChattyPpAccountDetails, device_fp_list);
 
-  gtk_widget_class_bind_template_callback (widget_class, pp_details_avatar_button_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, pp_details_delete_avatar_button_clicked_cb);
+  gtk_widget_class_bind_template_callback (widget_class, pp_details_edit_avatar_button_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, pa_details_pw_entry_icon_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, pa_details_pw_entry_changed_cb);
   gtk_widget_class_bind_template_callback (widget_class, pa_details_delete_account_clicked_cb);
@@ -342,6 +380,7 @@ chatty_pp_account_details_set_item (ChattyPpAccountDetails *self,
 
   if (self->account != account) {
     g_clear_signal_handler (&self->status_id, self->account);
+    g_clear_signal_handler (&self->avatar_changed_id, self->account);
     gtk_list_box_bind_model (GTK_LIST_BOX (self->device_fp_list),
                              NULL, NULL, NULL, NULL);
     gtk_widget_hide (self->device_fp_list);
@@ -362,10 +401,13 @@ chatty_pp_account_details_set_item (ChattyPpAccountDetails *self,
   self->status_id = g_signal_connect_object (self->account, "notify::status",
                                              G_CALLBACK (pp_details_status_changed_cb),
                                              self, G_CONNECT_SWAPPED);
+  self->avatar_changed_id = g_signal_connect_object (self->account, "avatar-changed",
+                                                     G_CALLBACK (pp_details_avatar_changed_cb),
+                                                     self, G_CONNECT_SWAPPED);
   pp_details_status_changed_cb (self);
+  pp_details_avatar_changed_cb (self);
 
-  if (chatty_item_get_protocols (CHATTY_ITEM (self->account)) == CHATTY_PROTOCOL_XMPP ||
-      CHATTY_IS_MA_ACCOUNT (self->account))
+  if (chatty_item_get_protocols (CHATTY_ITEM (self->account)) == CHATTY_PROTOCOL_XMPP)
     chatty_account_load_fp_async (self->account,
                                   pp_details_get_fingerprints_cb,
                                   g_object_ref (self));

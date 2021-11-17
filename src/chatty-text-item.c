@@ -11,8 +11,13 @@
 
 #include <glib/gi18n.h>
 
-#include "chatty-avatar.h"
-#include "chatty-utils.h"
+#include "config.h"
+
+#ifdef PURPLE_ENABLED
+# include <purple.h>
+#endif
+
+#include "chatty-settings.h"
 #include "chatty-text-item.h"
 
 
@@ -36,6 +41,7 @@ static gchar *
 chatty_msg_list_escape_message (ChattyTextItem *self,
                                 const char       *message)
 {
+#ifdef PURPLE_ENABLED
   g_autofree char *nl_2_br = NULL;
   g_autofree char *striped = NULL;
   g_autofree char *escaped = NULL;
@@ -50,6 +56,9 @@ chatty_msg_list_escape_message (ChattyTextItem *self,
   purple_markup_html_to_xhtml (linkified, &result, NULL);
 
   return result;
+#endif
+
+  return g_strdup ("");
 }
 
 static void
@@ -102,14 +111,26 @@ text_item_update_quotes (ChattyTextItem *self)
 static void
 text_item_update_message (ChattyTextItem *self)
 {
-  g_autofree char *message = NULL;
+  ChattySettings *settings;
+  const char *text;
 
   g_assert (CHATTY_IS_TEXT_ITEM (self));
   g_assert (self->message);
 
-  message = chatty_msg_list_escape_message (self, chatty_message_get_text (self->message));
+  settings = chatty_settings_get_default ();
+  text = chatty_message_get_text (self->message);
 
-  gtk_label_set_markup (GTK_LABEL (self->content_label), message);
+  if ((self->protocol == CHATTY_PROTOCOL_MATRIX &&
+       chatty_settings_get_experimental_features (settings)) ||
+      self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
+    gtk_label_set_text (GTK_LABEL (self->content_label), text);
+  } else {
+    /* This happens only for purple messages */
+    g_autofree char *message = NULL;
+
+    message = chatty_msg_list_escape_message (self, text);
+    gtk_label_set_markup (GTK_LABEL (self->content_label), message);
+  }
 
   text_item_update_quotes (self);
 }
