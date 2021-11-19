@@ -1,3 +1,10 @@
+chatty (0.5.0~beta-1) experimental; urgency=medium
+
+  * New upstream version 0.5.0~beta
+  * d/control: Add libgnome-desktop-3-dev build dependency
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Fri, 19 Nov 2021 17:13:01 +0100
+
 chatty (0.4.0-1) unstable; urgency=medium
 
   * New upstream version 0.4.0
