@@ -15,7 +15,7 @@
 
 #include "chatty-chat.h"
 #include "chatty-enums.h"
-#include "users/chatty-account.h"
+#include "chatty-account.h"
 
 G_BEGIN_DECLS
 
@@ -25,6 +25,7 @@ G_DECLARE_FINAL_TYPE (ChattyMaAccount, chatty_ma_account, CHATTY, MA_ACCOUNT, Ch
 
 ChattyMaAccount  *chatty_ma_account_new                (const char      *username,
                                                         const char      *password);
+const char       *chatty_ma_account_get_login_username (ChattyMaAccount *self);
 ChattyMaAccount  *chatty_ma_account_new_secret         (gpointer         secret_retrievable);
 void              chatty_ma_account_set_history_db     (ChattyMaAccount *self,
                                                         gpointer         history_db);

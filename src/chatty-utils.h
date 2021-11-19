@@ -4,14 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-
-#ifndef __UTILS_H_INCLUDE__
-#define __UTILS_H_INCLUDE__
+#pragma once
 
 #include <stdio.h>
 #include <gio/gio.h>
 #include <gtk/gtk.h>
-#include <purple.h>
 
 #include "chatty-enums.h"
 
@@ -34,6 +31,7 @@ struct _ChattyFileInfo {
   int status;
 };
 
+const char *chatty_utils_get_purple_dir (void);
 char *chatty_utils_jabber_id_strip (const char *name);
 char *chatty_utils_check_phonenumber (const char *phone_number,
                                       const char *country);
@@ -47,10 +45,12 @@ gboolean chatty_utils_get_item_position (GListModel *list,
 gboolean chatty_utils_remove_list_item  (GListStore *store,
                                          gpointer    item);
 char       *chatty_utils_get_human_time (time_t unix_time);
-PurpleBlistNode *chatty_utils_get_conv_blist_node (PurpleConversation *conv);
 GdkPixbuf           *chatty_utils_get_pixbuf_from_data  (const guchar *buf,
                                                          gsize         count);
-ChattyMsgDirection   chatty_utils_direction_from_flag   (PurpleMessageFlags flag);
 void                 chatty_file_info_free              (ChattyFileInfo     *file_info);
-
-#endif
+ChattyFileInfo      *chatty_file_info_new_for_path      (const char *attachment_path);
+void      chatty_utils_create_thumbnail_async  (const char     *file,
+                                                GAsyncReadyCallback callback,
+                                                gpointer       user_data);
+gboolean  chatty_utils_create_thumbnail_finish (GAsyncResult  *result,
+                                                GError       **error);

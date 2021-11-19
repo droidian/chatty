@@ -47,7 +47,9 @@ struct _MatrixApi
 {
   GObject         parent_instance;
 
-
+   /* The username used to log in.  This can be different from
+    * the @username as this can be an email, phone number, etc. */
+  char           *login_username;
   char           *username;
   char           *password;
   char           *homeserver;
@@ -63,6 +65,7 @@ struct _MatrixApi
   gpointer        cb_object;
   GCancellable   *cancellable;
   char           *next_batch;
+  char           *filter_id;
   MatrixAction    action;
 
   /* for sending events, incremented for each event */
@@ -116,6 +119,9 @@ api_get_version_cb (GObject      *obj,
 
   root = matrix_utils_read_uri_finish (result, &error);
 
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
+
   if (!error)
     error = matrix_utils_json_node_get_error (root);
 
@@ -156,7 +162,8 @@ api_get_version_cb (GObject      *obj,
         self->homeserver_verified = TRUE;
     }
 
-    CHATTY_TRACE_MSG ("%s has versions:%s", self->homeserver, versions->str);
+    g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
+           "%s has versions:%s", self->homeserver, versions->str);
 
     if (!self->homeserver_verified)
       g_warning ("Chatty requires Client-Server API to be ‘r0.5.x’ or ‘r0.6.x’");
@@ -184,6 +191,9 @@ api_get_homeserver_cb (gpointer      object,
   g_assert (MATRIX_IS_API (self));
 
   homeserver = matrix_utils_get_homeserver_finish (result, &error);
+
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
 
   CHATTY_TRACE_MSG ("Get home server, has-error: %d, home server: %s",
                     !error, homeserver);
@@ -220,8 +230,8 @@ api_send_message_cb (GObject      *obj,
   message = g_object_get_data (G_OBJECT (task), "message");
   event_id = g_object_get_data (G_OBJECT (task), "event-id");
 
-  CHATTY_TRACE_MSG ("Sent message. event-id: %s, success: %d, retry-after: %d",
-                    event_id, !error, retry_after);
+  g_debug ("Sending message %s. event-id: %s, retry-after: %d",
+           CHATTY_LOG_SUCESS (!error), event_id, retry_after);
 
   if (error) {
     g_debug ("Error sending message: %s", error->message);
@@ -347,7 +357,9 @@ matrix_get_room_name_cb (GObject      *obj,
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
   if (error) {
-    g_debug ("Error getting room state: %s", error->message);
+    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+      CHATTY_TRACE_MSG ("Error getting room name: %s", error->message);
+
     g_task_return_error (task, error);
   } else {
     g_task_return_pointer (task, object, (GDestroyNotify)json_object_unref);
@@ -373,6 +385,27 @@ matrix_get_room_encryption_cb (GObject      *obj,
 
   encryption = matrix_utils_json_object_get_string (object, "algorithm");
   g_task_return_pointer (task, g_strdup (encryption), g_free);
+}
+
+static void
+matrix_set_room_encryption_cb (GObject      *obj,
+                               GAsyncResult *result,
+                               gpointer      user_data)
+{
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(JsonObject) object = NULL;
+  const char *event;
+  GError *error = NULL;
+
+  object = g_task_propagate_pointer (G_TASK (result), &error);
+
+  if (error &&
+      !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) &&
+      !g_error_matches (error, MATRIX_ERROR, M_NOT_FOUND))
+    g_warning ("Error setting encryption: %s", error->message);
+
+  event = matrix_utils_json_object_get_string (object, "event_id");
+  g_task_return_boolean (task, !!event);
 }
 
 static void
@@ -491,11 +524,12 @@ handle_common_errors (MatrixApi *self,
 
   if (g_error_matches (error, MATRIX_ERROR, M_UNKNOWN_TOKEN)
       && self->password) {
-    CHATTY_TRACE (self->username, "Re-logging in ");
+    CHATTY_TRACE (self->username ? self->username : self->login_username, "Re-logging in ");
     self->login_success = FALSE;
     self->room_list_loaded = FALSE;
     g_clear_pointer (&self->access_token, matrix_utils_free_buffer);
     matrix_enc_set_details (self->matrix_enc, NULL, NULL);
+    self->callback (self->cb_object, self, MATRIX_ACCESS_TOKEN_LOGIN, NULL, NULL);
     matrix_start_sync (self);
 
     return TRUE;
@@ -521,6 +555,8 @@ handle_common_errors (MatrixApi *self,
     if (g_network_monitor_get_connectivity (network_monitor) == G_NETWORK_CONNECTIVITY_FULL) {
       g_clear_handle_id (&self->resync_id, g_source_remove);
 
+      self->sync_failed = TRUE;
+      self->callback (self->cb_object, self, MATRIX_RED_PILL, NULL, NULL);
       CHATTY_TRACE (self->username, "Schedule sync for user ");
       self->resync_id = g_timeout_add_seconds (URI_REQUEST_TIMEOUT,
                                                schedule_resync, self);
@@ -561,6 +597,92 @@ handle_one_time_keys (MatrixApi  *self,
 }
 
 static void
+api_upload_filter_cb (GObject      *object,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+  g_autoptr(MatrixApi) self = user_data;
+  g_autoptr(JsonObject) root = NULL;
+  g_autoptr(GError) error = NULL;
+
+  g_assert (MATRIX_IS_API (self));
+  g_assert (G_IS_TASK (result));
+
+  root = g_task_propagate_pointer (G_TASK (result), &error);
+
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
+
+  CHATTY_DEBUG (self->username, "Uploading filter %s, user",
+                CHATTY_LOG_SUCESS (!error));
+
+  if (handle_common_errors (self, error))
+    return;
+
+  self->filter_id = g_strdup (matrix_utils_json_object_get_string (root, "filter_id"));
+
+  if (!self->filter_id)
+    self->filter_id = g_strdup ("");
+  matrix_start_sync (self);
+}
+
+static void
+matrix_upload_filter (MatrixApi *self)
+{
+  g_autoptr(GError) error = NULL;
+  g_autoptr(GBytes) data = NULL;
+  const char *data_str = NULL;
+  gsize size;
+
+  data = g_resources_lookup_data ("/sm/puri/Chatty/matrix-filter.json", 0, &error);
+
+  if (error)
+    g_warning ("Error getting filter file: %s", error->message);
+  else if (data)
+    data_str = g_bytes_get_data (data, &size);
+
+  if (!data || !data_str || !size) {
+    self->filter_id = g_strdup ("");
+    matrix_start_sync (self);
+  } else {
+    g_autofree char *uri = NULL;
+    g_autoptr(JsonParser) parser = NULL;
+    JsonObject *filter = NULL;
+    JsonNode *root = NULL;
+
+    CHATTY_DEBUG (self->username, "Uploading filter, user:");
+
+    parser = json_parser_new ();
+    json_parser_load_from_data (parser, data_str, size, &error);
+
+    if (error)
+      g_warning ("Error parsing filter file: %s", error->message);
+
+    if (!error)
+      root = json_parser_get_root (parser);
+
+    if (root)
+      filter = json_node_get_object (root);
+
+    if (error || !root || !filter) {
+      if (error)
+        g_warning ("Error getting filter file: %s", error->message);
+
+      self->filter_id = g_strdup ("");
+      matrix_start_sync (self);
+
+      return;
+    }
+
+    uri = g_strconcat ("/_matrix/client/r0/user/", self->username, "/filter", NULL);
+    matrix_net_send_json_async (self->matrix_net, 2, json_object_ref (filter),
+                                uri, SOUP_METHOD_POST,
+                                NULL, self->cancellable, api_upload_filter_cb,
+                                g_object_ref (self));
+  }
+}
+
+static void
 matrix_login_cb (GObject      *obj,
                  GAsyncResult *result,
                  gpointer      user_data)
@@ -576,7 +698,11 @@ matrix_login_cb (GObject      *obj,
 
   root = g_task_propagate_pointer (G_TASK (result), &error);
 
-  CHATTY_TRACE_MSG ("login complete. success: %d", !error);
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
+
+  CHATTY_TRACE_MSG ("login %s", CHATTY_LOG_SUCESS (!error));
+
   if (error) {
     self->sync_failed = TRUE;
     /* use a better code to inform invalid password */
@@ -611,7 +737,7 @@ matrix_login_cb (GObject      *obj,
   self->key = matrix_enc_get_device_keys_json (self->matrix_enc);
 
   self->callback (self->cb_object, self, MATRIX_PASSWORD_LOGIN, NULL, NULL);
-  matrix_upload_key (self);
+  matrix_start_sync (self);
 }
 
 static void
@@ -663,9 +789,12 @@ matrix_take_red_pill_cb (GObject      *obj,
 
   root = g_task_propagate_pointer (G_TASK (result), &error);
 
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
+
   if (!self->next_batch || error || !self->full_state_loaded)
-    CHATTY_TRACE_MSG ("sync success: %d, full-state: %d, next-batch: %s",
-                      !error, !self->full_state_loaded, self->next_batch);
+    g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE, "sync %s, full-state: %d, next-batch: %s",
+           CHATTY_LOG_SUCESS (!error), !self->full_state_loaded, self->next_batch);
 
   if (handle_common_errors (self, error))
     return;
@@ -703,7 +832,8 @@ matrix_verify_homeserver (MatrixApi *self)
   g_autofree char *uri = NULL;
 
   g_assert (MATRIX_IS_API (self));
-  CHATTY_TRACE_MSG ("verifying homeserver %s", self->homeserver);
+  g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
+         "verifying homeserver %s", self->homeserver);
 
   self->action = MATRIX_VERIFY_HOMESERVER;
   uri = g_strconcat (self->homeserver, "/_matrix/client/versions", NULL);
@@ -718,13 +848,12 @@ matrix_login (MatrixApi *self)
   JsonObject *object, *child;
 
   g_assert (MATRIX_IS_API (self));
-  g_assert (self->username);
+  g_assert (self->login_username);
   g_assert (self->homeserver);
   g_assert (!self->access_token);
   g_assert (self->password && *self->password);
 
-  CHATTY_TRACE_MSG ("logging in to account '%s' on server '%s'",
-                    self->username, self->homeserver);
+  CHATTY_TRACE (self->login_username, "logging on server %s, account", self->homeserver);
 
   /* https://matrix.org/docs/spec/client_server/r0.6.1#post-matrix-client-r0-login */
   object = json_object_new ();
@@ -733,13 +862,21 @@ matrix_login (MatrixApi *self)
   json_object_set_string_member (object, "initial_device_display_name", "Chatty");
 
   child = json_object_new ();
-  json_object_set_string_member (child, "type", "m.id.user");
-  json_object_set_string_member (child, "user", self->username);
+
+  if (chatty_utils_username_is_valid (self->login_username, CHATTY_PROTOCOL_EMAIL)) {
+    json_object_set_string_member (child, "type", "m.id.thirdparty");
+    json_object_set_string_member (child, "medium", "email");
+    json_object_set_string_member (child, "address", self->login_username);
+  } else {
+    json_object_set_string_member (child, "type", "m.id.user");
+    json_object_set_string_member (child, "user", self->login_username);
+  }
+
   json_object_set_object_member (object, "identifier", child);
 
   matrix_net_send_json_async (self->matrix_net, 2, object,
                               "/_matrix/client/r0/login", SOUP_METHOD_POST,
-                              NULL, NULL, matrix_login_cb,
+                              NULL, self->cancellable, matrix_login_cb,
                               g_object_ref (self));
 }
 
@@ -755,7 +892,7 @@ matrix_upload_key (MatrixApi *self)
 
   matrix_net_send_data_async (self->matrix_net, 2, key, strlen (key),
                               "/_matrix/client/r0/keys/upload", SOUP_METHOD_POST,
-                              NULL, NULL, matrix_upload_key_cb,
+                              NULL, self->cancellable, matrix_upload_key_cb,
                               g_object_ref (self));
 }
 
@@ -771,12 +908,15 @@ get_joined_rooms_cb (GObject      *obj,
   g_assert (MATRIX_IS_API (self));
   g_assert (G_IS_TASK (result));
 
-  CHATTY_TRACE_MSG ("Getting joined rooms, success: %d", !error);
+  root = g_task_propagate_pointer (G_TASK (result), &error);
+
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+    return;
+
+  CHATTY_TRACE_MSG ("Getting joined rooms %s", CHATTY_LOG_SUCESS (!error));
 
   if (handle_common_errors (self, error))
     return;
-
-  root = g_task_propagate_pointer (G_TASK (result), &error);
 
   self->callback (self->cb_object, self, MATRIX_GET_JOINED_ROOMS, root, error);
 
@@ -795,7 +935,7 @@ matrix_get_joined_rooms (MatrixApi *self)
   CHATTY_TRACE_MSG ("Getting joined rooms");
   matrix_net_send_json_async (self->matrix_net, 0, NULL,
                               "/_matrix/client/r0/joined_rooms", SOUP_METHOD_GET,
-                              NULL, NULL, get_joined_rooms_cb,
+                              NULL, self->cancellable, get_joined_rooms_cb,
                               g_object_ref (self));
 }
 
@@ -810,7 +950,7 @@ matrix_start_sync (MatrixApi *self)
 
   if (!self->homeserver) {
     self->action = MATRIX_GET_HOMESERVER;
-    if (!matrix_utils_username_is_complete (self->username)) {
+    if (!matrix_utils_username_is_complete (self->login_username)) {
       g_autoptr(GError) error = NULL;
 
       g_debug ("Error: No Homeserver provided");
@@ -819,7 +959,7 @@ matrix_start_sync (MatrixApi *self)
       self->callback (self->cb_object, self, self->action, NULL, error);
     } else {
       g_debug ("Fetching home server details from username");
-      matrix_utils_get_homeserver_async (self->username, URI_REQUEST_TIMEOUT, self->cancellable,
+      matrix_utils_get_homeserver_async (self->login_username, URI_REQUEST_TIMEOUT, self->cancellable,
                                          (GAsyncReadyCallback)api_get_homeserver_cb,
                                          self);
     }
@@ -827,6 +967,8 @@ matrix_start_sync (MatrixApi *self)
     matrix_verify_homeserver (self);
   } else if (!self->access_token) {
     matrix_login (self);
+  } else if (!self->filter_id){
+    matrix_upload_filter (self);
   } else if (!self->room_list_loaded) {
     matrix_get_joined_rooms (self);
   } else {
@@ -875,8 +1017,10 @@ matrix_api_finalize (GObject *object)
   g_clear_handle_id (&self->resync_id, g_source_remove);
 
   g_free (self->username);
+  g_free (self->login_username);
   g_free (self->homeserver);
   g_free (self->device_id);
+  g_free (self->filter_id);
   matrix_utils_free_buffer (self->password);
   matrix_utils_free_buffer (self->access_token);
 
@@ -910,8 +1054,9 @@ matrix_api_init (MatrixApi *self)
  * and sync_callback should be set.
  *
  * If @username is not in full form (ie,
- * @user:example.com), homeserver should be set
- * with matrix_api_set_homeserver()
+ * @user:example.com) or an email or phone
+ * number, homeserver should be set with
+ * matrix_api_set_homeserver()
  *
  * Returns: (transfer full): A new #MatrixApi.
  * Free with g_object_unref().
@@ -922,7 +1067,7 @@ matrix_api_new (const char *username)
   MatrixApi *self;
 
   self = g_object_new (MATRIX_TYPE_API, NULL);
-  self->username = g_strdup (username);
+  self->login_username = g_strdup (username);
 
   return self;
 }
@@ -948,10 +1093,12 @@ matrix_api_set_enc (MatrixApi *self,
  * Get the username of @self.  This will be a fully
  * qualified Matrix ID (eg: @user:example.com) if
  * @self has succeeded in synchronizing with the
- * server.  Otherwise, the username set for @self
- * shall be returned.
+ * server, otherwise NULL is returned
  *
- * Returns: The matrix username.
+ * Please note that this can return a different value
+ * than the one set with matrix_api_set_login_username().
+ *
+ * Returns: (nullable): The matrix username.
  */
 const char *
 matrix_api_get_username (MatrixApi *self)
@@ -968,7 +1115,46 @@ matrix_api_set_username (MatrixApi  *self,
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (!self->username);
 
-  self->username = g_strdup (username);
+  if (chatty_utils_username_is_valid (username, CHATTY_PROTOCOL_MATRIX))
+    self->username = g_strdup (username);
+}
+
+/**
+ * matrix_api_get_login_username:
+ * @self: A #MatrixApi
+ *
+ * Get the username as set with
+ * matrix_api_set_login_username().
+ *
+ * Returns: The matrix username.
+ */
+const char *
+matrix_api_get_login_username (MatrixApi *self)
+{
+  g_return_val_if_fail (MATRIX_IS_API (self), "");
+
+  return self->login_username;
+}
+
+/**
+ * matrix_api_set_login_username:
+ * @self: A #MatrixApi
+ * @userame: The usernamed to use for login
+ *
+ * Set the username of @self.  This is not required to
+ * be a fully qualified Matrix ID like @user:example.com
+ * and can also be an email ID or phone number.
+ *
+ * username can be set only once.
+ */
+void
+matrix_api_set_login_username (MatrixApi  *self,
+                               const char *username)
+{
+  g_return_if_fail (MATRIX_IS_API (self));
+  g_return_if_fail (!self->login_username);
+
+  self->login_username = g_strdup (username);
 }
 
 /**
@@ -1011,13 +1197,12 @@ matrix_api_set_password (MatrixApi  *self,
  * matrix_api_set_sync_callback:
  * @self: A #MatrixApi
  * @callback: A #MatriCallback
- * @object: (nullable) (transfer full): A #GObject
+ * @object: A #GObject
  *
  * Set sync callback. It’s allowed to set callback
  * only once.
  *
- * @object should be a #GObject (derived) object
- * or %NULL.
+ * @object should be a #GObject (derived) object.
  *
  * callback shall run as `callback(@object, ...)`
  *
@@ -1036,12 +1221,11 @@ matrix_api_set_sync_callback (MatrixApi      *self,
 {
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (callback);
-  g_return_if_fail (!object || G_IS_OBJECT (object));
+  g_return_if_fail (G_IS_OBJECT (object));
   g_return_if_fail (!self->callback);
 
   self->callback = callback;
-  g_clear_object (&self->cb_object);
-  self->cb_object = g_object_ref (object);
+  g_set_weak_pointer (&self->cb_object, object);
 }
 
 const char *
@@ -1125,14 +1309,17 @@ matrix_api_set_access_token (MatrixApi  *self,
 {
   g_return_if_fail (MATRIX_IS_API (self));
 
-  matrix_utils_free_buffer (self->access_token);
-  g_free (self->device_id);
+  g_clear_pointer (&self->access_token, matrix_utils_free_buffer);
+  g_clear_pointer (&self->device_id, g_free);
+
+  if (!access_token || !device_id)
+    return;
 
   self->access_token = g_strdup (access_token);
   self->device_id = g_strdup (device_id);
   matrix_net_set_access_token (self->matrix_net, self->access_token);
 
-  if (self->matrix_enc)
+  if (self->matrix_enc && self->username)
     matrix_enc_set_details (self->matrix_enc, self->username, self->device_id);
 }
 
@@ -1177,13 +1364,27 @@ matrix_api_start_sync (MatrixApi *self)
 {
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (self->callback);
-  g_return_if_fail (self->username);
+  g_return_if_fail (self->login_username);
   g_return_if_fail (self->password || self->access_token);
 
   if (self->is_sync && !self->sync_failed)
     return;
 
+  if (g_cancellable_is_cancelled (self->cancellable)) {
+    g_object_unref (self->cancellable);
+    self->cancellable = g_cancellable_new ();
+  }
+
   matrix_start_sync (self);
+}
+
+gboolean
+matrix_api_is_sync (MatrixApi *self)
+{
+  g_return_val_if_fail (MATRIX_IS_API (self), FALSE);
+
+  return self->access_token && self->login_success &&
+    self->is_sync && !self->sync_failed;
 }
 
 void
@@ -1194,11 +1395,6 @@ matrix_api_stop_sync (MatrixApi *self)
   g_cancellable_cancel (self->cancellable);
   self->is_sync = FALSE;
   self->sync_failed = FALSE;
-
-  /* Free the cancellable and create a new
-     one for further use */
-  g_object_unref (self->cancellable);
-  self->cancellable = g_cancellable_new ();
 }
 
 void
@@ -1381,6 +1577,53 @@ matrix_api_get_room_encryption_finish (MatrixApi     *self,
   g_return_val_if_fail (!error || !*error, NULL);
 
   return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+/**
+ * matrix_api_set_room_encryption_async:
+ * @self: A #MatrixApi
+ * @room_id: The room id to set encryption for
+ * @callback: A #GAsyncReadyCallback
+ * @user_data: user data passed to @callback
+ *
+ * Calling this method shall enable encryption.
+ * There is no way to disable encryption once
+ * enabled.
+ *
+ * To get the result, finish the call with
+ * matrix_api_set_room_encryption_finish()
+ */
+void
+matrix_api_set_room_encryption_async (MatrixApi           *self,
+                                      const char          *room_id,
+                                      GAsyncReadyCallback  callback,
+                                      gpointer             user_data)
+{
+  g_autofree char *uri = NULL;
+  JsonObject *object;
+  GTask *task;
+
+  g_return_if_fail (MATRIX_IS_API (self));
+  g_return_if_fail (room_id && *room_id);
+
+  task = g_task_new (self, self->cancellable, callback, user_data);
+  object = json_object_new ();
+  json_object_set_string_member (object, "algorithm", ALGORITHM_MEGOLM);
+  uri = g_strconcat ("/_matrix/client/r0/rooms/", room_id, "/state/m.room.encryption", NULL);
+  matrix_net_send_json_async (self->matrix_net, 2, object, uri, SOUP_METHOD_PUT,
+                              NULL, self->cancellable, matrix_set_room_encryption_cb, task);
+}
+
+gboolean
+matrix_api_set_room_encryption_finish (MatrixApi     *self,
+                                       GAsyncResult  *result,
+                                       GError       **error)
+{
+  g_return_val_if_fail (MATRIX_IS_API (self), FALSE);
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+  g_return_val_if_fail (!error || !*error, FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 void
@@ -1684,7 +1927,7 @@ api_send_message_encrypted (MatrixApi     *self,
 
   g_object_set_data_full (G_OBJECT (task), "message", g_object_ref (message),
                           g_object_unref);
-  CHATTY_TRACE (room_id, "Sending encrypted message. event id: %s, room:", id);
+  CHATTY_DEBUG (room_id, "Sending encrypted message. event id: %s, room:", id);
 
   uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/send/m.room.encrypted/%s", room_id, id);
 
@@ -1714,7 +1957,7 @@ api_send_message (MatrixApi     *self,
   g_object_set_data_full (G_OBJECT (task), "message", g_object_ref (message),
                           g_object_unref);
 
-  CHATTY_TRACE (room_id, "Sending message. event id: %s, room:", id);
+  CHATTY_DEBUG (room_id, "Sending message. event id: %s, room:", id);
 
   /* https://matrix.org/docs/spec/client_server/r0.6.1#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid */
   uri = g_strdup_printf ("/_matrix/client/r0/rooms/%s/send/m.room.message/%s", room_id, id);
@@ -1859,7 +2102,8 @@ api_leave_room_cb (GObject      *obj,
 
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
-  CHATTY_TRACE_MSG ("Leave room. success: %d", !error);
+  CHATTY_DEBUG (g_task_get_task_data (G_TASK (task)),
+                "Leaving room %s", CHATTY_LOG_SUCESS (!error));
 
   if (error && !g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
     g_debug ("Error leaving room: %s", error->message);
@@ -1882,7 +2126,7 @@ matrix_api_leave_chat_async (MatrixApi           *self,
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (room_id && *room_id == '!');
 
-  CHATTY_TRACE_MSG ("Leaving room id: %s", room_id);
+  CHATTY_DEBUG (room_id, "Leaving room");
 
   task = g_task_new (self, self->cancellable, callback, user_data);
   g_task_set_task_data (task, g_strdup (room_id), g_free);
@@ -1953,9 +2197,16 @@ matrix_api_get_user_info_async (MatrixApi           *self,
   if (!user_id)
     user_id = self->username;
 
+  task = g_task_new (self, cancellable, callback, user_data);
+
+  if (!user_id) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
+                             "No user id provided");
+    return;
+  }
+
   CHATTY_TRACE (user_id, "Getting user info: ");
 
-  task = g_task_new (self, cancellable, callback, user_data);
   g_task_set_task_data (task, g_strdup (user_id), g_free);
   uri = g_strdup_printf ("/_matrix/client/r0/profile/%s", user_id);
   matrix_net_send_json_async (self->matrix_net, 1, NULL, uri, SOUP_METHOD_GET,
@@ -1996,7 +2247,8 @@ api_set_name_cb (GObject      *obj,
 
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
-  CHATTY_TRACE_MSG ("Setting name success: %d", !error);
+  CHATTY_DEBUG (self->username, "Setting name to '%s' %s for user",
+                (char *)g_task_get_task_data (task), CHATTY_LOG_SUCESS (!error));
 
   if (error)
     g_task_return_error (task, error);
@@ -2018,7 +2270,7 @@ matrix_api_set_name_async (MatrixApi           *self,
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
-  CHATTY_TRACE (self->username, "Setting name to '%s' for user ", name);
+  CHATTY_DEBUG (self->username, "Setting name to '%s' for user", name);
 
   if (name && *name) {
     root = json_object_new ();
@@ -2062,7 +2314,7 @@ api_set_user_avatar_cb (GObject      *obj,
 
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
-  CHATTY_TRACE_MSG ("Setting avatar success: %d", !error);
+  CHATTY_DEBUG (self->username, "Setting avatar %s, user:", CHATTY_LOG_SUCESS (!error));
 
   if (error)
     g_task_return_error (task, error);
@@ -2132,7 +2384,7 @@ api_get_3pid_cb (GObject      *obj,
   object = g_task_propagate_pointer (G_TASK (result), &error);
   array = matrix_utils_json_object_get_array (object, "threepids");
 
-  CHATTY_TRACE_MSG ("Getting 3pid. success: %d", !error);
+  CHATTY_DEBUG (self->username, "Getting 3pid %s, user:", CHATTY_LOG_SUCESS (!error));
 
   if (!array) {
     if (error)
@@ -2180,9 +2432,16 @@ matrix_api_get_3pid_async (MatrixApi           *self,
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
-  CHATTY_TRACE (self->username, "Getting 3pid of user ");
-
   task = g_task_new (self, cancellable, callback, user_data);
+
+  if (!self->username) {
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT,
+                             "user hasn't logged in yet");
+    return;
+  }
+
+  CHATTY_DEBUG (self->username, "Getting 3pid of user");
+
   matrix_net_send_json_async (self->matrix_net, 1, NULL,
                               "/_matrix/client/r0/account/3pid", SOUP_METHOD_GET,
                               NULL, self->cancellable, api_get_3pid_cb, task);
@@ -2224,14 +2483,13 @@ api_delete_3pid_cb (GObject      *obj,
 
   object = g_task_propagate_pointer (G_TASK (result), &error);
 
-  CHATTY_TRACE_MSG ("Deleting 3pid. success: %d", !error);
+  CHATTY_DEBUG (self->username, "Deleting 3pid %s", CHATTY_LOG_SUCESS (!error));
 
   if (error) {
     g_task_return_error (task, error);
     return;
   }
 
-  g_warning ("%s", matrix_utils_json_object_to_string (object, TRUE));
   g_task_return_boolean (task, TRUE);
 }
 
@@ -2251,7 +2509,17 @@ matrix_api_delete_3pid_async (MatrixApi           *self,
   g_return_if_fail (type == CHATTY_ID_EMAIL || type == CHATTY_ID_PHONE);
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
-  CHATTY_TRACE_MSG ("Deleting 3pid: %s", value);
+  if (chatty_log_get_verbosity () > 2) {
+    g_autoptr(GString) str = NULL;
+
+    str = g_string_new (NULL);
+    g_string_append (str, "user: ");
+    chatty_log_anonymize_value (str, self->username);
+    g_string_append (str, " value: ");
+    chatty_log_anonymize_value (str, value);
+
+    g_debug ("Deleting 3pid, %s", str->str);
+  }
 
   root = json_object_new ();
   json_object_set_string_member (root, "address", value);

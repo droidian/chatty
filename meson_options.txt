@@ -1,0 +1,1 @@
+option('purple', type: 'feature', value: 'auto', description: 'Enable libpurple plugin')

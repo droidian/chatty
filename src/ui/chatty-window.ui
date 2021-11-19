@@ -24,6 +24,13 @@
         </child>
         <child>
           <object class="GtkModelButton">
+            <property name="visible">1</property>
+            <property name="text" translatable="yes">Keyboard _Shortcuts</property>
+            <property name="action-name">win.show-help-overlay</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkModelButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
@@ -57,6 +64,19 @@
             <property name="receives_default">False</property>
             <property name="text" translatable="yes">New Message…</property>
             <signal name="clicked" handler="window_new_message_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton" id="menu_new_sms_mms_message_button">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="text" translatable="yes">New SMS/MMS Message…</property>
+            <signal name="clicked" handler="window_new_sms_mms_message_clicked_cb" swapped="yes"/>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -98,20 +118,6 @@
             <property name="receives_default">False</property>
             <property name="text" translatable="yes">Chat Details</property>
             <signal name="clicked" handler="window_show_chat_info_clicked_cb" swapped="yes"/>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="menu_add_contact_button">
-            <property name="visible">False</property>
-            <property name="active">False</property>
-            <property name="can_focus">False</property>
-            <property name="receives_default">False</property>
-            <property name="text" translatable="yes">Add Contact</property>
-            <signal name="clicked" handler="window_add_contact_clicked_cb" swapped="yes"/>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -166,6 +172,9 @@
     <property name="can_focus">False</property>
     <property name="default_width">360</property>
     <property name="default_height">576</property>
+    <property name="width-request">300</property>
+    <property name="height-request">150</property>
+
     <child type="titlebar">
       <object class="HdyTitleBar">
         <property name="visible">True</property>
@@ -182,12 +191,12 @@
                 <property name="show_close_button">True</property>
                 <property name="title" translatable="yes">Chats</property>
                 <child>
-                  <object class="GtkButton" id="header_add_chat_button">
+                  <object class="GtkMenuButton" id="header_add_chat_button">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
-                    <signal name="clicked" handler="window_add_chat_button_clicked_cb" swapped="yes"/>
+                    <property name="popover">header_chat_list_new_msg_popover</property>
                     <child>
                       <object class="GtkImage">
                         <property name="visible">True</property>
@@ -223,6 +232,7 @@
                     <property name="receives_default">False</property>
                     <property name="active" bind-source="chats_search_bar" bind-property="search-mode-enabled" bind-flags="sync-create|bidirectional"/>
                     <accelerator key="f" modifiers="primary" signal="clicked" />
+                    <signal name="toggled" handler="window_search_toggled_cb" swapped="yes"/>
                     <child>
                       <object class="GtkImage">
                         <property name="visible">True</property>
@@ -375,9 +385,26 @@
                 <property name="visible">True</property>
                 <property name="hexpand">False</property>
                 <child>
-                  <object class="GtkSearchEntry" id="chats_search_entry">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
-                    <signal name="search-changed" handler="window_search_changed_cb" swapped="yes"/>
+                    <style>
+                      <class name="linked"/>
+                    </style>
+                    <child>
+                      <object class="GdTaggedEntry" id="chats_search_entry">
+                        <property name="visible">True</property>
+                        <property name="hexpand">True</property>
+                        <signal name="search-changed" handler="window_search_changed_cb" swapped="yes"/>
+                        <signal name="tag-button-clicked" handler="search_tag_button_clicked_cb" swapped="yes"/>
+                        <signal name="activate" handler="window_search_entry_activated_cb" swapped="yes"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkMenuButton">
+                        <property name="visible">1</property>
+                        <property name="popover">popover</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
@@ -399,8 +426,6 @@
                       <object class="HdyStatusPage" id="empty_view">
                         <property name="visible">True</property>
                         <property name="expand">True</property>
-                        <property name="title" translatable="yes">Start Chatting</property>
-                        <property name="icon-name">sm.puri.Chatty-symbolic</property>
                       </object>
                     </child>
 
@@ -455,6 +480,21 @@
       </object>
     </child>
   </template>
+
+  <object class="GtkPopover" id="popover">
+    <property name="position">bottom</property>
+    <style>
+      <class name="no-padding"/>
+    </style>
+    <child>
+      <object class="GtkListBox" id="protocol_list">
+        <property name="visible">True</property>
+        <property name="selection-mode">none</property>
+        <signal name="row-activated" handler="window_search_protocol_changed_cb" swapped="yes"/>
+      </object>
+    </child>
+  </object>
+
   <object class="GtkSizeGroup" id="start_pane_size_group">
     <property name="mode">horizontal</property>
     <widgets>

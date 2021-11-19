@@ -25,31 +25,14 @@ struct _ChattyNotification
 {
   GObject         parent_instance;
 
+  ChattyChat     *chat;
+  char           *chat_name;
+
   GNotification  *notification;
   int             timeout_id;
 };
 
 G_DEFINE_TYPE (ChattyNotification, chatty_notification, G_TYPE_OBJECT)
-
-static void
-create_new_notification (ChattyNotification *self,
-                         ChattyChat         *chat)
-{
-  g_assert (CHATTY_IS_NOTIFICATION (self));
-
-  if (self->notification)
-    return;
-
-  self->notification = g_notification_new ("chatty");
-  g_notification_set_default_action (self->notification, "app.show-window");
-  g_notification_add_button_with_target (self->notification, _("Open Message"), "app.open-chat",
-                                         "(ss)",
-                                         chatty_chat_get_chat_name (chat),
-                                         chatty_item_get_username (CHATTY_ITEM (chat)));
-#if GLIB_CHECK_VERSION(2,70,0)
-  g_notification_set_category (self->notification, "im.received");
-#endif
-}
 
 static gboolean
 show_notification (gpointer user_data)
@@ -63,13 +46,27 @@ show_notification (gpointer user_data)
   app = g_application_get_default ();
 
   if (app)
-    g_application_send_notification (app, "x-chatty.im.received",
+    g_application_send_notification (app, self->chat_name,
                                      self->notification);
 
-  /* We create new GNotification for each notification */
-  g_clear_object (&self->notification);
-
   return G_SOURCE_REMOVE;
+}
+
+static void
+notification_chat_changed_cb (ChattyNotification *self)
+{
+  GApplication *app;
+
+  g_assert (CHATTY_IS_NOTIFICATION (self));
+
+  if (chatty_chat_get_unread_count (self->chat) > 0)
+    return;
+
+  g_clear_handle_id (&self->timeout_id, g_source_remove);
+  app = g_application_get_default ();
+
+  if (app)
+    g_application_withdraw_notification (app, self->chat_name);
 }
 
 static GdkPixbuf *
@@ -140,6 +137,8 @@ chatty_notification_finalize (GObject *object)
   g_clear_handle_id (&self->timeout_id, g_source_remove);
   g_clear_object (&self->notification);
 
+  g_free (self->chat_name);
+
   G_OBJECT_CLASS (chatty_notification_parent_class)->finalize (object);
 }
 
@@ -154,32 +153,61 @@ chatty_notification_class_init (ChattyNotificationClass *klass)
 static void
 chatty_notification_init (ChattyNotification *self)
 {
+  self->notification = g_notification_new ("chatty");
+
+  g_notification_set_default_action (self->notification, "app.show-window");
+
+#if GLIB_CHECK_VERSION(2,70,0)
+  g_notification_set_category (self->notification, "im.received");
+#endif
 }
 
 ChattyNotification *
-chatty_notification_new (void)
+chatty_notification_new (ChattyChat *chat)
 {
-  return g_object_new (CHATTY_TYPE_NOTIFICATION,
-                       NULL);
+  ChattyNotification *self;
+
+  g_return_val_if_fail (CHATTY_IS_CHAT (chat), NULL);
+
+  self = g_object_new (CHATTY_TYPE_NOTIFICATION, NULL);
+  self->chat = chat;
+  self->chat_name = g_strdup (chatty_chat_get_chat_name (chat));
+  g_set_weak_pointer (&self->chat, chat);
+
+  g_signal_connect_object (self->chat, "changed",
+                           G_CALLBACK (notification_chat_changed_cb),
+                           self, G_CONNECT_SWAPPED);
+
+  g_notification_add_button_with_target (self->notification, _("Open Message"), "app.open-chat",
+                                         "(ssi)", self->chat_name,
+                                         chatty_item_get_username (CHATTY_ITEM (chat)),
+                                         chatty_item_get_protocols (CHATTY_ITEM (chat)));
+
+  if (chatty_item_get_avatar (CHATTY_ITEM (chat))) {
+    g_autoptr(GdkPixbuf) image = NULL;
+    GdkPixbuf *avatar;
+
+    avatar = chatty_item_get_avatar (CHATTY_ITEM (chat));
+    image = chatty_manager_round_pixbuf (avatar);
+
+    if (image)
+      g_notification_set_icon (self->notification, G_ICON (image));
+  }
+
+  return self;
 }
 
 void
 chatty_notification_show_message (ChattyNotification *self,
-                                  ChattyChat         *chat,
                                   ChattyMessage      *message,
                                   const char         *name)
 {
   g_autofree char *title = NULL;
-  g_autoptr(GdkPixbuf) image = NULL;
   g_autoptr(LfbEvent) event = NULL;
-  GdkPixbuf *avatar;
   ChattyItem *item;
 
   g_return_if_fail (CHATTY_IS_NOTIFICATION (self));
-  g_return_if_fail (CHATTY_IS_CHAT (chat));
   g_return_if_fail (CHATTY_IS_MESSAGE (message));
-
-  create_new_notification (self, chat);
 
   if (name)
     title = g_strdup_printf (_("New message from %s"), name);
@@ -188,14 +216,16 @@ chatty_notification_show_message (ChattyNotification *self,
 
   item = chatty_message_get_user (message);
 
-  if (!item)
-    item = CHATTY_ITEM (chat);
+  if (item) {
+    g_autoptr(GdkPixbuf) image = NULL;
+    GdkPixbuf *avatar;
 
-  avatar = chatty_item_get_avatar (item);
-  image = chatty_manager_round_pixbuf (avatar);
+    avatar = chatty_item_get_avatar (item);
+    image = chatty_manager_round_pixbuf (avatar);
 
-  if (image)
-    g_notification_set_icon (self->notification, G_ICON (image));
+    if (image)
+      g_notification_set_icon (self->notification, G_ICON (image));
+  }
 
   g_notification_set_body (self->notification, chatty_message_get_text (message));
   g_notification_set_title (self->notification, title);

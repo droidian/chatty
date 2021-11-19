@@ -87,6 +87,36 @@
           </packing>
         </child>
 
+        <!-- Checkbox -->
+        <child>
+          <object class="GtkCheckButton" id="checkbox">
+            <property name="visible">0</property>
+            <property name="sensitive">0</property>
+          </object>
+          <packing>
+            <property name="height">2</property>
+          </packing>
+        </child>
+
+        <!-- Add Contact -->
+        <child>
+          <object class="GtkButton" id="add_contact_button">
+            <property name="visible">0</property>
+            <property name="sensitive">1</property>
+            <signal name="clicked" handler="chatty_list_row_add_contact_clicked_cb" swapped="yes"/>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="icon_name">contact-new-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="height">2</property>
+          </packing>
+        </child>
+
       </object>
     </child>
   </template>

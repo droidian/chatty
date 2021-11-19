@@ -27,16 +27,14 @@
 #include <gtk/gtk.h>
 
 #include "chatty-chat.h"
+#include "chatty-chat-info.h"
 
 G_BEGIN_DECLS
 
 #define CHATTY_TYPE_PP_CHAT_INFO (chatty_pp_chat_info_get_type ())
 
-G_DECLARE_FINAL_TYPE (ChattyPpChatInfo, chatty_pp_chat_info, CHATTY, PP_CHAT_INFO, HdyPreferencesPage)
+G_DECLARE_FINAL_TYPE (ChattyPpChatInfo, chatty_pp_chat_info, CHATTY, PP_CHAT_INFO, ChattyChatInfo)
 
 GtkWidget     *chatty_pp_chat_info_new         (void);
-ChattyChat    *chatty_pp_chat_info_get_item    (ChattyPpChatInfo *self);
-void           chatty_pp_chat_info_set_item    (ChattyPpChatInfo *self,
-                                                ChattyChat       *chat);
 
 G_END_DECLS

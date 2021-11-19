@@ -4,7 +4,12 @@ set -e
 ABS_BUILDDIR='@ABS_BUILDDIR@'
 ABS_SRCDIR='@ABS_SRCDIR@'
 
+if [ "${CHATTY_GDB}" = 1 ]; then
+    echo "Running chatty under gdb"
+    WRAPPER="gdb --args"
+fi
+
 export GSETTINGS_SCHEMA_DIR="${ABS_BUILDDIR}/data"
 set -x
 export MALLOC_PERTURB_="$(($RANDOM % 255 + 1))"
-MALLOC_CHECK_=2 exec "${ABS_BUILDDIR}/src/chatty" "$@"
+MALLOC_CHECK_=2 exec ${WRAPPER} "${ABS_BUILDDIR}/src/chatty" "$@"

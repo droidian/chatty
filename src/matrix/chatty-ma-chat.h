@@ -13,9 +13,8 @@
 
 #include <glib-object.h>
 
-#include "users/chatty-item.h"
-#include "users/chatty-account.h"
-#include "users/chatty-pp-buddy.h"
+#include "chatty-item.h"
+#include "chatty-account.h"
 #include "chatty-message.h"
 #include "chatty-chat.h"
 #include "chatty-enums.h"
@@ -26,9 +25,10 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (ChattyMaChat, chatty_ma_chat, CHATTY, MA_CHAT, ChattyChat)
 
-ChattyMaChat *chatty_ma_chat_new                (const char    *room_id,
-                                                 const char    *name,
-                                                 ChattyFileInfo *avatar);
+ChattyMaChat *chatty_ma_chat_new                (const char     *room_id,
+                                                 const char     *name,
+                                                 ChattyFileInfo *avatar,
+                                                 gboolean        encrypted);
 void          chatty_ma_chat_set_history_db     (ChattyMaChat  *self,
                                                  gpointer       history_db);
 void          chatty_ma_chat_set_matrix_db      (ChattyMaChat  *self,
@@ -45,6 +45,5 @@ void          chatty_ma_chat_set_last_batch     (ChattyMaChat  *self,
                                                  const char    *last_batch);
 void          chatty_ma_chat_add_messages       (ChattyMaChat  *self,
                                                  GPtrArray     *messages);
-void          chatty_ma_chat_show_notification  (ChattyMaChat  *self);
 
 G_END_DECLS

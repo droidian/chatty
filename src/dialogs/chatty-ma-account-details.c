@@ -31,8 +31,7 @@
 #include <glib/gi18n.h>
 
 #include "chatty-avatar.h"
-#include "chatty-fp-row.h"
-#include "matrix/chatty-ma-account.h"
+#include "chatty-ma-account.h"
 #include "chatty-ma-account-details.h"
 #include "chatty-log.h"
 
@@ -91,14 +90,15 @@ update_delete_avatar_button_state (ChattyMaAccountDetails *self)
 
   status = chatty_account_get_status (CHATTY_ACCOUNT (self->account));
   can_delete = has_avatar && !self->is_deleting_avatar && status == CHATTY_CONNECTED;
-  gtk_widget_set_sensitive (self->delete_avatar_button, can_delete);
-
   button_stack = GTK_STACK (self->delete_button_stack);
 
   if (self->is_deleting_avatar)
     gtk_stack_set_visible_child (button_stack, self->delete_avatar_spinner);
   else
     gtk_stack_set_visible_child (button_stack, self->delete_button_image);
+
+  gtk_widget_set_visible (self->delete_avatar_button, can_delete || self->is_deleting_avatar);
+  gtk_widget_set_sensitive (self->delete_avatar_button, can_delete);
 
   g_object_set (self->delete_avatar_spinner, "active", self->is_deleting_avatar, NULL);
 }
@@ -107,6 +107,7 @@ static char *
 ma_account_show_dialog_load_avatar (ChattyMaAccountDetails *self)
 {
   g_autoptr(GtkFileChooserNative) dialog = NULL;
+  GtkFileFilter *filter;
   GtkWidget *window;
   int response;
 
@@ -116,6 +117,13 @@ ma_account_show_dialog_load_avatar (ChattyMaAccountDetails *self)
                                         GTK_FILE_CHOOSER_ACTION_OPEN,
                                         _("Open"),
                                         _("Cancel"));
+  gtk_native_dialog_set_transient_for (GTK_NATIVE_DIALOG (dialog), GTK_WINDOW (window));
+  gtk_native_dialog_set_modal (GTK_NATIVE_DIALOG (dialog), TRUE);
+
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_add_mime_type (filter, "image/*");
+  gtk_file_filter_set_name (filter, _("Images"));
+  gtk_file_chooser_add_filter (GTK_FILE_CHOOSER (dialog), filter);
 
   response = gtk_native_dialog_run (GTK_NATIVE_DIALOG (dialog));
 
@@ -156,7 +164,6 @@ ma_details_delete_avatar_button_clicked_cb (ChattyMaAccountDetails *self)
   if (self->is_deleting_avatar)
     return;
 
-  g_warning ("xxxxxxxxxx");
   self->is_deleting_avatar = TRUE;
   update_delete_avatar_button_state (self);
   chatty_item_set_avatar_async (CHATTY_ITEM (self->account), NULL, NULL,
@@ -305,7 +312,6 @@ ma_account_details_add_entry (ChattyMaAccountDetails *self,
   row = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
   context = gtk_widget_get_style_context (row);
   gtk_style_context_add_class (context, "linked");
-  /* gtk_style_context_add_class (context, "dim-label"); */
 
   entry = gtk_entry_new ();
   gtk_widget_show (entry);
@@ -332,10 +338,6 @@ ma_account_details_add_entry (ChattyMaAccountDetails *self,
 
   g_signal_connect_swapped (button, "clicked",
                             (GCallback)ma_details_delete_3pid_clicked, self);
-  /* context = gtk_widget_get_style_context (button); */
-  /* gtk_style_context_add_class (context, "dim-label"); */
-  /* gtk_stack_add_named (GTK_STACK (stack), button, "delete-button"); */
-
 
   gtk_widget_show_all (row);
   gtk_container_add (GTK_CONTAINER (box), row);

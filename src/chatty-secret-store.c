@@ -15,8 +15,8 @@
 #include <libsecret/secret.h>
 #include <glib/gi18n.h>
 
-#include "matrix/matrix-utils.h"
-#include "matrix/chatty-ma-account.h"
+#include "matrix-utils.h"
+#include "chatty-ma-account.h"
 #include "chatty-secret-store.h"
 #include "chatty-log.h"
 
@@ -54,7 +54,7 @@ chatty_secret_store_save_async (ChattyAccount       *account,
 {
   const SecretSchema *schema;
   g_autofree char *label = NULL;
-  const char *server, *old_pass;
+  const char *server, *old_pass, *username;
   char *password = NULL, *token = NULL, *key = NULL;
   char *credentials;
 
@@ -74,21 +74,32 @@ chatty_secret_store_save_async (ChattyAccount       *account,
   if (!device_id)
     device_id = "";
 
+  if (CHATTY_IS_MA_ACCOUNT (account))
+    username = chatty_ma_account_get_login_username (CHATTY_MA_ACCOUNT (account));
+  else
+    username = chatty_item_get_username (CHATTY_ITEM (account));
+
+  CHATTY_TRACE (username, "Saving account, has password: %d, has access token: %d"
+                "has device-id: %d",
+                password && *password, token && *token,
+                device_id && *device_id);
+
   /* We don't use json APIs here so that we can manage memory better (and securely free them)  */
   /* TODO: Use a non-pageable memory */
   /* XXX: We use a dumb string search, so don't change the order or spacing of the format string */
-  credentials = g_strdup_printf ("{\"password\": \"%s\", \"access-token\": \"%s\", "
+  credentials = g_strdup_printf ("{\"username\": \"%s\",  \"password\": \"%s\","
+                                 "\"access-token\": \"%s\", "
                                  "\"pickle-key\": \"%s\", \"device-id\": \"%s\"}",
+                                 chatty_item_get_username (CHATTY_ITEM (account)),
                                  password ? password : "", token ? token : "",
                                  key ? key : "", device_id);
   schema = secret_store_get_schema ();
   server = chatty_ma_account_get_homeserver (CHATTY_MA_ACCOUNT (account));
-  label = g_strdup_printf (_("Chatty password for \"%s\""),
-                           chatty_item_get_username (CHATTY_ITEM (account)));
+  label = g_strdup_printf (_("Chatty password for \"%s\""), username);
 
   secret_password_store (schema, NULL, label, credentials,
                          cancellable, callback, user_data,
-                         CHATTY_USERNAME_ATTRIBUTE, chatty_item_get_username (CHATTY_ITEM (account)),
+                         CHATTY_USERNAME_ATTRIBUTE, username,
                          CHATTY_SERVER_ATTRIBUTE, server,
                          CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
                          NULL);
@@ -123,7 +134,7 @@ secret_load_cb (GObject      *object,
   g_assert_true (G_IS_TASK (task));
 
   secrets = secret_password_search_finish (result, &error);
-  CHATTY_TRACE_MSG ("secret accounts loaded, has-error: %d", !!error);
+  CHATTY_DEBUG_MSG ("secret accounts load %s", CHATTY_LOG_SUCESS (!error));
 
   if (error) {
     g_task_return_error (task, error);
@@ -170,7 +181,7 @@ chatty_secret_load_async  (GCancellable        *cancellable,
                           cancellable, secret_load_cb, task,
                           CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
                           NULL);
-  CHATTY_TRACE_MSG ("loading secret accounts");
+  CHATTY_DEBUG_MSG ("loading secret accounts");
 }
 
 GPtrArray *
@@ -189,14 +200,21 @@ chatty_secret_delete_async (ChattyAccount       *account,
                             gpointer             user_data)
 {
   const SecretSchema *schema;
-  const char *server;
+  const char *server, *username;
 
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+
+  if (CHATTY_IS_MA_ACCOUNT (account))
+    username = chatty_ma_account_get_login_username (CHATTY_MA_ACCOUNT (account));
+  else
+    username = chatty_item_get_username (CHATTY_ITEM (account));
+
+  CHATTY_DEBUG (username, "Deleting account");
 
   schema = secret_store_get_schema ();
   server = chatty_ma_account_get_homeserver (CHATTY_MA_ACCOUNT (account));
   secret_password_clear (schema, cancellable, callback, user_data,
-                         CHATTY_USERNAME_ATTRIBUTE, chatty_item_get_username (CHATTY_ITEM (account)),
+                         CHATTY_USERNAME_ATTRIBUTE, username,
                          CHATTY_SERVER_ATTRIBUTE, server,
                          CHATTY_PROTOCOL_ATTRIBUTE, PROTOCOL_MATRIX_STR,
                          NULL);

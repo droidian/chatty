@@ -70,6 +70,43 @@ To run Chatty from source tree (without installing) do:
 build/run
 ```
 
+To start Chatty under `gdb` set `CHATTY_GDB=1` for the run script.
+
+## Running over ssh
+
+```sh
+ssh -X purism@ip
+# kill chatty twice to kill existing instance
+killall chatty; killall chatty
+build/run -vvv --display=$DISPLAY
+```
+
+When running over ssh, if you run into polkit permission issues
+like the following:
+
+```sh
+Error sending message:
+GDBus.Error:org.freedesktop.ModemManager1.Error.Core.Unauthorized:
+PolicyKit authorization failed: not authorized for
+'org.freedesktop.ModemManager1.Messaging'
+```
+
+you can work around the permission issue by running chatty
+on device, but displaying the window on appropriate display:
+
+```sh
+ssh -X purism@ip
+# kill chatty twice to kill existing instance
+killall chatty; killall chatty
+echo $DISPLAY # Use the value you get here in next step
+```
+
+and on the device, open some terminal and do so so that the window
+will be shown in a different display:
+```sh
+# Replace XXX with the value you got in the previous step
+build/run -vvvv --display=XXX
+```
 ## Commands
 
 In a messaging conversation (except SMS conversations) the following commands can be used:

@@ -9,8 +9,13 @@ env.set('G_TEST_BUILDDIR', meson.current_build_dir())
 env.set('GSETTINGS_SCHEMA_DIR', join_paths(meson.build_root(), 'data'))
 env.set('MALLOC_CHECK_', '2')
 
+test_items = []
+
+if purple_dep.found()
+  test_items += ['account']
+endif
+
 test_items = [
-  'account',
   'history',
   'settings',
   'utils',

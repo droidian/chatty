@@ -20,13 +20,13 @@
 #include <glib/gstdio.h>
 #include <sqlite3.h>
 
-#include "matrix/chatty-ma-account.h"
-#include "matrix/chatty-ma-chat.h"
+#include "chatty-history.c"
+#include "chatty-ma-account.h"
+#include "chatty-ma-chat.h"
 
-#include "purple-init.h"
+#include "chatty-contact.h"
 #include "chatty-settings.h"
 #include "chatty-utils.h"
-#include "chatty-history.h"
 
 typedef struct Message {
   ChattyChat *chat;
@@ -36,24 +36,9 @@ typedef struct Message {
   char *who;
   char *what;
   char *uuid;
-  PurpleMessageFlags flags;
+  ChattyMsgDirection direction;
   time_t when;
 } Message;
-
-static PurpleMessageFlags
-flag_for_direction (int direction)
-{
-  if (direction == 1)
-    return PURPLE_MESSAGE_RECV;
-
-  if (direction == -1)
-    return PURPLE_MESSAGE_SEND;
-
-  if (direction == 0)
-    return PURPLE_MESSAGE_SYSTEM;
-
-  g_return_val_if_reached (PURPLE_MESSAGE_SYSTEM);
-}
 
 static void
 free_message (Message *msg)
@@ -241,7 +226,7 @@ new_message (const char         *account,
              const char         *buddy,
              const char         *msg_text,
              const char         *uuid,
-             PurpleMessageFlags  flags,
+             ChattyMsgDirection  direction,
              time_t              time_stamp,
              ChattyMsgType       type,
              const char         *room)
@@ -249,9 +234,7 @@ new_message (const char         *account,
   g_autoptr(ChattyContact) contact = NULL;
   ChattyChat *chat;
   Message *message;
-  ChattyMsgDirection direction = CHATTY_DIRECTION_UNKNOWN;
 
-  direction = chatty_utils_direction_from_flag (flags);
   chat = chatty_chat_new (account, room ? room : buddy, room == NULL);
   g_object_set (G_OBJECT (chat), "protocols", CHATTY_PROTOCOL_XMPP, NULL);
   message = g_new (Message, 1);
@@ -337,7 +320,7 @@ new_message (const char         *account,
   message->room = g_strdup (room);
   message->chat = chat;
   message->when  = time_stamp;
-  message->flags = flags;
+  message->direction = direction;
 
   return message;
 }
@@ -365,7 +348,6 @@ static void
 compare_message (Message       *message,
                  ChattyMessage *chatty_message)
 {
-  ChattyMsgDirection direction;
   ChattyMsgType type;
 
   if (message == NULL)
@@ -378,7 +360,6 @@ compare_message (Message       *message,
   if (type == CHATTY_MESSAGE_HTML)
     type = CHATTY_MESSAGE_HTML_ESCAPED;
 
-  direction = chatty_utils_direction_from_flag (message->flags);
   if (type != CHATTY_MESSAGE_FILE &&
       type != CHATTY_MESSAGE_IMAGE &&
       type != CHATTY_MESSAGE_VIDEO &&
@@ -386,7 +367,7 @@ compare_message (Message       *message,
     g_assert_cmpstr (message->what, ==, chatty_message_get_text (chatty_message));
   g_assert_cmpstr (message->uuid, ==, chatty_message_get_uid (chatty_message));
   g_assert_cmpint (message->when, ==, chatty_message_get_time (chatty_message));
-  g_assert_cmpint (direction, ==, chatty_message_get_msg_direction (chatty_message));
+  g_assert_cmpint (message->direction, ==, chatty_message_get_msg_direction (chatty_message));
   g_assert_cmpint (type, ==, chatty_message_get_msg_type (chatty_message));
   compare_file (g_list_nth_data (chatty_message_get_files (chatty_message), 0),
                 g_list_nth_data (chatty_message_get_files (message->message), 0));
@@ -434,7 +415,9 @@ test_history_new (void)
   g_assert_false (chatty_history_is_open (history));
   g_assert_true (status);
   g_clear_object (&task);
-  g_clear_object (&history);
+  g_object_unref (history);
+  /* FIXME */
+  /* g_assert_finalize_object (history); */
 
   g_remove (file_name);
   g_assert_false (g_file_test (file_name, G_FILE_TEST_EXISTS));
@@ -459,7 +442,7 @@ add_message (ChattyHistory      *history,
              const char         *message,
              time_t              when,
              ChattyMsgType       type,
-             PurpleMessageFlags  flags)
+             ChattyMsgDirection  direction)
 {
   g_autofree char *uid = NULL;
   GPtrArray *msg_array;
@@ -476,7 +459,7 @@ add_message (ChattyHistory      *history,
   else
     uid = g_strdup (uuid);
 
-  msg = new_message (account, who, message, uid, flags, when, type, room);
+  msg = new_message (account, who, message, uid, direction, when, type, room);
   success = chatty_history_add_message (history, msg->chat, msg->message);
   g_assert_true (success);
   g_assert_nonnull (uid);
@@ -490,6 +473,7 @@ add_message (ChattyHistory      *history,
     g_main_context_iteration (NULL, TRUE);
 
   msg_array = g_task_propagate_pointer (task, NULL);
+  g_assert_finalize_object (task);
   g_assert_nonnull (msg_array);
   g_assert_cmpint (test_msg_array->len, ==, msg_array->len);
 
@@ -510,6 +494,7 @@ add_message (ChattyHistory      *history,
 
   for (guint i = 0; i < msg_array->len; i++)
     compare_message (test_msg_array->pdata[i], msg_array->pdata[i]);
+  g_ptr_array_unref (msg_array);
 }
 
 static void
@@ -616,6 +601,9 @@ add_chatty_message (ChattyHistory      *history,
 
     for (guint i = 0; i < msg_array->len - 2; i++)
       compare_chat_message (msg_array->pdata[i], old_msg_array->pdata[i]);
+
+    g_assert_finalize_object (task);
+    g_ptr_array_unref (old_msg_array);
   }
 }
 
@@ -633,7 +621,7 @@ add_chat_and_test (ChattyHistory   *history,
   if (room_id) {
     g_autoptr(ChattyMaChat) chat = NULL;
 
-    chat = chatty_ma_chat_new (room_id, room_name, NULL);
+    chat = chatty_ma_chat_new (room_id, room_name, NULL, FALSE);
     g_assert (CHATTY_IS_MA_CHAT (chat));
     if (hidden)
       chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_HIDDEN);
@@ -732,7 +720,10 @@ test_history_message (void)
                       CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_IN, 0);
   add_chatty_message (history, chat, msg_array, "More message", when + 1,
                       CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT, 0);
+  /* FIXME */
+  /* g_assert_finalize_object (chat); */
 
+  g_ptr_array_unref (msg_array);
   chatty_history_close (history);
 }
 
@@ -765,7 +756,7 @@ test_history_raw_message (void)
 
   add_message (history, msg_array, account, room, who, uuid,
                "Random message", when, CHATTY_MESSAGE_TEXT,
-               PURPLE_MESSAGE_SYSTEM | PURPLE_MESSAGE_RECV);
+               CHATTY_DIRECTION_SYSTEM);
   g_clear_pointer (&uuid, g_free);
   g_ptr_array_free (msg_array, TRUE);
 
@@ -776,7 +767,7 @@ test_history_raw_message (void)
   uuid = g_uuid_string_random ();
   add_message (history, msg_array, account, NULL, who, uuid,
                "Some Random message", time(NULL) + 5,
-               CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_SYSTEM);
+               CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_SYSTEM);
   g_clear_pointer (&uuid, g_free);
   g_ptr_array_free (msg_array, TRUE);
 
@@ -799,19 +790,19 @@ test_history_raw_message (void)
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
   add_message (history, msg_array, account, room, who, uuid,
-               "Message", when - 4, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_SYSTEM);
+               "Message", when - 4, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Some random message", when - 3, CHATTY_MESSAGE_HTML, PURPLE_MESSAGE_SYSTEM);
+               "Some random message", when - 3, CHATTY_MESSAGE_HTML, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.com/media/audio.ogg", when -1, CHATTY_MESSAGE_AUDIO, PURPLE_MESSAGE_SEND);
+               "https://www.example.com/media/audio.ogg", when -1, CHATTY_MESSAGE_AUDIO, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.com/video/അറിവ്.mp4", when, CHATTY_MESSAGE_VIDEO, PURPLE_MESSAGE_SEND);
+               "https://www.example.com/video/അറിവ്.mp4", when, CHATTY_MESSAGE_VIDEO, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "http://www.example.com/invalid-file.xml", when, CHATTY_MESSAGE_FILE, PURPLE_MESSAGE_RECV);
+               "http://www.example.com/invalid-file.xml", when, CHATTY_MESSAGE_FILE, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when, CHATTY_MESSAGE_MATRIX_HTML, PURPLE_MESSAGE_RECV);
+               "And one more", when, CHATTY_MESSAGE_MATRIX_HTML, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "http://www.example.com/invalid-file.mp4", when + 1, CHATTY_MESSAGE_VIDEO, PURPLE_MESSAGE_RECV);
+               "http://www.example.com/invalid-file.mp4", when + 1, CHATTY_MESSAGE_VIDEO, CHATTY_DIRECTION_IN);
   g_ptr_array_free (msg_array, TRUE);
 
   /* Another buddy */
@@ -820,19 +811,19 @@ test_history_raw_message (void)
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
   add_message (history, msg_array, account, room, who, uuid,
-               "Message", when, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_SYSTEM);
+               "Message", when, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Some test message", when + 1, CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_SYSTEM);
+               "Some test message", when + 1, CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Yet another test message", when + 1, CHATTY_MESSAGE_MATRIX_HTML, PURPLE_MESSAGE_SEND);
+               "Yet another test message", when + 1, CHATTY_MESSAGE_MATRIX_HTML, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "നല്ല ഒരു അറിവ്", when + 1, CHATTY_MESSAGE_HTML, PURPLE_MESSAGE_SEND);
+               "നല്ല ഒരു അറിവ്", when + 1, CHATTY_MESSAGE_HTML, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "A Simple message", when + 1, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_RECV);
+               "A Simple message", when + 1, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when + 2, CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_RECV);
+               "And one more", when + 2, CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when + 3, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_RECV);
+               "And one more", when + 3, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_IN);
   g_ptr_array_free (msg_array, TRUE);
 
   /* Test several Chat messages */
@@ -842,19 +833,19 @@ test_history_raw_message (void)
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
   add_message (history, msg_array, account, room, who, uuid,
-               "Message", when - 4, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_SYSTEM);
+               "Message", when - 4, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Some random message", when - 3, CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_SYSTEM);
+               "Some random message", when - 3, CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Yet another random message", when -1, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_SEND);
+               "Yet another random message", when -1, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "നല്ല ഒരു അറിവ് message", when, CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_SEND);
+               "നല്ല ഒരു അറിവ് message", when, CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "A very simple message", when, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_RECV);
+               "A very simple message", when, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.net/file/random.pdf", when, CHATTY_MESSAGE_FILE, PURPLE_MESSAGE_RECV);
+               "https://www.example.net/file/random.pdf", when, CHATTY_MESSAGE_FILE, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when + 1, CHATTY_MESSAGE_HTML_ESCAPED, PURPLE_MESSAGE_RECV);
+               "And one more", when + 1, CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_IN);
   g_ptr_array_free (msg_array, TRUE);
 
   /* Another buddy */
@@ -865,19 +856,20 @@ test_history_raw_message (void)
   g_ptr_array_set_free_func (msg_array, (GDestroyNotify)free_message);
 
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.com/images/random-image.png", when, CHATTY_MESSAGE_IMAGE, PURPLE_MESSAGE_SYSTEM);
+               "https://www.example.com/images/random-image.png", when, CHATTY_MESSAGE_IMAGE, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "Some test message", when + 1, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_SYSTEM);
+               "Some test message", when + 1, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_SYSTEM);
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.com/videos/video.flv", when + 1, CHATTY_MESSAGE_VIDEO, PURPLE_MESSAGE_SEND);
+               "https://www.example.com/videos/video.flv", when + 1, CHATTY_MESSAGE_VIDEO, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "https://www.example.com/audio/അറിവ്.ogg", when + 1, CHATTY_MESSAGE_AUDIO, PURPLE_MESSAGE_SEND);
+               "https://www.example.com/audio/അറിവ്.ogg", when + 1, CHATTY_MESSAGE_AUDIO, CHATTY_DIRECTION_OUT);
   add_message (history, msg_array, account, room, who, uuid,
-               "geo:51.5008,0.1247", when + 1, CHATTY_MESSAGE_LOCATION, PURPLE_MESSAGE_RECV);
+               "geo:51.5008,0.1247", when + 1, CHATTY_MESSAGE_LOCATION, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "geo:51.5008,0.1247", when + 2, CHATTY_MESSAGE_LOCATION, PURPLE_MESSAGE_RECV);
+               "geo:51.5008,0.1247", when + 2, CHATTY_MESSAGE_LOCATION, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when + 3, CHATTY_MESSAGE_TEXT, PURPLE_MESSAGE_RECV);
+               "And one more", when + 3, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_IN);
+  g_ptr_array_unref (msg_array);
 
   /* Test deletion */
   delete_existing_chat (history, account, "buddy@test", TRUE);
@@ -904,7 +896,6 @@ test_value (ChattyHistory *history,
   g_autofree char *uuid = NULL;
   sqlite3_stmt *stmt;
   int status, time_stamp;
-  PurpleMessageFlags flags;
 
   status = sqlite3_prepare_v2 (db, statement, -1, &stmt, NULL);
   g_assert_cmpint (status, ==, SQLITE_OK);
@@ -912,7 +903,6 @@ test_value (ChattyHistory *history,
   uuid = g_uuid_string_random ();
   time_stamp = time (NULL) + g_random_int_range (1, 1000);
 
-  flags = flag_for_direction (direction);
   if (statement_status == SQLITE_ROW) {
     g_autoptr(ChattyChat) chat = NULL;
     g_autoptr(ChattyContact) contact = NULL;
@@ -926,7 +916,7 @@ test_value (ChattyHistory *history,
     if (!uuid)
       uuid = g_uuid_string_random ();
 
-    chat_direction = chatty_utils_direction_from_flag (flags);
+    chat_direction = history_direction_from_value (direction);
     contact = g_object_new (CHATTY_TYPE_CONTACT, NULL);
     chatty_contact_set_name (contact, who);
     chatty_contact_set_value (contact, who);

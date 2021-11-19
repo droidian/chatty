@@ -10,14 +10,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <glib/gi18n.h>
 
-#include "users/chatty-pp-buddy.h"
-#include "users/chatty-contact.h"
+#include "chatty-purple.h"
+#include "chatty-contact.h"
 #include "chatty-chat.h"
 #include "chatty-avatar.h"
-#include "chatty-utils.h"
 #include "chatty-list-row.h"
+#include "chatty-contact-provider.h"
 
 #define SECONDS_PER_MINUTE 60.0
 #define SECONDS_PER_HOUR   3600.0
@@ -34,6 +38,8 @@ struct _ChattyListRow
   GtkWidget     *subtitle;
   GtkWidget     *last_modified;
   GtkWidget     *unread_message_count;
+  GtkWidget     *checkbox;
+  GtkWidget     *add_contact_button;
 
   ChattyItem    *item;
   gboolean       hide_chat_details;
@@ -208,6 +214,16 @@ chatty_time_ago_in_words (time_t time_stamp)
 }
 
 static gboolean
+chatty_list_row_item_is_valid (ChattyItem *item)
+{
+  return CHATTY_IS_CONTACT (item) ||
+#ifdef PURPLE_ENABLED
+    CHATTY_IS_PP_BUDDY (item) ||
+#endif
+    CHATTY_IS_CHAT (item);
+}
+
+static gboolean
 chatty_list_row_update_last_modified (ChattyListRow *self)
 {
   ChattyChat *item;
@@ -243,6 +259,7 @@ chatty_list_row_update_last_modified (ChattyListRow *self)
   return G_SOURCE_REMOVE;
 }
 
+#ifdef PURPLE_ENABLED
 static char *
 list_row_user_flag_to_str (ChattyUserFlag flags)
 {
@@ -265,6 +282,7 @@ list_row_user_flag_to_str (ChattyUserFlag flags)
 
   return g_strconcat (color_tag, status, "</span>", NULL);
 }
+#endif
 
 static void
 chatty_list_row_update (ChattyListRow *self)
@@ -276,6 +294,7 @@ chatty_list_row_update (ChattyListRow *self)
 
   g_clear_handle_id (&self->last_modified_timeout, g_source_remove);
 
+#ifdef PURPLE_ENABLED
   if (CHATTY_IS_PP_BUDDY (self->item)) {
     if (chatty_pp_buddy_get_buddy (CHATTY_PP_BUDDY (self->item))) { /* Buddy in contact list */
       ChattyAccount *account;
@@ -291,7 +310,10 @@ chatty_list_row_update (ChattyListRow *self)
       gtk_label_set_markup (GTK_LABEL (self->subtitle), markup);
       gtk_widget_show (self->subtitle);
     }
-  } else if (CHATTY_IS_CONTACT (self->item)) {
+  } else
+#endif
+
+  if (CHATTY_IS_CONTACT (self->item)) {
     g_autofree gchar *type = NULL;
     const gchar *number;
 
@@ -317,7 +339,11 @@ chatty_list_row_update (ChattyListRow *self)
     if (last_message && *last_message) {
       g_autofree char *message_stripped = NULL;
 
+#ifdef PURPLE_ENABLED
       message_stripped = purple_markup_strip_html (last_message);
+#else
+      message_stripped = g_strdup (last_message);
+#endif
       g_strstrip (message_stripped);
 
       gtk_label_set_label (GTK_LABEL (self->subtitle), message_stripped);
@@ -339,6 +365,33 @@ chatty_list_row_update (ChattyListRow *self)
 
   if (subtitle)
     gtk_label_set_label (GTK_LABEL (self->subtitle), subtitle);
+}
+
+static void
+write_eds_contact_cb (GObject      *object,
+                      GAsyncResult *result,
+                      gpointer      user_data)
+{
+  ChattyListRow *self = user_data;
+  g_autoptr(GError) error = NULL;
+
+  if (chatty_eds_write_contact_finish (result, &error)) {
+    gtk_widget_hide (self->add_contact_button);
+    return;
+  }
+}
+
+static void
+chatty_list_row_add_contact_clicked_cb (ChattyListRow *self)
+{
+  const char *phone;
+
+  g_return_if_fail (CHATTY_IS_CONTACT (self->item));
+
+  phone = gtk_label_get_text (GTK_LABEL (self->subtitle));
+  chatty_eds_write_contact_async ("", phone,
+                                  write_eds_contact_cb,
+                                  g_object_ref (self));
 }
 
 static void
@@ -364,10 +417,14 @@ chatty_list_row_class_init (ChattyListRowClass *klass)
                                                "/sm/puri/Chatty/"
                                                "ui/chatty-list-row.ui");
   gtk_widget_class_bind_template_child (widget_class, ChattyListRow, avatar);
+  gtk_widget_class_bind_template_child (widget_class, ChattyListRow, checkbox);
   gtk_widget_class_bind_template_child (widget_class, ChattyListRow, title);
   gtk_widget_class_bind_template_child (widget_class, ChattyListRow, subtitle);
   gtk_widget_class_bind_template_child (widget_class, ChattyListRow, last_modified);
   gtk_widget_class_bind_template_child (widget_class, ChattyListRow, unread_message_count);
+  gtk_widget_class_bind_template_child (widget_class, ChattyListRow, add_contact_button);
+
+  gtk_widget_class_bind_template_callback (widget_class, chatty_list_row_add_contact_clicked_cb);
 }
 
 static void
@@ -381,9 +438,7 @@ chatty_list_row_new (ChattyItem *item)
 {
   ChattyListRow *self;
 
-  g_return_val_if_fail (CHATTY_IS_CONTACT (item) ||
-                        CHATTY_IS_PP_BUDDY (item) ||
-                        CHATTY_IS_CHAT (item), NULL);
+  g_return_val_if_fail (chatty_list_row_item_is_valid (item), NULL);
 
   self = g_object_new (CHATTY_TYPE_LIST_ROW, NULL);
   chatty_list_row_set_item (self, item);
@@ -406,9 +461,7 @@ chatty_list_contact_row_new (ChattyItem *item)
 {
   ChattyListRow *self;
 
-  g_return_val_if_fail (CHATTY_IS_CONTACT (item) ||
-                        CHATTY_IS_PP_BUDDY (item) ||
-                        CHATTY_IS_CHAT (item), NULL);
+  g_return_val_if_fail (chatty_list_row_item_is_valid (item), NULL);
 
   self = g_object_new (CHATTY_TYPE_LIST_ROW, NULL);
   self->hide_chat_details = TRUE;
@@ -430,9 +483,7 @@ chatty_list_row_set_item (ChattyListRow *self,
                           ChattyItem    *item)
 {
   g_return_if_fail (CHATTY_IS_LIST_ROW (self));
-  g_return_if_fail (CHATTY_IS_CONTACT (item) ||
-                    CHATTY_IS_PP_BUDDY (item) ||
-                    CHATTY_IS_CHAT (item));
+  g_return_if_fail (chatty_list_row_item_is_valid (item));
 
   g_set_object (&self->item, item);
   chatty_avatar_set_item (CHATTY_AVATAR (self->avatar), item);
@@ -445,4 +496,29 @@ chatty_list_row_set_item (ChattyListRow *self,
                              G_CALLBACK (chatty_list_row_update),
                              self, G_CONNECT_SWAPPED);
   chatty_list_row_update (self);
+}
+
+void
+chatty_list_row_set_selectable (ChattyListRow *self, gboolean enable)
+{
+  g_return_if_fail (CHATTY_IS_LIST_ROW (self));
+
+  gtk_widget_set_visible (self->checkbox, enable);
+}
+
+void
+chatty_list_row_select (ChattyListRow *self, gboolean enable)
+{
+  g_return_if_fail (CHATTY_IS_LIST_ROW (self));
+
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->checkbox),
+                                enable);
+}
+
+void
+chatty_list_row_set_contact (ChattyListRow *self, gboolean enable)
+{
+  g_return_if_fail (CHATTY_IS_LIST_ROW (self));
+
+  gtk_widget_set_visible (self->add_contact_button, enable);
 }

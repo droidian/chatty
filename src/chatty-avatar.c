@@ -15,13 +15,8 @@
 
 #include <handy.h>
 
-#include "users/chatty-pp-buddy.h"
-#include "chatty-settings.h"
 #include "chatty-chat.h"
 #include "chatty-mm-chat.h"
-#include "chatty-pp-chat.h"
-#include "matrix/chatty-ma-buddy.h"
-#include "matrix/chatty-ma-chat.h"
 #include "chatty-avatar.h"
 
 /**

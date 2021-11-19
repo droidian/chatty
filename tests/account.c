@@ -18,7 +18,7 @@
 #include <glib.h>
 
 #include "purple-init.h"
-#include "users/chatty-pp-account.h"
+#include "chatty-pp-account.h"
 
 static void
 test_account (ChattyAccount *ac,
@@ -34,9 +34,6 @@ test_account (ChattyAccount *ac,
 
   account = chatty_pp_account_get_account (CHATTY_PP_ACCOUNT (ac));
   g_assert_nonnull (account);
-
-  str = chatty_pp_account_get_protocol_id (CHATTY_PP_ACCOUNT (ac));
-  g_assert_cmpstr (str, ==, protocol_id);
 
   str = chatty_item_get_username (CHATTY_ITEM (ac));
   g_assert_cmpstr (str, ==, username);
@@ -90,9 +87,6 @@ test_new_account (void)
   account = chatty_pp_account_new (CHATTY_PROTOCOL_XMPP, "xmpp@example.com", NULL, FALSE);
   g_assert (CHATTY_IS_PP_ACCOUNT (account));
 
-  str = chatty_pp_account_get_protocol_id (account);
-  g_assert_cmpstr (str, ==, "prpl-jabber");
-
   str = chatty_account_get_protocol_name (CHATTY_ACCOUNT (account));
   g_assert_cmpstr (str, ==, "XMPP");
 
@@ -105,9 +99,6 @@ test_new_account (void)
   pp_account = purple_account_new ("xmpp@example.com", "prpl-jabber");
   account = chatty_pp_account_new_purple (pp_account, FALSE);
   g_assert (CHATTY_IS_PP_ACCOUNT (account));
-
-  str = chatty_pp_account_get_protocol_id (account);
-  g_assert_cmpstr (str, ==, "prpl-jabber");
 
   g_object_unref (account);
   purple_account_destroy (pp_account);

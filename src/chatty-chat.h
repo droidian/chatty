@@ -13,8 +13,8 @@
 
 #include <glib-object.h>
 
-#include "users/chatty-item.h"
-#include "users/chatty-account.h"
+#include "chatty-item.h"
+#include "chatty-account.h"
 #include "chatty-message.h"
 #include "chatty-enums.h"
 
@@ -47,7 +47,6 @@ struct _ChattyChatClass
   guint             (*get_unread_count)   (ChattyChat *self);
   void              (*set_unread_count)   (ChattyChat *self,
                                            guint       unread_count);
-  time_t            (*get_last_msg_time)  (ChattyChat *self);
   void              (*send_message_async) (ChattyChat    *chat,
                                            ChattyMessage *message,
                                            GAsyncReadyCallback callback,
@@ -65,6 +64,13 @@ struct _ChattyChatClass
   ChattyEncryption  (*get_encryption)     (ChattyChat *self);
   void              (*set_encryption)     (ChattyChat *self,
                                            gboolean    enable);
+  void              (*set_encryption_async) (ChattyChat *self,
+                                             gboolean    enable,
+                                             GAsyncReadyCallback callback,
+                                             gpointer       user_data);
+  gboolean          (*set_encryption_finish) (ChattyChat    *self,
+                                              GAsyncResult  *result,
+                                              GError       **error);
   gboolean          (*get_buddy_typing)   (ChattyChat *self);
   void              (*set_typing)         (ChattyChat *self,
                                            gboolean    is_typing);
@@ -77,6 +83,8 @@ struct _ChattyChatClass
   gboolean         (*invite_finish)       (ChattyChat    *self,
                                            GAsyncResult  *result,
                                            GError       **error);
+  void             (*show_notification)   (ChattyChat    *self,
+                                           const char    *name);
 };
 
 ChattyChat         *chatty_chat_new                (const char *account_username,
@@ -119,6 +127,13 @@ gboolean            chatty_chat_get_files_finish   (ChattyChat    *self,
 ChattyEncryption    chatty_chat_get_encryption     (ChattyChat *self);
 void                chatty_chat_set_encryption     (ChattyChat *self,
                                                     gboolean    enable);
+void                chatty_chat_set_encryption_async (ChattyChat     *self,
+                                                      gboolean        enable,
+                                                      GAsyncReadyCallback callback,
+                                                      gpointer        user_data);
+gboolean            chatty_chat_set_encryption_finish (ChattyChat    *self,
+                                                       GAsyncResult  *result,
+                                                       GError       **error);
 gboolean            chatty_chat_get_buddy_typing   (ChattyChat *self);
 void                chatty_chat_set_typing         (ChattyChat *self,
                                                     gboolean    is_typing);
@@ -131,5 +146,7 @@ void                chatty_chat_invite_async       (ChattyChat *self,
 gboolean           chatty_chat_invite_finish       (ChattyChat    *self,
                                                     GAsyncResult  *result,
                                                     GError       **error);
+void               chatty_chat_show_notification   (ChattyChat    *self,
+                                                    const char    *name);
 
 G_END_DECLS

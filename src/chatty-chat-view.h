@@ -19,7 +19,7 @@ G_BEGIN_DECLS
 
 #define CHATTY_TYPE_CHAT_VIEW (chatty_chat_view_get_type ())
 
-G_DECLARE_FINAL_TYPE (ChattyChatView, chatty_chat_view, CHATTY, CHAT_VIEW, GtkBox)
+G_DECLARE_FINAL_TYPE (ChattyChatView, chatty_chat_view, CHATTY, CHAT_VIEW, GtkStack)
 
 GtkWidget  *chatty_chat_view_new      (void);
 void        chatty_chat_view_set_chat (ChattyChatView *self,

@@ -35,7 +35,17 @@
               G_STRFUNC, fmt, ##__VA_ARGS__)
 #define CHATTY_DEBUG(value, fmt, ...)                           \
   chatty_log (G_LOG_DOMAIN,                                     \
+              G_LOG_LEVEL_DEBUG,                                \
+              value, __FILE__, G_STRINGIFY (__LINE__),          \
+              G_STRFUNC, fmt, ##__VA_ARGS__)
+#define CHATTY_DEBUG_DETAILED(value, fmt, ...)                  \
+  chatty_log (G_LOG_DOMAIN,                                     \
               G_LOG_LEVEL_DEBUG | CHATTY_LOG_DETAILED,          \
+              value, __FILE__, G_STRINGIFY (__LINE__),          \
+              G_STRFUNC, fmt, ##__VA_ARGS__)
+#define CHATTY_INFO(value, fmt, ...)                            \
+  chatty_log (G_LOG_DOMAIN,                                     \
+              G_LOG_LEVEL_INFO,                                 \
               value, __FILE__, G_STRINGIFY (__LINE__),          \
               G_STRFUNC, fmt, ##__VA_ARGS__)
 #define CHATTY_WARNING(value, fmt, ...)                         \
@@ -44,9 +54,16 @@
               value, __FILE__, G_STRINGIFY (__LINE__),          \
               G_STRFUNC, fmt, ##__VA_ARGS__)
 
+#define CHATTY_LOG_BOOL(value)                                  \
+  chatty_log_bool_str (value, FALSE)
+#define CHATTY_LOG_SUCESS(value)                                \
+  chatty_log_bool_str (value, TRUE)
+
 void chatty_log_init               (void);
 void chatty_log_increase_verbosity (void);
 int  chatty_log_get_verbosity      (void);
+const char *chatty_log_bool_str    (gboolean value,
+                                    gboolean use_success);
 void chatty_log                    (const char     *domain,
                                     GLogLevelFlags  log_level,
                                     const char     *value,
