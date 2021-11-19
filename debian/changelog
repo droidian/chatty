@@ -2,6 +2,8 @@ chatty (0.5.0~beta-1) experimental; urgency=medium
 
   * New upstream version 0.5.0~beta
   * d/control: Add libgnome-desktop-3-dev build dependency
+  * lintian: Fix custom-library-search-path override
+  * d/patches: Use platform independent size types
 
  -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Fri, 19 Nov 2021 17:13:01 +0100
 
