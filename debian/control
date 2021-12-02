@@ -43,7 +43,6 @@ Depends:
  ${shlibs:Depends},
 Recommends:
  purple-lurch,
- purple-mm-sms,
  purple-xmpp-carbons,
  purple-xmpp-http-upload,
 Suggests:
