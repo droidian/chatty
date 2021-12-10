@@ -59,6 +59,7 @@ struct _MatrixApi
 
   MatrixEnc      *matrix_enc;
   MatrixNet      *matrix_net;
+  GSocketAddress *gaddress;
 
   /* Executed for every request response */
   MatrixCallback  callback;
@@ -78,6 +79,8 @@ struct _MatrixApi
   guint           homeserver_verified : 1;
   guint           login_success : 1;
   guint           room_list_loaded : 1;
+  /* Set when @self has tried connecting the network atleast once */
+  guint           has_tried_connecting : 1;
 
   guint           resync_id;
 };
@@ -105,25 +108,24 @@ api_set_string_value (char       **strp,
 }
 
 static void
-api_get_version_cb (GObject      *obj,
-                    GAsyncResult *result,
-                    gpointer      user_data)
+api_verify_homeserver_cb (GObject      *obj,
+                          GAsyncResult *result,
+                          gpointer      user_data)
 {
   MatrixApi *self = user_data;
-  g_autoptr(JsonNode) root = NULL;
-  JsonObject *object = NULL;
-  JsonArray *array = NULL;
   g_autoptr(GError) error = NULL;
+  gboolean success;
 
   g_assert (MATRIX_IS_API (self));
 
-  root = matrix_utils_read_uri_finish (result, &error);
+  success = matrix_utils_verify_homeserver_finish (result, &error);
 
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
     return;
 
-  if (!error)
-    error = matrix_utils_json_node_get_error (root);
+  if (!self->gaddress)
+    self->gaddress = g_object_steal_data (G_OBJECT (result), "address");
+  self->has_tried_connecting = TRUE;
 
   /* Since GTask can't have timeout, We cancel the cancellable to fake timeout */
   if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT)) {
@@ -134,48 +136,18 @@ api_get_version_cb (GObject      *obj,
   if (handle_common_errors (self, error))
     return;
 
-  if (!root) {
+  if (error) {
     CHATTY_TRACE_MSG ("Error verifying home server: %s", error->message);
-    self->callback (self->cb_object, self, self->action, NULL, error);
+    self->callback (self->cb_object, self, MATRIX_VERIFY_HOMESERVER, NULL, error);
     return;
   }
 
-  object = json_node_get_object (root);
-  array = matrix_utils_json_object_get_array (object, "versions");
-
-  if (array) {
-    g_autoptr(GString) versions = NULL;
-    guint length;
-
-    versions = g_string_new ("");
-    length = json_array_get_length (array);
-
-    for (guint i = 0; i < length; i++) {
-      const char *version;
-
-      version = json_array_get_string_element (array, i);
-      g_string_append_printf (versions, " %s", version);
-
-      /* We have tested only with r0.6.x and r0.5.0 */
-      if (g_str_has_prefix (version, "r0.5.") ||
-          g_str_has_prefix (version, "r0.6."))
-        self->homeserver_verified = TRUE;
-    }
-
-    g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
-           "%s has versions:%s", self->homeserver, versions->str);
-
-    if (!self->homeserver_verified)
-      g_warning ("Chatty requires Client-Server API to be ‘r0.5.x’ or ‘r0.6.x’");
-  }
-
-  if (!self->homeserver_verified) {
-    error = g_error_new (MATRIX_ERROR, M_BAD_HOME_SERVER,
-                         "Couldn't Verify Client-Server API to be "
-                         "‘r0.5.0’ or ‘r0.6.0’ for %s", self->homeserver);
-    self->callback (self->cb_object, self, self->action, NULL, error);
-  } else {
+  if (success) {
+    self->homeserver_verified = TRUE;
     matrix_start_sync (self);
+  } else {
+    error = g_error_new (G_IO_ERROR, G_IO_ERROR_FAILED, "Failed to verify homeserver");
+    self->callback (self->cb_object, self, self->action, NULL, error);
   }
 }
 
@@ -197,6 +169,10 @@ api_get_homeserver_cb (gpointer      object,
 
   CHATTY_TRACE_MSG ("Get home server, has-error: %d, home server: %s",
                     !error, homeserver);
+
+  if (!self->gaddress)
+    self->gaddress = g_object_steal_data (G_OBJECT (result), "address");
+  self->has_tried_connecting = TRUE;
 
   if (!homeserver) {
     self->sync_failed = TRUE;
@@ -490,18 +466,15 @@ static gboolean
 schedule_resync (gpointer user_data)
 {
   MatrixApi *self = user_data;
-  GNetworkMonitor *network_monitor;
-  GNetworkConnectivity connectivity;
+  gboolean sync_now;
 
   g_assert (MATRIX_IS_API (self));
   self->resync_id = 0;
 
-  network_monitor = g_network_monitor_get_default ();
-  connectivity = g_network_monitor_get_connectivity (network_monitor);
+  sync_now = matrix_api_can_connect (self);
+  CHATTY_TRACE (self->username, "Schedule sync. sync now: %d, user: ", sync_now);
 
-  CHATTY_TRACE (self->username, "Schedule sync. sync now: %d, user: ",
-                connectivity == G_NETWORK_CONNECTIVITY_FULL);
-  if (connectivity == G_NETWORK_CONNECTIVITY_FULL)
+  if (sync_now)
     matrix_start_sync (self);
 
   return G_SOURCE_REMOVE;
@@ -546,13 +519,8 @@ handle_common_errors (MatrixApi *self,
       g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT) ||
       error->domain == G_RESOLVER_ERROR ||
       error->domain == JSON_PARSER_ERROR) {
-    GNetworkMonitor *network_monitor;
 
-    network_monitor = g_network_monitor_get_default ();
-
-    /* Distributions may advertise to have full network support
-     * even when connected only to local network */
-    if (g_network_monitor_get_connectivity (network_monitor) == G_NETWORK_CONNECTIVITY_FULL) {
+    if (matrix_api_can_connect (self)) {
       g_clear_handle_id (&self->resync_id, g_source_remove);
 
       self->sync_failed = TRUE;
@@ -586,8 +554,8 @@ handle_one_time_keys (MatrixApi  *self,
     CHATTY_TRACE_MSG ("generating %lu onetime keys", limit - count);
     matrix_enc_create_one_time_keys (self->matrix_enc, limit - count);
 
-    g_free (self->key);
-    self->key = matrix_enc_get_one_time_keys_json (self->matrix_enc);
+    if (!self->key)
+      self->key = matrix_enc_get_one_time_keys_json (self->matrix_enc);
     matrix_upload_key (self);
 
     return TRUE;
@@ -829,17 +797,14 @@ matrix_take_red_pill_cb (GObject      *obj,
 static void
 matrix_verify_homeserver (MatrixApi *self)
 {
-  g_autofree char *uri = NULL;
-
   g_assert (MATRIX_IS_API (self));
   g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
          "verifying homeserver %s", self->homeserver);
 
   self->action = MATRIX_VERIFY_HOMESERVER;
-  uri = g_strconcat (self->homeserver, "/_matrix/client/versions", NULL);
-  matrix_utils_read_uri_async (uri, URI_REQUEST_TIMEOUT,
-                               self->cancellable,
-                               api_get_version_cb, self);
+  matrix_utils_verify_homeserver_async (self->homeserver, URI_REQUEST_TIMEOUT,
+                                        self->cancellable,
+                                        api_verify_homeserver_cb, self);
 }
 
 static void
@@ -1013,6 +978,7 @@ matrix_api_finalize (GObject *object)
 
   g_clear_object (&self->matrix_enc);
   g_clear_object (&self->matrix_net);
+  g_clear_object (&self->gaddress);
 
   g_clear_handle_id (&self->resync_id, g_source_remove);
 
@@ -1084,6 +1050,45 @@ matrix_api_set_enc (MatrixApi *self,
 
   if (self->username && self->device_id)
     matrix_enc_set_details (self->matrix_enc, self->username, self->device_id);
+}
+
+/**
+ * matrix_api_can_connect:
+ * @self: A #MatrixApi
+ *
+ * Check if @self can be connected to homeserver with current
+ * network state.  This function is a bit dumb: returning
+ * %TRUE shall not ensure that the @self is connectable.
+ * But if %FALSE is returned, @self shall not be
+ * able to connect.
+ */
+gboolean
+matrix_api_can_connect (MatrixApi *self)
+{
+  GNetworkMonitor *nm;
+  GInetAddress *inet;
+
+  g_return_val_if_fail (MATRIX_IS_API (self), FALSE);
+
+  /* If never tried, assume we can connect */
+  if (!self->has_tried_connecting)
+    return TRUE;
+
+  nm = g_network_monitor_get_default ();
+
+  if (!self->gaddress || !G_IS_INET_SOCKET_ADDRESS (self->gaddress))
+    goto end;
+
+  inet = g_inet_socket_address_get_address ((GInetSocketAddress *)self->gaddress);
+
+  if (g_inet_address_get_is_loopback (inet) ||
+      g_inet_address_get_is_site_local (inet))
+    return g_network_monitor_can_reach (nm, G_SOCKET_CONNECTABLE (self->gaddress), NULL, NULL);
+
+ end:
+  /* Distributions may advertise to have full network support event
+   * when connected only to local network, so this isn't always right */
+  return g_network_monitor_get_connectivity (nm) == G_NETWORK_CONNECTIVITY_FULL;
 }
 
 /**
@@ -1392,6 +1397,7 @@ matrix_api_stop_sync (MatrixApi *self)
 {
   g_return_if_fail (MATRIX_IS_API (self));
 
+  g_clear_handle_id (&self->resync_id, g_source_remove);
   g_cancellable_cancel (self->cancellable);
   self->is_sync = FALSE;
   self->sync_failed = FALSE;

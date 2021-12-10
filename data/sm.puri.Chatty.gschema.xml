@@ -74,30 +74,6 @@
       <description>Whether to request delivery reports for outgoing SMS</description>
     </key>
 
-    <key name="request-mmsd-smil" type="b">
-      <default>true</default>
-      <summary>Request mmsd to handle SMIL</summary>
-      <description>Whether to request mmsd to create SMIL</description>
-    </key>
-
-    <key name="mmsd-carrier-mmsc" type="s">
-      <default>""</default>
-      <summary>Carrier mmsc for mmsd</summary>
-      <description>The carrier mmsc to set for mmsd</description>
-    </key>
-
-    <key name="mmsd-carrier-mms-apn" type="s">
-      <default>""</default>
-      <summary>Carrier mms apn for mmsd</summary>
-      <description>The mms APN to set for mmsd</description>
-    </key>
-
-    <key name="mmsd-carrier-mms-proxy" type="s">
-      <default>""</default>
-      <summary>Carrier mms proxy for mmsd</summary>
-      <description>The mms proxy to set for mmsd</description>
-    </key>
-
     <key name="experimental-features" type="b">
       <default>false</default>
       <summary>Enable experimental features</summary>

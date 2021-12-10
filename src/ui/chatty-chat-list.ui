@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ChattyChatList" parent="GtkBox">
+    <property name="visible">1</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar_policy">never</property>
+        <property name="visible">1</property>
+
+        <child>
+          <object class="GtkStack" id="main_stack">
+            <property name="visible">1</property>
+
+            <!-- Empty chat list view -->
+            <child>
+              <object class="HdyStatusPage" id="empty_view">
+                <property name="visible">1</property>
+                <property name="expand">1</property>
+              </object>
+            </child>
+
+            <!-- Chat list view -->
+            <child>
+              <object class="GtkBox" id="chat_list_view">
+                <property name="visible">1</property>
+                <property name="expand">1</property>
+                <property name="orientation">vertical</property>
+
+                <child>
+                  <object class="GtkListBox" id="chats_listbox">
+                    <property name="visible">1</property>
+                    <property name="vexpand">1</property>
+                    <property name="selection-mode">none</property>
+                    <signal name="row-activated" handler="chat_list_row_activated_cb" swapped="yes"/>
+                  </object>
+                </child>
+
+              </object>
+            </child>
+
+          </object> <!-- ./GtkStack main_stack -->
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

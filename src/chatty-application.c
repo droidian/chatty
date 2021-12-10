@@ -119,6 +119,37 @@ application_open_uri (ChattyApplication *self)
 }
 
 static void
+chatty_application_show_help (GSimpleAction *action,
+			      GVariant      *parameter,
+			      gpointer       user_data)
+{
+  ChattyApplication *self = CHATTY_APPLICATION (user_data);
+  g_autoptr (GError) error = NULL;
+  const char *url = "help:chatty";
+
+  gtk_show_uri_on_window (GTK_WINDOW (self->main_window),
+			  url,
+			  gtk_get_current_event_time (),
+			  &error);
+  if (error) {
+      GtkWidget *message_dialog;
+
+      message_dialog = gtk_message_dialog_new (GTK_WINDOW (self->main_window),
+                                               GTK_DIALOG_DESTROY_WITH_PARENT,
+                                               GTK_MESSAGE_ERROR,
+                                               GTK_BUTTONS_CLOSE,
+                                               _("There was an error displaying help:\n%s"),
+                                               error->message);
+      g_signal_connect (message_dialog, "response",
+                        G_CALLBACK (gtk_widget_destroy),
+                        NULL);
+
+      gtk_widget_show (message_dialog);
+  }
+}
+
+
+static void
 chatty_application_show_window (GSimpleAction *action,
                                 GVariant      *parameter,
                                 gpointer       user_data)
@@ -256,6 +287,11 @@ chatty_application_command_line (GApplication            *application,
   return 0;
 }
 
+static const GActionEntry app_entries[] = {
+  { "help", chatty_application_show_help, },
+  { "open-chat", chatty_application_open_chat, "(ssi)" },
+  { "show-window", chatty_application_show_window } };
+
 static void
 chatty_application_startup (GApplication *application)
 {
@@ -263,10 +299,7 @@ chatty_application_startup (GApplication *application)
   g_autoptr(GtkCssProvider) provider = NULL;
   g_autofree char *db_path = NULL;
   g_autofree char *dir = NULL;
-  static const GActionEntry app_entries[] = {
-    { "open-chat", chatty_application_open_chat, "(ssi)" },
-    { "show-window", chatty_application_show_window },
-  };
+  const char *help_accels[] = { "F1", NULL };
 
   self->daemon = FALSE;
   self->manager = chatty_manager_get_default ();
@@ -305,6 +338,7 @@ chatty_application_startup (GApplication *application)
 
   g_action_map_add_action_entries (G_ACTION_MAP (self), app_entries,
                                    G_N_ELEMENTS (app_entries), self);
+  gtk_application_set_accels_for_action (GTK_APPLICATION (self), "app.help", help_accels);
 }
 
 

@@ -5,6 +5,7 @@ src/chatty-application.c
 src/chatty-application.h
 src/chatty-avatar.c
 src/chatty-avatar.h
+src/chatty-chat-list.c
 src/chatty-chat-view.c
 src/chatty-chat.c
 src/chatty-chat.h
@@ -76,6 +77,7 @@ src/ui/chatty-ma-account-details.ui
 src/ui/chatty-pp-account-details.ui
 src/ui/chatty-settings-dialog.ui
 src/ui/chatty-window.ui
+src/ui/help-overlay.ui
 src/users/chatty-account.c
 src/users/chatty-account.h
 src/users/chatty-contact-private.h

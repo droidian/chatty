@@ -60,6 +60,22 @@ void             chatty_mm_account_recieve_mms_cb      (ChattyMmAccount *self,
                                                         ChattyMessage   *message,
                                                         const char      *sender,
                                                         const char      *recipientlist);
+gboolean         chatty_mm_account_get_mms_settings    (ChattyMmAccount     *self,
+                                                        const char         **apn,
+                                                        const char         **mmsc,
+                                                        const char         **proxy,
+                                                        gboolean            *use_smil);
+void             chatty_mm_account_set_mms_settings_async (ChattyMmAccount  *self,
+                                                           const char       *apn,
+                                                           const char       *mmsc,
+                                                           const char       *proxy,
+                                                           gboolean          use_smil,
+                                                           GCancellable     *cancellable,
+                                                           GAsyncReadyCallback callback,
+                                                           gpointer          user_data);
+gboolean         chatty_mm_account_set_mms_settings_finish (ChattyMmAccount *self,
+                                                            GAsyncResult    *result,
+                                                            GError         **error);
 
 
 G_END_DECLS

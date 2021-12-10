@@ -32,6 +32,13 @@
         <child>
           <object class="GtkModelButton">
             <property name="visible">True</property>
+            <property name="text" translatable="yes">Help</property>
+	    <property name="action-name">app.help</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkModelButton">
+            <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="text" translatable="yes">About Chats</property>
@@ -168,24 +175,25 @@
       </packing>
     </child>
   </object>
-  <template class="ChattyWindow" parent="GtkApplicationWindow">
+  <template class="ChattyWindow" parent="HdyApplicationWindow">
     <property name="can_focus">False</property>
     <property name="default_width">360</property>
     <property name="default_height">576</property>
     <property name="width-request">300</property>
     <property name="height-request">150</property>
 
-    <child type="titlebar">
-      <object class="HdyTitleBar">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">1</property>
+        <property name="orientation">vertical</property>
         <child>
           <object class="HdyLeaflet" id="header_box">
             <property name="visible">True</property>
             <property name="visible-child-name" bind-source="content_box" bind-property="visible-child-name" bind-flags="sync-create"/>
+            <property name="vexpand">0</property>
             <signal name="notify::folded" handler="notify_fold_cb" after="yes" swapped="yes"/>
             <child>
-              <object class="GtkHeaderBar" id="header_bar">
+              <object class="HdyHeaderBar" id="header_bar">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="show_close_button">True</property>
@@ -253,15 +261,13 @@
             <child>
               <object class="GtkSeparator">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="orientation">vertical</property>
                 <style>
                   <class name="sidebar"/>
                 </style>
               </object>
             </child>
             <child>
-              <object class="GtkHeaderBar" id="sub_header_bar">
+              <object class="HdyHeaderBar" id="sub_header_bar">
                 <property name="visible">True</property>
                 <property name="expand">True</property>
                 <property name="show_close_button">True</property>
@@ -319,8 +325,7 @@
                 </child>
                 <child>
                   <object class="GtkMenuButton" id="header_sub_menu_button">
-                    <property name="visible">True</property>
-                    <property name="sensitive">False</property>
+                    <property name="visible">False</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
                     <property name="popover">header_view_message_list_popover</property>
@@ -367,116 +372,88 @@
             </child>
           </object>
         </child>
-      </object>
-    </child>
-    <child>
-      <object class="HdyLeaflet" id="content_box">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="transition-type">slide</property>
+
         <child>
-          <object class="GtkBox" id="sidebar">
-            <property name="visible">True</property>
-            <property name="orientation">vertical</property>
-
-            <!-- Search bar -->
-            <child>
-              <object class="HdySearchBar" id="chats_search_bar">
-                <property name="visible">True</property>
-                <property name="hexpand">False</property>
-                <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <style>
-                      <class name="linked"/>
-                    </style>
-                    <child>
-                      <object class="GdTaggedEntry" id="chats_search_entry">
-                        <property name="visible">True</property>
-                        <property name="hexpand">True</property>
-                        <signal name="search-changed" handler="window_search_changed_cb" swapped="yes"/>
-                        <signal name="tag-button-clicked" handler="search_tag_button_clicked_cb" swapped="yes"/>
-                        <signal name="activate" handler="window_search_entry_activated_cb" swapped="yes"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkMenuButton">
-                        <property name="visible">1</property>
-                        <property name="popover">popover</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-            </child>
-
-            <child>
-              <object class="GtkScrolledWindow">
-                <property name="hscrollbar_policy">never</property>
-                <property name="width_request">300</property>
-                <property name="visible">True</property>
-                <property name="hexpand">False</property>
-
-                <child>
-                  <object class="GtkStack" id="sidebar_stack">
-                    <property name="visible">True</property>
-
-                    <!-- Empty chat list view -->
-                    <child>
-                      <object class="HdyStatusPage" id="empty_view">
-                        <property name="visible">True</property>
-                        <property name="expand">True</property>
-                      </object>
-                    </child>
-
-                    <!-- Chat list view -->
-                    <child>
-                      <object class="GtkBox" id="chat_list_view">
-                        <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
-                        <property name="expand">True</property>
-
-                        <!-- Chat list -->
-                        <child>
-                          <object class="GtkListBox" id="chats_listbox">
-                            <property name="visible">True</property>
-                            <property name="vexpand">True</property>
-                            <property name="selection-mode">none</property>
-                            <signal name="row-activated" handler="window_chat_row_activated_cb" swapped="no"/>
-                          </object>
-                        </child>
-
-                      </object>
-                    </child>
-
-                  </object>
-                </child>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="name">sidebar</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSeparator">
+          <object class="HdyLeaflet" id="content_box">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-            <style>
-              <class name="sidebar"/>
-            </style>
+            <property name="transition-type">slide</property>
+            <child>
+              <object class="GtkBox" id="sidebar">
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+
+                <!-- Search bar -->
+                <child>
+                  <object class="HdySearchBar" id="chats_search_bar">
+                    <property name="visible">True</property>
+                    <property name="hexpand">False</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <style>
+                          <class name="linked"/>
+                        </style>
+                        <child>
+                          <object class="GdTaggedEntry" id="chats_search_entry">
+                            <property name="visible">True</property>
+                            <property name="hexpand">True</property>
+                            <signal name="search-changed" handler="window_search_changed_cb" swapped="yes"/>
+                            <signal name="tag-button-clicked" handler="search_tag_button_clicked_cb" swapped="yes"/>
+                            <signal name="activate" handler="window_search_entry_activated_cb" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkMenuButton">
+                            <property name="visible">1</property>
+                            <property name="popover">popover</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Chat list view -->
+                <child>
+                  <object class="ChattyChatList" id="chat_list">
+                    <property name="visible">1</property>
+                    <property name="hexpand">0</property>
+                    <property name="width_request">300</property>
+                    <signal name="selection-changed" handler="window_chat_list_selection_changed" swapped="yes"/>
+                  </object>
+                </child>
+
+              </object>
+              <packing>
+                <property name="name">sidebar</property>
+              </packing>
+            </child>
+
+            <child>
+              <object class="GtkSeparator">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <style>
+                  <class name="sidebar"/>
+                </style>
+              </object>
+            </child>
+
+            <child>
+              <object class="ChattyChatView" id="chat_view">
+                <property name="visible">True</property>
+                <property name="width_request">300</property>
+              </object>
+              <packing>
+                <property name="name">content</property>
+              </packing>
+            </child>
+
           </object>
         </child>
-        <child>
-          <object class="ChattyChatView" id="chat_view">
-            <property name="visible">True</property>
-            <property name="width_request">300</property>
-          </object>
-          <packing>
-            <property name="name">content</property>
-          </packing>
-        </child>
+
       </object>
     </child>
   </template>

@@ -45,17 +45,6 @@ struct _MatrixNet
   GCancellable   *cancellable;
   char           *homeserver;
   char           *access_token;
-
-  guint           full_state_loaded : 1;
-  guint           is_sync : 1;
-
-  /* Set when error occurs with sync enabled */
-  guint           sync_failed : 1;
-  guint           homeserver_verified : 1;
-  guint           login_success : 1;
-  guint           room_list_loaded : 1;
-
-  guint           resync_id;
 };
 
 

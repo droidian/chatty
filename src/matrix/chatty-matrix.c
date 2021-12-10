@@ -38,6 +38,9 @@ struct _ChattyMatrix
   ChattyHistory *history;
   MatrixDb      *matrix_db;
 
+  /* The timeout id for the callback on network changes */
+  guint          network_change_id;
+
   gboolean       has_loaded;
   gboolean       disable_auto_login;
   gboolean       network_available;
@@ -45,38 +48,51 @@ struct _ChattyMatrix
 
 G_DEFINE_TYPE (ChattyMatrix, chatty_matrix, G_TYPE_OBJECT)
 
-static void
-matrix_network_changed_cb (ChattyMatrix    *self,
-                           gboolean         network_available,
-                           GNetworkMonitor *network_monitor)
+#define RECONNECT_TIMEOUT    1000 /* milliseconds */
+
+static gboolean
+matrix_reconnect (gpointer user_data)
 {
+  ChattyMatrix *self = user_data;
   GListModel *list;
   guint n_items;
 
-  g_assert (CHATTY_IS_MATRIX (self));
-  g_assert (G_IS_NETWORK_MONITOR (network_monitor));
+  self->network_change_id = 0;
 
-  if (network_available == self->network_available ||
-      !self->has_loaded)
-    return;
-
-  self->network_available = network_available;
   list = G_LIST_MODEL (self->account_list);
   n_items = g_list_model_get_n_items (list);
-
-  g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
-         "Network changed, has network: %s", CHATTY_LOG_BOOL (network_available));
 
   for (guint i = 0; i < n_items; i++) {
     g_autoptr(ChattyAccount) account = NULL;
 
     account = g_list_model_get_item (list, i);
 
-    if (network_available)
+    if (chatty_ma_account_can_connect (CHATTY_MA_ACCOUNT (account)))
       chatty_account_connect (account, FALSE);
     else
       chatty_account_disconnect (account);
   }
+
+  return G_SOURCE_REMOVE;
+}
+
+static void
+matrix_network_changed_cb (ChattyMatrix    *self,
+                           gboolean         network_available,
+                           GNetworkMonitor *network_monitor)
+{
+  g_assert (CHATTY_IS_MATRIX (self));
+  g_assert (G_IS_NETWORK_MONITOR (network_monitor));
+
+  if (!self->has_loaded)
+    return;
+
+  g_clear_handle_id (&self->network_change_id, g_source_remove);
+  self->network_change_id = g_timeout_add (RECONNECT_TIMEOUT,
+                                           matrix_reconnect, self);
+
+  g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
+         "Network changed, has network: %s", CHATTY_LOG_BOOL (network_available));
 }
 
 static void
@@ -122,8 +138,7 @@ matrix_secret_load_cb (GObject      *object,
                              G_CALLBACK (matrix_ma_account_changed_cb),
                              self, G_CONNECT_SWAPPED);
 
-    chatty_ma_account_set_history_db (accounts->pdata[i], self->history);
-    chatty_ma_account_set_db (accounts->pdata[i], self->matrix_db);
+    chatty_ma_account_set_db (accounts->pdata[i], self->matrix_db, self->history);
     g_list_store_append (self->list_of_chat_list,
                          chatty_ma_account_get_chat_list (accounts->pdata[i]));
   }
@@ -153,6 +168,8 @@ static void
 chatty_matrix_finalize (GObject *object)
 {
   ChattyMatrix *self = (ChattyMatrix *)object;
+
+  g_clear_handle_id (&self->network_change_id, g_source_remove);
 
   g_list_store_remove_all (self->list_of_chat_list);
   g_list_store_remove_all (self->account_list);
@@ -407,8 +424,7 @@ chatty_matrix_save_account_async (ChattyMatrix        *self,
   CHATTY_DEBUG (chatty_item_get_username (CHATTY_ITEM (account)), "Saving account");
 
   task = g_task_new (self, cancellable, callback, user_data);
-  chatty_ma_account_set_history_db (CHATTY_MA_ACCOUNT (account), self->history);
-  chatty_ma_account_set_db (CHATTY_MA_ACCOUNT (account), self->matrix_db);
+  chatty_ma_account_set_db (CHATTY_MA_ACCOUNT (account), self->matrix_db, self->history);
   chatty_ma_account_save_async (CHATTY_MA_ACCOUNT (account), TRUE, NULL,
                                 matrix_save_account_cb, task);
 }
@@ -437,7 +453,6 @@ chatty_matrix_find_account_with_name  (ChattyMatrix *self,
   account_list = G_LIST_MODEL (self->account_list);
   n_items = g_list_model_get_n_items (account_list);
 
-  g_warning ("account id: %s", account_id);
   for (guint i = 0; i < n_items; i++) {
     g_autoptr(ChattyMaAccount) account = NULL;
 

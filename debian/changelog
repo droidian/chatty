@@ -1,3 +1,13 @@
+chatty (0.5.0~beta3-1) experimental; urgency=medium
+
+  * d/control: Drop purple-mm-sms from recommends
+  * d/rules: Force locale for tests to fix reprotest failure
+  * New upstream version 0.5.0~beta3
+  * d/control: Recommend mmsd-tng
+  * d/patches: Remove patches applied by upstream
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Fri, 10 Dec 2021 17:08:06 +0100
+
 chatty (0.5.0~beta-1) experimental; urgency=medium
 
   * New upstream version 0.5.0~beta

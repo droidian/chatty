@@ -204,7 +204,7 @@ chatty_chat_view_update (ChattyChatView *self)
     hdy_status_page_set_description (HDY_STATUS_PAGE (self->no_message_status),
                                      _("Your messages are not encrypted, "
                                        "and carrier rates may apply"));
-  } else if (chatty_chat_is_im (self->chat)) {
+  } else {
     hdy_status_page_set_title (HDY_STATUS_PAGE (self->no_message_status),
                                _("This is an IM conversation"));
     hdy_status_page_set_description (HDY_STATUS_PAGE (self->no_message_status),
@@ -223,7 +223,7 @@ chatty_chat_view_update (ChattyChatView *self)
   if (protocol == CHATTY_PROTOCOL_MMS_SMS) {
     gtk_style_context_remove_class (context, "suggested-action");
     gtk_style_context_add_class (context, "button_send_green");
-  } else if (chatty_chat_is_im (self->chat)) {
+  } else {
     gtk_style_context_remove_class (context, "button_send_green");
     gtk_style_context_add_class (context, "suggested-action");
   }

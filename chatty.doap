@@ -8,7 +8,7 @@
   <name>chatty</name>
   <shortname>chatty</shortname>
   <shortdesc>A libpurple messaging client</shortdesc>
-  <description>XMPP and SMS messaging via libpurple and
+  <description>SMS, MMS and XMPP messaging via libpurple and
   Modemmanager.</description>
   <homepage rdf:resource="https://source.puri.sm/Librem5/chatty" />
   <license rdf:resource="http://usefulinc.com/doap/licenses/gpl" />

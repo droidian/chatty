@@ -23,7 +23,7 @@
 
 struct _ChattyNewMucDialog
 {
-  GtkDialog  parent_instance;
+  HdyWindow  parent_instance;
 
   GtkWidget *accounts_list;
   GtkWidget *button_join_chat;
@@ -37,7 +37,7 @@ struct _ChattyNewMucDialog
 };
 
 
-G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, GTK_TYPE_DIALOG)
+G_DEFINE_TYPE (ChattyNewMucDialog, chatty_new_muc_dialog, HDY_TYPE_WINDOW)
 
 
 #ifdef PURPLE_ENABLED
@@ -51,6 +51,14 @@ join_new_chat_cb (GObject      *object,
   g_assert (CHATTY_IS_NEW_MUC_DIALOG (self));
 }
 #endif
+
+static void
+muc_dialog_cancel_clicked_cb (ChattyNewMucDialog *self)
+{
+  g_assert (CHATTY_IS_NEW_MUC_DIALOG (self));
+
+  gtk_widget_destroy (GTK_WIDGET (self));
+}
 
 static void
 button_join_chat_clicked_cb (ChattyNewMucDialog *self)
@@ -68,6 +76,8 @@ button_join_chat_clicked_cb (ChattyNewMucDialog *self)
   chatty_account_join_chat_async (CHATTY_ACCOUNT (self->selected_account), chat,
                                   join_new_chat_cb, g_object_ref (self));
 #endif
+
+  gtk_widget_destroy (GTK_WIDGET (self));
 }
 
 
@@ -201,6 +211,7 @@ chatty_new_muc_dialog_class_init (ChattyNewMucDialogClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyNewMucDialog, entry_group_chat_pw);
 
   gtk_widget_class_bind_template_callback (widget_class, chat_name_changed_cb);
+  gtk_widget_class_bind_template_callback (widget_class, muc_dialog_cancel_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, button_join_chat_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, account_list_row_activated_cb);
 }
@@ -224,6 +235,5 @@ chatty_new_muc_dialog_new (GtkWindow *parent_window)
 
   return g_object_new (CHATTY_TYPE_NEW_MUC_DIALOG,
                        "transient-for", parent_window,
-                       "use-header-bar", 1,
                        NULL);
 }

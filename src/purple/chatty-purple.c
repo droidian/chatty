@@ -1831,10 +1831,8 @@ chatty_purple_get_default (void)
 {
   static ChattyPurple *self;
 
-  if (!self) {
-    self = g_object_new (CHATTY_TYPE_PURPLE, NULL);
-    g_set_weak_pointer (&self, self);
-  }
+  if (!self)
+    g_set_weak_pointer (&self, g_object_new (CHATTY_TYPE_PURPLE, NULL));
 
   return self;
 }

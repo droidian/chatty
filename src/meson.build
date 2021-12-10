@@ -68,7 +68,7 @@ ui_files = files (
   # FIXME: Testing this fails in CI,
   # but works fine locally
   # 'ui/chatty-info-dialog.ui',
-  'ui/chatty-dialog-join-muc.ui',
+  # 'ui/chatty-dialog-join-muc.ui',
   'ui/chatty-dialog-new-chat.ui',
   'ui/chatty-fp-row.ui',
   'ui/chatty-list-row.ui',
@@ -78,7 +78,7 @@ ui_files = files (
   # 'ui/chatty-ma-chat-info.ui',
   # 'ui/chatty-pp-user-info.ui',
   # 'ui/chatty-mm-chat-info.ui',
-  'ui/chatty-settings-dialog.ui',
+  # 'ui/chatty-settings-dialog.ui',
   # We can't test with GdTaggedEntry
   # 'ui/chatty-window.ui',
 )
@@ -87,6 +87,7 @@ chatty_sources += [
   'main.c',
   'chatty-manager.c',
   'chatty-application.c',
+  'chatty-chat-list.c',
   'chatty-window.c',
   'dialogs/chatty-info-dialog.c',
   'dialogs/chatty-settings-dialog.c',

@@ -23,6 +23,7 @@ test_items = [
   'matrix-db',
   'matrix-enc',
   'matrix-utils',
+  'message-text-item',
   'mm-account',
 ]
 

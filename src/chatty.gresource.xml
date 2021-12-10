@@ -6,6 +6,7 @@
     <file preprocess="xml-stripblanks">ui/chatty-selectable-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-fp-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-list-row.ui</file>
+    <file preprocess="xml-stripblanks">ui/chatty-chat-list.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-chat-view.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-contact-row.ui</file>
     <file preprocess="xml-stripblanks">ui/chatty-file-item.ui</file>

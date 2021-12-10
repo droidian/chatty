@@ -159,6 +159,11 @@ message_row_update_message (ChattyMessageRow *self)
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
 
+  /* Don't show author label for outgoing SMS/MMS */
+  if (chatty_message_get_msg_direction (self->message) == CHATTY_DIRECTION_OUT &&
+      self->protocol & (CHATTY_PROTOCOL_MMS | CHATTY_PROTOCOL_MMS_SMS))
+    return;
+
   if (!self->is_im || self->protocol == CHATTY_PROTOCOL_MATRIX) {
     const char *alias;
 
