@@ -113,7 +113,7 @@ chatty_mm_chat_update_contact (ChattyMmChat *self)
   if (title->len > 2)
     g_string_truncate (title, title->len - 2);
 
-  if (title->len && (!self->name || !*self->name || !self->has_custom_name)) {
+  if (title->len && (!self->name || !*self->name || !self->has_custom_name || n_items == 1)) {
     g_free (self->name);
     self->name = g_string_free (title, FALSE);
     self->has_custom_name = FALSE;

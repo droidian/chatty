@@ -52,17 +52,7 @@ void            chatty_settings_set_window_geometry          (ChattySettings *se
 const char     *chatty_settings_get_country_iso_code         (ChattySettings *self);
 void            chatty_settings_set_country_iso_code         (ChattySettings *self,
                                                               const char     *iso_code);
-char           *chatty_settings_get_mms_carrier_mmsc         (ChattySettings *self);
-void            chatty_settings_set_mms_carrier_mmsc         (ChattySettings *self,
-                                                              const char     *mms_carrier_mmsc);
-char           *chatty_settings_get_mms_carrier_apn          (ChattySettings *self);
-void            chatty_settings_set_mms_carrier_apn          (ChattySettings *self,
-                                                              const char     *mms_carrier_apn);
-char           *chatty_settings_get_mms_carrier_proxy        (ChattySettings *self);
-void            chatty_settings_set_mms_carrier_proxy        (ChattySettings *self,
-                                                              const char     *mms_carrier_proxy);
 gboolean        chatty_settings_request_sms_delivery_reports (ChattySettings *self);
-gboolean        chatty_settings_request_mmsd_tng_smil        (ChattySettings *self);
 gboolean        chatty_settings_get_experimental_features    (ChattySettings *self);
 void            chatty_settings_enable_experimental_features (ChattySettings *self,
                                                               gboolean        enable);

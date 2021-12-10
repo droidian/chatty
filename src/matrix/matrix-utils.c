@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
+#define G_LOG_DOMAIN "chatty-matrix-utils"
 #define BUFFER_SIZE 256
 
 #ifdef HAVE_CONFIG_H
@@ -20,6 +21,7 @@
 #include <glib/gi18n.h>
 
 #include "matrix-enums.h"
+#include "chatty-log.h"
 #include "chatty-utils.h"
 #include "matrix-utils.h"
 
@@ -576,6 +578,23 @@ uri_file_read_cb (GObject      *object,
                                       g_steal_pointer (&task));
 }
 
+static void
+message_network_event_cb (SoupMessage        *msg,
+                          GSocketClientEvent  event,
+                          GIOStream          *connection,
+                          gpointer            user_data)
+{
+  GSocketAddress *address;
+
+  /* We shall have a non %NULL @connection by %G_SOCKET_CLIENT_CONNECTING event */
+  if (event != G_SOCKET_CLIENT_CONNECTING)
+    return;
+
+  /* @connection is a #GSocketConnection */
+  address = g_socket_connection_get_remote_address (G_SOCKET_CONNECTION (connection), NULL);
+  g_object_set_data_full (user_data, "address", address, g_object_unref);
+}
+
 void
 matrix_utils_read_uri_async (const char          *uri,
                              guint                timeout,
@@ -617,6 +636,10 @@ matrix_utils_read_uri_async (const char          *uri,
   soup_message_set_flags (message, SOUP_MESSAGE_NO_REDIRECT);
   g_object_set_data_full (G_OBJECT (task), "message", g_object_ref (message), g_object_unref);
 
+  /* XXX: Switch to  */
+  g_signal_connect_object (message, "network-event",
+                           G_CALLBACK (message_network_event_cb), task,
+                           G_CONNECT_AFTER);
   session = soup_session_new ();
   g_object_set (G_OBJECT (session), SOUP_SESSION_SSL_STRICT, FALSE, NULL);
 
@@ -656,6 +679,10 @@ get_homeserver_cb (GObject      *obj,
     g_task_return_error (task, error);
     return;
   }
+
+  g_object_set_data_full (G_OBJECT (task), "address",
+                          g_object_steal_data (G_OBJECT (result), "address"),
+                          g_object_unref);
 
   if (JSON_NODE_HOLDS_OBJECT (root))
     object = json_node_get_object (root);
@@ -742,6 +769,113 @@ matrix_utils_get_homeserver_finish (GAsyncResult  *result,
   g_return_val_if_fail (g_task_get_source_tag (task) == matrix_utils_get_homeserver_async, NULL);
 
   return g_task_propagate_pointer (G_TASK (result), error);
+}
+
+static void
+api_get_version_cb (GObject      *obj,
+                    GAsyncResult *result,
+                    gpointer      user_data)
+{
+  g_autoptr(GTask) task = user_data;
+  g_autoptr(JsonNode) root = NULL;
+  JsonObject *object = NULL;
+  JsonArray *array = NULL;
+  GError *error = NULL;
+  const char *server;
+  gboolean valid;
+
+  g_assert (G_IS_TASK (task));
+
+  server = g_task_get_task_data (task);
+  root = matrix_utils_read_uri_finish (result, &error);
+
+  if (!error && root)
+    error = matrix_utils_json_node_get_error (root);
+
+  if (!root ||
+      g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED) ||
+      g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT)) {
+    if (error)
+      g_task_return_error (task, error);
+    else
+      g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_FAILED,
+                               "Failed to get version for server '%s'", server);
+    return;
+  }
+
+  g_object_set_data_full (G_OBJECT (task), "address",
+                          g_object_steal_data (G_OBJECT (result), "address"),
+                          g_object_unref);
+
+  object = json_node_get_object (root);
+  array = matrix_utils_json_object_get_array (object, "versions");
+  valid = FALSE;
+
+  if (array) {
+    g_autoptr(GString) versions = NULL;
+    guint length;
+
+    versions = g_string_new ("");
+    length = json_array_get_length (array);
+
+    for (guint i = 0; i < length; i++) {
+      const char *version;
+
+      version = json_array_get_string_element (array, i);
+      g_string_append_printf (versions, " %s", version);
+
+      /* We have tested only with r0.6.x and r0.5.0 */
+      if (g_str_has_prefix (version, "r0.5.") ||
+          g_str_has_prefix (version, "r0.6."))
+        valid = TRUE;
+    }
+
+    g_log (G_LOG_DOMAIN, CHATTY_LOG_LEVEL_TRACE,
+           "'%s' has versions:%s, valid: %s",
+           server, versions->str, CHATTY_LOG_BOOL (valid));
+  }
+
+  g_task_return_boolean (task, valid);
+}
+
+void
+matrix_utils_verify_homeserver_async (const char          *server,
+                                      guint                timeout,
+                                      GCancellable        *cancellable,
+                                      GAsyncReadyCallback  callback,
+                                      gpointer             user_data)
+{
+  g_autoptr(GTask) task = NULL;
+  g_autofree char *uri = NULL;
+
+  g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
+  g_return_if_fail (callback);
+
+  task = g_task_new (NULL, cancellable, callback, user_data);
+  g_task_set_task_data (task, g_strdup (server), g_free);
+  g_task_set_source_tag (task, matrix_utils_verify_homeserver_async);
+
+  if (!server || !*server ||
+      !g_str_has_prefix (server, "http")) {
+    g_task_return_new_error (task, G_IO_ERROR,
+                             G_IO_ERROR_INVALID_DATA,
+                             "URI '%s' is invalid", server);
+    return;
+  }
+
+  uri = g_strconcat (server, "/_matrix/client/versions", NULL);
+  matrix_utils_read_uri_async (uri, timeout, cancellable,
+                               api_get_version_cb,
+                               g_steal_pointer (&task));
+}
+
+gboolean
+matrix_utils_verify_homeserver_finish (GAsyncResult *result,
+                                       GError       **error)
+{
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 static void

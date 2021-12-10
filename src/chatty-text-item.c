@@ -9,9 +9,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include <glib/gi18n.h>
-
+#define _GNU_SOURCE
 #include "config.h"
+
+#include <glib/gi18n.h>
+#include <ctype.h>
+
 
 #ifdef PURPLE_ENABLED
 # include <purple.h>
@@ -36,6 +39,111 @@ struct _ChattyTextItem
 
 G_DEFINE_TYPE (ChattyTextItem, chatty_text_item, GTK_TYPE_BIN)
 
+#define URL_WWW "www"
+#define URL_HTTP "http"
+#define URL_HTTPS "https"
+#define URL_FILE "file"
+
+#define get_url_start(_start, _match, _type, _suffix, _out)             \
+  do {                                                                  \
+    char *_uri = _match - strlen (_type);                               \
+    size_t len = strlen (_type _suffix);                                \
+                                                                        \
+    if (*_out)                                                          \
+      break;                                                            \
+                                                                        \
+    if (_match - _start >= strlen (_type) &&                            \
+        g_ascii_strncasecmp (_uri, _type _suffix, len) == 0 &&          \
+        (isalnum (_uri[len]) || _uri[len] == '/'))                      \
+      *_out = match - strlen (_type);                                   \
+  } while (0)
+
+static char *
+find_url (const char  *buffer,
+          char       **end)
+{
+  char *match, *url = NULL;
+  const char *start;
+
+  start = buffer;
+
+  /*
+   * linkify http://,  https://, file://, and www.
+   */
+  while ((match = strpbrk (start, ":."))) {
+    get_url_start (start, match, URL_HTTP, "://", &url);
+    get_url_start (start, match, URL_HTTPS, "://", &url);
+    get_url_start (start, match, URL_FILE, "://", &url);
+    get_url_start (start, match, URL_WWW, ".", &url);
+
+    start = match + 1;
+
+    if (url && url > buffer &&
+        !isspace (url[-1]) && !ispunct (url[-1]))
+      url = NULL;
+
+    if (url)
+      break;
+  }
+
+  if (url)
+    *end = strchrnul (url, ' ');
+
+  return url;
+}
+
+static void
+text_item_linkify_and_add (ChattyTextItem *self,
+                           const char     *message)
+{
+  g_autoptr(GString) link_str = NULL;
+  g_autoptr(GString) str = NULL;
+  char *start, *end, *url;
+  GtkLabel *label;
+
+  label = GTK_LABEL (self->content_label);
+
+  if (!message)
+    message = "";
+
+  str = g_string_sized_new (256);
+  link_str = g_string_sized_new (256);
+  start = end = (char *)message;
+
+  while ((url = find_url (start, &end))) {
+    g_autofree char *link = NULL;
+    g_autofree char *escaped_link = NULL;
+    char *escaped = NULL;
+
+    escaped = g_markup_escape_text (start, url - start);
+    g_string_append (str, escaped);
+    g_free (escaped);
+
+    link = g_strndup (url, end - url);
+    escaped_link = g_markup_escape_text (url, end - url);
+    g_string_set_size (link_str, 0);
+    g_string_append_uri_escaped (link_str, link, ":/", TRUE);
+    escaped = g_markup_escape_text (link_str->str, link_str->len);
+    g_string_append_printf (str, "<a href=\"%s\">%s</a>", escaped, escaped_link);
+    g_free (escaped);
+
+    start = end;
+  }
+
+  /* Append rest of the string, only if we there is already content */
+  if (str->len && start && *start) {
+    g_autofree char *escaped = NULL;
+
+    escaped = g_markup_escape_text (start, -1);
+    g_string_append (str, escaped);
+  }
+
+  /* The string is generated only if there is at least one url, hence set as markup */
+  if (str->len)
+    gtk_label_set_markup (label, str->str);
+  else
+    gtk_label_set_text (label, message);
+}
 
 static gchar *
 chatty_msg_list_escape_message (ChattyTextItem *self,
@@ -120,10 +228,39 @@ text_item_update_message (ChattyTextItem *self)
   settings = chatty_settings_get_default ();
   text = chatty_message_get_text (self->message);
 
-  if ((self->protocol == CHATTY_PROTOCOL_MATRIX &&
-       chatty_settings_get_experimental_features (settings)) ||
-      self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
-    gtk_label_set_text (GTK_LABEL (self->content_label), text);
+  if (!text || !*text) {
+    g_autoptr(GString) files_str = NULL;
+    GList *files;
+
+    files_str = g_string_sized_new (256);
+    files = chatty_message_get_files (self->message);
+
+    for (GList *item = files; item; item = item->next) {
+      ChattyFileInfo *file = item->data;
+
+      /* file->path is the path to locally saved file */
+      if (file->path) {
+        if (g_str_has_prefix (file->path, "file://"))
+          g_string_append (files_str, file->path);
+        else
+          g_string_append_printf (files_str, "file://%s", file->path);
+      } else {
+        g_string_append (files_str, file->url);
+      }
+
+      if (item->next)
+        g_string_append_c (files_str, ' ');
+    }
+
+    if (files_str->len)
+      text_item_linkify_and_add (self, files_str->str);
+    else
+      gtk_label_set_label (GTK_LABEL (self->content_label), "");
+
+  } else if ((self->protocol == CHATTY_PROTOCOL_MATRIX &&
+              chatty_settings_get_experimental_features (settings)) ||
+             self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
+    text_item_linkify_and_add (self, text);
   } else {
     /* This happens only for purple messages */
     g_autofree char *message = NULL;
@@ -172,16 +309,8 @@ chatty_text_item_new (ChattyMessage  *message,
                       ChattyProtocol  protocol)
 {
   ChattyTextItem *self;
-  ChattyMsgType type;
 
   g_return_val_if_fail (CHATTY_IS_MESSAGE (message), NULL);
-
-  type = chatty_message_get_msg_type (message);
-  g_return_val_if_fail (type == CHATTY_MESSAGE_TEXT ||
-                        type == CHATTY_MESSAGE_HTML ||
-                        type == CHATTY_MESSAGE_HTML_ESCAPED ||
-                        type == CHATTY_MESSAGE_MATRIX_HTML,
-                        NULL);
 
   self = g_object_new (CHATTY_TYPE_TEXT_ITEM, NULL);
   self->protocol = protocol;

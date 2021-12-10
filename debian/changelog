@@ -1,3 +1,152 @@
+chatty (0.5.0~beta3) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * message-row: Don't show author for outgoing SMS/MMS
+  * matrix-api: Regenerate keys only if empty
+  * mmsd: Write settings directly to mmsd-tng
+  * settings: Remove unused settings
+  * new-chat-dialog: Remove unused struct member
+  * new-chat-dialog: Update contact filter when dialog is shown
+  * new-chat-dialog: Deselect selected items on dispose
+  * window: Destroy new-chat-dailog on finalize()
+  * tests: Fix matrix tests with olm account pickle v4
+  * text-item: Allow creating text-item from file only messages
+  * text-item: Remove an additional '/' in file url
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+
+  [ Luna Jernberg ]
+  * po: Update Swedish translation (fixed)
+
+  [ Chris Talbot ]
+  * mm-chat: Force contact update if SMS chat
+  * notification: Change message body based on message type
+  * mmsd: Don't delete statuses Chatty doesn't support yet
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Fri, 10 Dec 2021 16:39:18 +0530
+
+chatty (0.5.0~beta2) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * window: Derive from HdyApplicationWindow
+  * window: Fix indentation
+  * settings-dialog: Derive from HdyWindow
+  * new-muc-dialog: Derive from HdyWindow
+  * settings-dialog: Improve some strings
+  * settings-dialog: Add an arrow for message settings row
+  * settings-dialog: Don't expand accounts list box
+  * avatar: Use user icon for group chat dummy contacts
+  * build: Avoid testing some UI files
+  * mmsd: Warn and return if recipientlist is empty
+  * mm-account: Don't proceed if chat not found
+  * flatpak: Bump olm dependency
+  * settings-dialog: Update some strings
+  * settings-dialog: Remove unused options
+  * manager: Remove unused ListStore
+  * purple: Fix setting weak pointer
+  * manager: Simplify list models
+  * manager: Filter out disconnected chats
+  * chat-view: Fix empty view for IM conversation
+  * chat-view: Fix send button style for Group IM chats
+  * window: Simplifying filtering items
+  * Add chatty-chat-list
+  * window: Use chatty-chat-list for chat lists
+  * Update POTFILES.in
+  * chat-view: Show an empty page on empty view
+  * window: Hide headerbar buttons that can't be used
+  * window: Fix sidebar width
+  * manager: Fix an invalid free
+  * settings-dialog: Move purple specific settings to another page
+  * settings-dialog: Move protocol settings to bottom
+  * settings-dialog: Remove a duplicate binding
+  * settings-dialog: Hide purple settings if feature is disabled
+  * matri-utils: Add API to verify homeserver
+  * settings-dialog: Use an entry for providing homeserver details
+  * settings-dialog: Use an app notification on error
+  * ma-account: activate OK button on password entry activate
+  * matrix-utils: Pass server address to task
+  * matrix-utils: Log homeserver verify status
+  * matrix-api: Simplify verifying homeserver
+  * matrix: Remove debug code
+  * settings-dialog: Reset homeserver entry on opening new account page
+  * settings-dialog: Ellipsize app notification label
+  * settings-dialog: Handle homeserver details for puri.sm accounts
+  * ma-account: Simplify setting db
+  * ma-account: Add a documentation comment
+  * settings-dialog: Simplify updating headerbar after save
+  * manager: Remove unused struct variable
+  * ma-account: Don't try connecting when it's already in similar state
+  * ma-account: log when trying to connect a disabled account
+  * matrix-net: Remove unused struct members
+  * matrix-utils: Store the GSocketAddress on network connection
+  * matrix: Rework handling network changes
+  * matrix-api: Avoid resync when asked to stop sync
+  * mmsd: Simplify setting weak pointer
+  * mmsd: Simplify updating gvariant string values
+  * mmsd: Handle all dbus signals at once
+  * mmsd: Simplify signal and object cleanup
+  * mm-account: Add API to get device phone number
+  * mmsd: Use MmDevice API to get phone number
+  * mmsd: Load when mmsd is created
+  * mmsd: Cleanup if mm-account has been finalized
+  * mmsd: Don't clear mmsd_watch_id when mmsd is vanished
+  * mmsd: Fix various memory leaks
+  * mmsd: Unsubscribe from mmsd dbus signal on mmsd vanish
+  * text-item: Handle links in messages
+  * d/control: Add more packages for tests
+  * d/rules: Run tests with xvfb-run
+  * tests: Add a test for chatty-text-item
+  * settings-dialog: Update dialog title on new account page
+  * settings-dialog: Hide 'Accounts' title if content is hidden
+  * settings-dialog: Select available protocol when new account page is shown
+  * settings-dialog: Add appropriate placeholders in new account entry
+  * manager: Add SMS account to account list model
+  * settings-dialog: Use bind_model to create account rows
+  * new-chat-dialog: Don't explicitly add SMS account row
+  * settings-dialog: Fix a translator comment
+  * d/control: Recommend mmsd-tng
+  * README.md: Mention mmsd-tng for MMS support
+  * doap: Mention MMS
+  * d/control: Update Description to mention MMS
+
+  [ Chris Talbot ]
+  * mmsd: Add own number back if it is the only recipient
+  * mmsd: Don't check mmsd modem number if it is empty
+  * mmsd: remove warning about own number
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+  [ Evangelos Ribeiro Tzaras ]
+  * mmsd: Use platform independent size types
+
+  [ Vittorio Monti ]
+  * po: Update Italian translation
+  * po: Update Italian translation
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+  * po: Update Swedish translation
+
+  [ Guido Günther ]
+  * help: Add stub
+  * chatty-application: Move static action entries out of function
+  * chatty-application: Add help action
+
+  [ Luna Jernberg ]
+  * po: Update Swedish translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Thu, 02 Dec 2021 22:05:47 +0530
+
 chatty (0.5.0~beta) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

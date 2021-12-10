@@ -34,6 +34,8 @@ typedef void   (*MatrixCallback)                 (gpointer        object,
 MatrixApi     *matrix_api_new                    (const char     *username);
 void           matrix_api_set_enc                (MatrixApi      *self,
                                                   MatrixEnc      *enc);
+gboolean       matrix_api_can_connect            (MatrixApi      *self);
+
 const char    *matrix_api_get_username           (MatrixApi      *self);
 void           matrix_api_set_username           (MatrixApi      *self,
                                                   const char     *username);

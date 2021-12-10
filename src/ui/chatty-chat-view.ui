@@ -228,10 +228,8 @@
     </child>
 
     <child>
-      <object class="HdyStatusPage" id="empty_view">
+      <object class="GtkBox" id="empty_view">
         <property name="visible">True</property>
-        <property name="icon-name">sm.puri.Chatty-symbolic</property>
-        <property name="title" translatable="yes">No chat selected</property>
       </object>
     </child>
 

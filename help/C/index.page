@@ -1,0 +1,22 @@
+<page xmlns="http://projectmallard.org/1.0/"
+      xmlns:its="http://www.w3.org/2005/11/its"
+  type="guide" style="task"
+  id="index">
+  <info>
+    <title type='link'>Chats</title>
+    <title type='text'>Chats</title>
+    <revision pkgversion="3.5.5" version="0.1" date="2012-08-11" status="review"/>
+    <credit type="author copyright">
+      <name>Purism SPC</name>
+      <years>2018-2021</years>
+    </credit>
+    <license>
+      <p>Creative Commons Share Alike 3.0</p>
+    </license>
+  </info>
+<title>Chats</title>
+  <p>
+    <app>Chats</app> is a messaging application that supports SMS, MMS and XMPP.
+  </p>
+</page>
+

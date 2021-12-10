@@ -74,7 +74,6 @@ struct _ChattyNewChatDialog
 
   GPtrArray  *selected_items;
   ChattyItem *selected_item;
-  char       *phone_number;
 
   ChattyContact *dummy_contact;
   GCancellable  *cancellable;
@@ -764,7 +763,6 @@ chatty_new_chat_account_list_clear (GtkWidget *list)
 static void
 chatty_new_chat_populate_account_list (ChattyNewChatDialog *self)
 {
-  ChattyAccount *mm_account;
   GListModel   *model;
   HdyActionRow *row;
   guint         n_items;
@@ -784,10 +782,6 @@ chatty_new_chat_populate_account_list (ChattyNewChatDialog *self)
 
     chatty_new_chat_add_account_to_list (self, account);
   }
-
-  /* Add sms account */
-  mm_account = chatty_manager_get_mm_account (self->manager);
-  chatty_new_chat_add_account_to_list (self, mm_account);
 
   row = HDY_ACTION_ROW(gtk_list_box_get_row_at_index (GTK_LIST_BOX (self->accounts_list), 0));
 
@@ -831,6 +825,8 @@ chatty_new_chat_dialog_show (GtkWidget *widget)
   g_ptr_array_set_size (self->selected_items, 0);
   self->selected_items->pdata[0] = NULL;
 
+  /* Re-filter so that selection changes are reverted */
+  gtk_filter_changed (self->filter, GTK_FILTER_CHANGE_DIFFERENT);
   chatty_list_row_select (CHATTY_LIST_ROW (self->new_contact_row), FALSE);
 
   gtk_widget_set_sensitive (self->start_button, FALSE);
@@ -839,7 +835,6 @@ chatty_new_chat_dialog_show (GtkWidget *widget)
                          (GtkCallback)gtk_widget_destroy, NULL);
 
   /* Reset selection list */
-  g_clear_pointer (&self->phone_number, g_free);
   self->selected_item = NULL;
 
   contacts_search_entry = gtk_entry_get_text (GTK_ENTRY (self->contacts_search_entry));
@@ -860,12 +855,15 @@ chatty_new_chat_dialog_dispose (GObject *object)
   if (self->cancellable)
     g_cancellable_cancel (self->cancellable);
 
+  if (self->selected_items)
+    g_ptr_array_foreach (self->selected_items,
+                         chatty_new_chat_unset_items, NULL);
+
   g_clear_pointer (&self->selected_items, g_ptr_array_unref);
   g_clear_object (&self->cancellable);
   g_clear_object (&self->manager);
   g_clear_object (&self->slice_model);
   g_clear_object (&self->filter);
-  g_clear_pointer (&self->phone_number, g_free);
 
   G_OBJECT_CLASS (chatty_new_chat_dialog_parent_class)->dispose (object);
 }

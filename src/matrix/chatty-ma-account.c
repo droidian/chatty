@@ -63,6 +63,9 @@ struct _ChattyMaAccount
   gboolean       account_enabled;
 
   gboolean       avatar_is_loading;
+  /* @is_loading is set when the account is loading
+   * from db and set to not save the change to db.
+   */
   gboolean       is_loading;
   gboolean       save_account_pending;
   gboolean       save_password_pending;
@@ -285,7 +288,7 @@ handle_password_login (ChattyMaAccount *self,
    * Let’s update matrix_enc & set device keys to upload */
   if (g_error_matches (error, MATRIX_ERROR, M_BAD_PASSWORD)) {
     GtkWidget *dialog, *content, *header_bar;
-    GtkWidget *cancel_btn, *entry;
+    GtkWidget *cancel_btn, *ok_btn, *entry;
     g_autofree char *label = NULL;
     const char *password;
     int response;
@@ -304,8 +307,14 @@ handle_password_login (ChattyMaAccount *self,
                              matrix_api_get_login_username (self->matrix_api));
     gtk_container_add (GTK_CONTAINER (content), gtk_label_new (label));
     entry = gtk_entry_new ();
+    gtk_entry_set_activates_default (GTK_ENTRY (entry), TRUE);
     gtk_entry_set_visibility (GTK_ENTRY (entry), FALSE);
     gtk_container_add (GTK_CONTAINER (content), entry);
+
+    ok_btn = gtk_dialog_get_widget_for_response (GTK_DIALOG (dialog),
+                                                 GTK_RESPONSE_ACCEPT);
+    gtk_widget_set_can_default (ok_btn, TRUE);
+    gtk_widget_grab_default (ok_btn);
     gtk_widget_show_all (content);
 
     header_bar = gtk_dialog_get_header_bar (GTK_DIALOG (dialog));
@@ -545,7 +554,6 @@ chatty_ma_account_set_enabled (ChattyAccount *account,
                                gboolean       enable)
 {
   ChattyMaAccount *self = (ChattyMaAccount *)account;
-  GNetworkMonitor *network_monitor;
 
   g_assert (CHATTY_IS_MA_ACCOUNT (self));
 
@@ -562,13 +570,12 @@ chatty_ma_account_set_enabled (ChattyAccount *account,
   }
 
   self->account_enabled = enable;
-  network_monitor = g_network_monitor_get_default ();
   CHATTY_TRACE (chatty_item_get_username (CHATTY_ITEM (account)),
                 "Enable account: %d, is loading: %d, user:",
                 enable, self->is_loading);
 
   if (self->account_enabled &&
-      g_network_monitor_get_connectivity (network_monitor) == G_NETWORK_CONNECTIVITY_FULL) {
+      chatty_ma_account_can_connect (self)) {
     ma_account_update_status (self, CHATTY_CONNECTING);
     matrix_api_start_sync (self->matrix_api);
   } else if (!self->account_enabled){
@@ -640,10 +647,21 @@ chatty_ma_account_connect (ChattyAccount *account,
                            gboolean       delay)
 {
   ChattyMaAccount *self = (ChattyMaAccount *)account;
+  ChattyStatus status;
 
   g_assert (CHATTY_IS_MA_ACCOUNT (self));
 
-  if (!chatty_account_get_enabled (account))
+  if (!chatty_account_get_enabled (account)) {
+    CHATTY_TRACE (matrix_api_get_login_username (self->matrix_api),
+                  "Trying to connect disabled account, username:");
+    return;
+  }
+
+  status = chatty_account_get_status (account);
+
+  /* XXX: Check if we can move this to chatty_account_connect() */
+  if (status == CHATTY_CONNECTING ||
+      status == CHATTY_CONNECTED)
     return;
 
   g_clear_handle_id (&self->connect_id, g_source_remove);
@@ -1054,6 +1072,14 @@ chatty_ma_account_new (const char *username,
   return self;
 }
 
+gboolean
+chatty_ma_account_can_connect (ChattyMaAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MA_ACCOUNT (self), FALSE);
+
+  return matrix_api_can_connect (self->matrix_api);
+}
+
 /**
  * chatty_ma_account_get_login_username:
  * @self: A #ChattyMaAccount
@@ -1159,17 +1185,6 @@ chatty_ma_account_new_secret (gpointer secret_retrievable)
   matrix_utils_free_buffer (token_str);
 
   return self;
-}
-
-void
-chatty_ma_account_set_history_db (ChattyMaAccount *self,
-                                  gpointer         history_db)
-{
-  g_return_if_fail (CHATTY_IS_MA_ACCOUNT (self));
-  g_return_if_fail (CHATTY_IS_HISTORY (history_db));
-  g_return_if_fail (!self->history_db);
-
-  self->history_db = g_object_ref (history_db);
 }
 
 static void
@@ -1283,14 +1298,17 @@ history_db_load_account_cb (GObject      *object,
 
 void
 chatty_ma_account_set_db (ChattyMaAccount *self,
-                          gpointer         matrix_db)
+                          gpointer         matrix_db,
+                          gpointer         history_db)
 {
   g_return_if_fail (CHATTY_IS_MA_ACCOUNT (self));
   g_return_if_fail (MATRIX_IS_DB (matrix_db));
+  g_return_if_fail (CHATTY_IS_HISTORY (history_db));
   g_return_if_fail (!self->matrix_db);
-  g_return_if_fail (self->history_db);
+  g_return_if_fail (!self->history_db);
 
   self->matrix_db = g_object_ref (matrix_db);
+  self->history_db = g_object_ref (history_db);
   chatty_history_load_account_async (self->history_db, CHATTY_ACCOUNT (self),
                                      history_db_load_account_cb,
                                      g_object_ref (self));

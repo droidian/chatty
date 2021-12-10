@@ -13,6 +13,7 @@
 # include "config.h"
 #endif
 
+#include <glib/gi18n.h>
 #include <handy.h>
 
 #include "chatty-chat.h"
@@ -61,7 +62,9 @@ avatar_changed_cb (ChattyAvatar *self)
 static void
 item_name_changed_cb (ChattyAvatar *self)
 {
-  chatty_avatar_set_title (self, chatty_item_get_name (self->item));
+  if (!CHATTY_IS_CONTACT (self->item) ||
+      !chatty_contact_is_dummy (CHATTY_CONTACT (self->item)))
+    chatty_avatar_set_title (self, chatty_item_get_name (self->item));
 
   if (CHATTY_IS_MM_CHAT (self->item)) {
     gboolean has_name;
@@ -151,7 +154,8 @@ chatty_avatar_set_title (ChattyAvatar *self,
 
   /* We use dummy contact as a placeholder to create new chat */
   if (CHATTY_IS_CONTACT (self->item) &&
-      chatty_contact_is_dummy (CHATTY_CONTACT (self->item)))
+      chatty_contact_is_dummy (CHATTY_CONTACT (self->item)) &&
+      g_strcmp0 (chatty_item_get_name (self->item), _("Send To")) == 0)
     title = "+";
 
   hdy_avatar_set_text (HDY_AVATAR (self->avatar), title);

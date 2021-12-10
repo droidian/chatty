@@ -45,6 +45,11 @@ Please go to the git page where you'll find information on how to build and inst
 
 This can be skipped if Telegram messaging is not needed.
 
+### Build and install mmsd-tng
+Please go to the git page where you'll find information on how to build and install the
+[mmsd-tng](https://gitlab.com/kop316/mmsd)
+
+This can be skipped if MMS is not needed.
 
 ### Build and install 'libfeedback'
 Please go to the git page where you'll find information on how to build and use

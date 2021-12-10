@@ -25,6 +25,11 @@ Build-Depends:
  libebook1.2-dev,
  gsettings-desktop-schemas-dev,
  meson,
+# to run the tests
+ at-spi2-core,
+ dbus-x11,
+ xvfb,
+ xauth,
 Standards-Version: 4.2.1
 Homepage: https://source.puri.sm/Librem5/chatty
 
@@ -34,13 +39,14 @@ Depends:
  ${misc:Depends},
  ${shlibs:Depends},
 Recommends:
+ mmsd-tng,
  purple-xmpp-carbons,
  purple-lurch,
  purple-xmpp-http-upload,
 Suggests:
  calls,
-Description: XMPP and SMS messaging
- Chatty is GTK based chat application supporting SMS and XMPP.
+Description: SMS, MMS and XMPP messaging
+ Chatty is GTK based chat application supporting SMS, MMS and XMPP.
  .
  It works on desktops but also adjusts to small screen sizes like smart phones
  and other mobile devices.
