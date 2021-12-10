@@ -21,3 +21,4 @@ G_DECLARE_FINAL_TYPE (ChattyMmDevice, chatty_mm_device, CHATTY, MM_DEVICE, GObje
 
 GListModel *chatty_mm_account_get_devices (ChattyMmAccount *self);
 MMObject   *chatty_mm_device_get_object   (ChattyMmDevice  *device);
+char       *chatty_mm_device_get_number   (ChattyMmDevice  *device);

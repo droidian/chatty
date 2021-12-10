@@ -205,6 +205,7 @@ chatty_notification_show_message (ChattyNotification *self,
   g_autofree char *title = NULL;
   g_autoptr(LfbEvent) event = NULL;
   ChattyItem *item;
+  ChattyMsgType type;
 
   g_return_if_fail (CHATTY_IS_NOTIFICATION (self));
   g_return_if_fail (CHATTY_IS_MESSAGE (message));
@@ -227,7 +228,39 @@ chatty_notification_show_message (ChattyNotification *self,
       g_notification_set_icon (self->notification, G_ICON (image));
   }
 
-  g_notification_set_body (self->notification, chatty_message_get_text (message));
+  type = chatty_message_get_msg_type (message);
+
+  switch (type) {
+    case CHATTY_MESSAGE_UNKNOWN:
+    case CHATTY_MESSAGE_TEXT:
+    case CHATTY_MESSAGE_HTML:
+    case CHATTY_MESSAGE_HTML_ESCAPED:
+    case CHATTY_MESSAGE_MATRIX_HTML:
+    case CHATTY_MESSAGE_LOCATION:
+      g_notification_set_body (self->notification, chatty_message_get_text (message));
+      break;
+
+    case CHATTY_MESSAGE_FILE:
+      g_notification_set_body (self->notification, "File");
+      break;
+
+    case CHATTY_MESSAGE_IMAGE:
+      g_notification_set_body (self->notification, "Picture");
+      break;
+
+    case CHATTY_MESSAGE_VIDEO:
+      g_notification_set_body (self->notification, "Video");
+      break;
+
+    case CHATTY_MESSAGE_AUDIO:
+      g_notification_set_body (self->notification, "Audio File");
+      break;
+
+    default:
+      g_notification_set_body (self->notification, chatty_message_get_text (message));
+      break;
+    }
+
   g_notification_set_title (self->notification, title);
   g_notification_set_priority (self->notification, G_NOTIFICATION_PRIORITY_HIGH);
 

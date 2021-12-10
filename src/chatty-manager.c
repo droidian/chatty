@@ -47,12 +47,11 @@ struct _ChattyManager
   ChattyEds       *chatty_eds;
 
   GtkFlattenListModel *accounts;
-  GListStore          *account_list;
-  GListStore          *list_of_account_list;
-
-  GListStore      *list_of_chat_list;
-  GListStore      *list_of_user_list;
   GtkFlattenListModel *contact_list;
+  GtkFlattenListModel *chat_list;
+
+  GtkFilter           *chat_filter;
+  GtkFilterListModel  *filtered_chat_list;
   GtkSortListModel    *sorted_chat_list;
 
   ChattyMatrix    *matrix;
@@ -63,7 +62,6 @@ struct _ChattyManager
   ChattyMmAccount *mm_account;
 
   gboolean         disable_auto_login;
-  gboolean         network_available;
   gboolean         has_loaded;
 };
 
@@ -84,6 +82,26 @@ enum {
 static GParamSpec *properties[N_PROPS];
 static guint signals[N_SIGNALS];
 
+static GtkFlattenListModel *
+manager_new_flatten_list (GType type)
+{
+  g_autoptr(GListStore) list_of_list = NULL;
+
+  list_of_list = g_list_store_new (G_TYPE_LIST_MODEL);
+
+  return gtk_flatten_list_model_new (type, G_LIST_MODEL (list_of_list));
+}
+
+static void
+manager_add_to_flat_model (GtkFlattenListModel *flatten_model,
+                           GListModel          *model)
+{
+  GListModel *parent;
+
+  parent = gtk_flatten_list_model_get_model (flatten_model);
+  g_list_store_append (G_LIST_STORE (parent), model);
+}
+
 static int
 manager_sort_chat_item (ChattyChat *a,
                         ChattyChat *b,
@@ -98,6 +116,43 @@ manager_sort_chat_item (ChattyChat *a,
   b_time = chatty_chat_get_last_msg_time (b);
 
   return difftime (b_time, a_time);
+}
+
+static gboolean
+manager_filter_chat_item (ChattyItem *item)
+{
+  ChattyProtocol protocol;
+
+  protocol = chatty_item_get_protocols (item);
+
+  /* We always show SMS/MMS chats regardless of the modem status */
+  if (protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS))
+    return TRUE;
+
+#ifdef PURPLE_ENABLED
+  if (CHATTY_IS_PP_CHAT (item) &&
+      !chatty_pp_chat_get_auto_join (CHATTY_PP_CHAT (item)))
+    return FALSE;
+#endif
+
+  if (CHATTY_IS_CHAT (item)) {
+    ChattyAccount *account;
+
+    account = chatty_chat_get_account (CHATTY_CHAT (item));
+
+    if (!account || chatty_account_get_status (account) != CHATTY_CONNECTED)
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
+static void
+manager_active_protocols_changed_cb (ChattyManager *self)
+{
+  g_assert (CHATTY_IS_MANAGER (self));
+
+  gtk_filter_changed (self->chat_filter, GTK_FILTER_CHANGE_DIFFERENT);
 }
 
 static gboolean
@@ -145,11 +200,11 @@ chatty_manager_dispose (GObject *object)
   ChattyManager *self = (ChattyManager *)object;
 
   g_clear_object (&self->chatty_eds);
-  g_clear_object (&self->list_of_chat_list);
-  g_clear_object (&self->list_of_user_list);
+  g_clear_object (&self->chat_list);
+  g_clear_object (&self->filtered_chat_list);
+  g_clear_object (&self->sorted_chat_list);
+
   g_clear_object (&self->contact_list);
-  g_clear_object (&self->list_of_user_list);
-  g_clear_object (&self->account_list);
   g_clear_object (&self->accounts);
 
   G_OBJECT_CLASS (chatty_manager_parent_class)->dispose (object);
@@ -280,9 +335,7 @@ manager_chat_list_items_changed (ChattyManager *self,
 static void
 chatty_manager_init (ChattyManager *self)
 {
-  g_autoptr(GtkFlattenListModel) flatten_list = NULL;
   g_autoptr(GtkSorter) sorter = NULL;
-  GListModel *model;
 
   self->chatty_eds = chatty_eds_new (CHATTY_PROTOCOL_MMS_SMS);
   self->mm_account = chatty_mm_account_new ();
@@ -295,30 +348,23 @@ chatty_manager_init (ChattyManager *self)
                            G_CALLBACK (manager_eds_is_ready), self,
                            G_CONNECT_SWAPPED);
 
-  /* List of lists */
-  self->list_of_account_list = g_list_store_new (G_TYPE_LIST_MODEL);
-  self->list_of_chat_list = g_list_store_new (G_TYPE_LIST_MODEL);
-  self->list_of_user_list = g_list_store_new (G_TYPE_LIST_MODEL);
+  self->accounts = manager_new_flatten_list (CHATTY_TYPE_ACCOUNT);
+  self->contact_list = manager_new_flatten_list (G_TYPE_OBJECT);
+  self->chat_list = manager_new_flatten_list (G_TYPE_OBJECT);
+  manager_add_to_flat_model (self->contact_list, chatty_eds_get_model (self->chatty_eds));
 
-  model = G_LIST_MODEL (self->list_of_account_list);
-  self->accounts = gtk_flatten_list_model_new (CHATTY_TYPE_ACCOUNT, model);
-
-  self->account_list = g_list_store_new (CHATTY_TYPE_ACCOUNT);
-  g_list_store_append (self->list_of_account_list, self->account_list);
-
-  model = G_LIST_MODEL (self->list_of_user_list);
-  self->contact_list = gtk_flatten_list_model_new (G_TYPE_OBJECT, model);
-
-  model = chatty_eds_get_model (self->chatty_eds);
-  g_list_store_append (self->list_of_user_list, model);
-
-  model = G_LIST_MODEL (self->list_of_chat_list);
   sorter = gtk_custom_sorter_new ((GCompareDataFunc)manager_sort_chat_item, NULL, NULL);
-  flatten_list = gtk_flatten_list_model_new (G_TYPE_OBJECT, model);
-  self->sorted_chat_list = gtk_sort_list_model_new (G_LIST_MODEL (flatten_list), sorter);
+  self->sorted_chat_list = gtk_sort_list_model_new (G_LIST_MODEL (self->chat_list), sorter);
 
-  g_signal_connect_object (flatten_list, "items-changed",
+  self->chat_filter = gtk_custom_filter_new ((GtkCustomFilterFunc)manager_filter_chat_item, NULL, NULL);
+  self->filtered_chat_list = gtk_filter_list_model_new (G_LIST_MODEL(self->sorted_chat_list),
+                                                        self->chat_filter);
+
+  g_signal_connect_object (self->chat_list, "items-changed",
                            G_CALLBACK (manager_chat_list_items_changed),
+                           self, G_CONNECT_SWAPPED);
+  g_signal_connect_object (self, "notify::active-protocols",
+                           G_CALLBACK (manager_active_protocols_changed_cb),
                            self, G_CONNECT_SWAPPED);
 }
 
@@ -339,6 +385,8 @@ chatty_manager_get_default (void)
 void
 chatty_manager_load (ChattyManager *self)
 {
+  g_autoptr(GListStore) accounts = NULL;
+
   g_return_if_fail (CHATTY_IS_MANAGER (self));
 
   if (self->has_loaded)
@@ -349,14 +397,14 @@ chatty_manager_load (ChattyManager *self)
 #ifdef PURPLE_ENABLED
   if (!self->purple) {
     self->purple = chatty_purple_get_default ();
-    g_list_store_append (self->list_of_account_list,
-                         chatty_purple_get_accounts (self->purple));
-    g_list_store_append (self->list_of_chat_list,
-                         chatty_purple_get_chat_list (self->purple));
-    g_list_store_append (self->list_of_user_list,
-                         chatty_purple_get_chat_list (self->purple));
-    g_list_store_append (self->list_of_user_list,
-                         chatty_purple_get_user_list (self->purple));
+    manager_add_to_flat_model (self->accounts,
+                               chatty_purple_get_accounts (self->purple));
+    manager_add_to_flat_model (self->chat_list,
+                               chatty_purple_get_chat_list (self->purple));
+    manager_add_to_flat_model (self->contact_list,
+                               chatty_purple_get_chat_list (self->purple));
+    manager_add_to_flat_model (self->contact_list,
+                               chatty_purple_get_user_list (self->purple));
     chatty_purple_set_history_db (self->purple, self->history);
     chatty_purple_load (self->purple, self->disable_auto_login);
   }
@@ -364,19 +412,23 @@ chatty_manager_load (ChattyManager *self)
 
   chatty_mm_account_set_history_db (self->mm_account,
                                     chatty_manager_get_history (self));
-  g_list_store_append (self->list_of_chat_list,
-                       chatty_mm_account_get_chat_list (self->mm_account));
+  manager_add_to_flat_model (self->chat_list,
+                             chatty_mm_account_get_chat_list (self->mm_account));
 
   chatty_mm_account_load_async (self->mm_account, NULL, NULL);
 
   /* Matrix Setup */
   self->matrix = chatty_matrix_new (chatty_manager_get_history (self),
                                     self->disable_auto_login);
-  g_list_store_append (self->list_of_account_list,
-                       chatty_matrix_get_account_list (self->matrix));
-  g_list_store_append (self->list_of_chat_list,
-                       chatty_matrix_get_chat_list (self->matrix));
+  manager_add_to_flat_model (self->accounts,
+                             chatty_matrix_get_account_list (self->matrix));
+  manager_add_to_flat_model (self->chat_list,
+                             chatty_matrix_get_chat_list (self->matrix));
   chatty_matrix_load (self->matrix);
+
+  accounts = g_list_store_new (CHATTY_TYPE_ACCOUNT);
+  g_list_store_append (accounts, self->mm_account);
+  manager_add_to_flat_model (self->accounts, G_LIST_MODEL (accounts));
 }
 
 GListModel *
@@ -401,7 +453,7 @@ chatty_manager_get_chat_list (ChattyManager *self)
 {
   g_return_val_if_fail (CHATTY_IS_MANAGER (self), NULL);
 
-  return G_LIST_MODEL (self->sorted_chat_list);
+  return G_LIST_MODEL (self->filtered_chat_list);
 }
 
 /**
@@ -651,7 +703,7 @@ gboolean
 chatty_manager_set_uri (ChattyManager *self,
                         const char    *uri)
 {
-  g_autoptr(ChattyChat) chat = NULL;
+  ChattyChat *chat = NULL;
   g_autofree char *who = NULL;
   ChattyAccount *account;
   const char *country_code;

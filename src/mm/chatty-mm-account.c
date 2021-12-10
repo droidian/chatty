@@ -79,6 +79,32 @@ chatty_mm_device_get_object (ChattyMmDevice *device)
   return device->mm_object;
 }
 
+char *
+chatty_mm_device_get_number (ChattyMmDevice *device)
+{
+  const char *const *own_numbers;
+  MMModem *mm_modem;
+
+  g_return_val_if_fail (CHATTY_IS_MM_DEVICE (device), NULL);
+
+  mm_modem = mm_object_peek_modem (device->mm_object);
+  own_numbers = mm_modem_get_own_numbers (mm_modem);
+
+  for (guint i = 0; own_numbers && own_numbers[i]; i++) {
+    const char *number, *country_code;
+    char *modem_number;
+
+    number = own_numbers[i];
+    country_code = chatty_settings_get_country_iso_code (chatty_settings_get_default ());
+    modem_number = chatty_utils_check_phonenumber (number, country_code);
+
+    if (modem_number)
+      return modem_number;
+  }
+
+  return NULL;
+}
+
 struct _ChattyMmAccount
 {
   ChattyAccount     parent_instance;
@@ -380,6 +406,8 @@ chatty_mm_account_recieve_mms_cb (ChattyMmAccount *self,
   ChattyMessage  *messagecheck;
 
   chat = chatty_mm_account_start_chat (self, recipientlist);
+  g_return_if_fail (CHATTY_IS_MM_CHAT (chat));
+
   /*
    * Check to see if this message exists (e.g. draft MMS sent)
    */
@@ -869,7 +897,6 @@ mm_new_cb (GObject      *object,
   g_assert (CHATTY_IS_MM_ACCOUNT (self));
 
   self->mm_manager = mm_manager_new_finish (result, &error);
-  chatty_mmsd_load (self->mmsd);
 
   if (!self->mm_watch_id)
     self->mm_watch_id = g_bus_watch_name (G_BUS_TYPE_SYSTEM,
@@ -1334,4 +1361,42 @@ chatty_mm_account_get_devices (ChattyMmAccount *self)
   g_return_val_if_fail (CHATTY_MM_ACCOUNT (self), NULL);
 
   return G_LIST_MODEL (self->device_list);
+}
+
+gboolean
+chatty_mm_account_get_mms_settings (ChattyMmAccount  *self,
+                                    const char      **apn,
+                                    const char      **mmsc,
+                                    const char      **proxy,
+                                    gboolean         *use_smil)
+{
+  g_return_val_if_fail (CHATTY_MM_ACCOUNT (self), FALSE);
+
+  return chatty_mmsd_get_settings (self->mmsd, apn, mmsc, proxy, use_smil);
+}
+
+void
+chatty_mm_account_set_mms_settings_async (ChattyMmAccount     *self,
+                                          const char          *apn,
+                                          const char          *mmsc,
+                                          const char          *proxy,
+                                          gboolean             use_smil,
+                                          GCancellable        *cancellable,
+                                          GAsyncReadyCallback  callback,
+                                          gpointer             user_data)
+{
+  chatty_mmsd_set_settings_async (self->mmsd, apn, mmsc, proxy, use_smil,
+                                  cancellable, callback, user_data);
+}
+
+gboolean
+chatty_mm_account_set_mms_settings_finish (ChattyMmAccount *self,
+                                           GAsyncResult    *result,
+                                           GError          **error)
+{
+  g_return_val_if_fail (CHATTY_MM_ACCOUNT (self), FALSE);
+  g_return_val_if_fail (G_IS_TASK (result), FALSE);
+  g_return_val_if_fail (!error || !*error, FALSE);
+
+  return chatty_mmsd_set_settings_finish (self->mmsd, result, error);
 }

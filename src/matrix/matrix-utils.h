@@ -56,6 +56,13 @@ void          matrix_utils_get_homeserver_async     (const char    *username,
                                                      GCancellable  *cancellable,
                                                      GAsyncReadyCallback callback,
                                                      gpointer       user_data);
+void          matrix_utils_verify_homeserver_async  (const char    *server,
+                                                     guint          timeout,
+                                                     GCancellable  *cancellable,
+                                                     GAsyncReadyCallback callback,
+                                                     gpointer       user_data);
+gboolean      matrix_utils_verify_homeserver_finish (GAsyncResult  *result,
+                                                     GError       **error);
 char         *matrix_utils_get_homeserver_finish    (GAsyncResult  *result,
                                                      GError       **error);
 void          matrix_utils_get_pixbuf_async         (const char    *file,
