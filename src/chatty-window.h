@@ -20,7 +20,8 @@ G_DECLARE_FINAL_TYPE (ChattyWindow, chatty_window, CHATTY, WINDOW, HdyApplicatio
 
 GtkWidget  *chatty_window_new             (GtkApplication *application);
 void        chatty_window_set_uri         (ChattyWindow   *self,
-                                           const char     *uri);
+                                           const char     *uri,
+                                           const char     *name);
 ChattyChat *chatty_window_get_active_chat (ChattyWindow   *self);
 void        chatty_window_open_chat       (ChattyWindow   *self,
                                            ChattyChat     *chat);

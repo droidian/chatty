@@ -45,5 +45,7 @@ void        chatty_mmsd_set_settings_async    (ChattyMmsd      *self,
 gboolean    chatty_mmsd_set_settings_finish   (ChattyMmsd      *self,
                                                GAsyncResult    *result,
                                                GError         **error);
+void        chatty_mmsd_delete_mms            (ChattyMmsd *self,
+                                               const char *uid);
 
 G_END_DECLS

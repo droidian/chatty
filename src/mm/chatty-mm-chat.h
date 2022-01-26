@@ -16,6 +16,7 @@
 #include "chatty-chat.h"
 #include "chatty-mm-buddy.h"
 #include "chatty-message.h"
+#include "chatty-sms-uri.h"
 #include "chatty-contact-provider.h"
 #include "chatty-enums.h"
 
@@ -29,6 +30,9 @@ ChattyMmChat     *chatty_mm_chat_new                    (const char     *name,
                                                          const char     *alias,
                                                          ChattyProtocol  protocol,
                                                          gboolean        is_im);
+ChattyMmChat     *chatty_mm_chat_new_with_uri           (ChattySmsUri   *uri,
+                                                         ChattyProtocol  protocol,
+                                                         gboolean        is_im);
 gboolean          chatty_mm_chat_has_custom_name        (ChattyMmChat   *self);
 void              chatty_mm_chat_set_eds                (ChattyMmChat   *self,
                                                          ChattyEds      *chatty_eds);
@@ -40,6 +44,8 @@ void              chatty_mm_chat_prepend_messages       (ChattyMmChat   *self,
                                                          GPtrArray      *messages);
 ChattyMessage    *chatty_mm_chat_find_message_with_id   (ChattyMmChat   *self,
                                                          const char     *id);
+ChattyMessage    *chatty_mm_chat_find_message_with_uid  (ChattyMmChat   *self,
+                                                         const char     *uid);
 ChattyMmBuddy    *chatty_mm_chat_find_user              (ChattyMmChat   *self,
                                                          const char     *phone);
 void              chatty_mm_chat_add_user               (ChattyMmChat   *self,

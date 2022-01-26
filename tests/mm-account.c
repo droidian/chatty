@@ -106,7 +106,7 @@ test_mm_account_new (void)
   account = chatty_mm_account_new ();
   g_assert_true (CHATTY_IS_MM_ACCOUNT (account));
 
-  g_assert_cmpstr (chatty_item_get_username (CHATTY_ITEM (account)), ==, "SMS");
+  g_assert_cmpstr (chatty_item_get_username (CHATTY_ITEM (account)), ==, "invalid-0000000000000000");
   g_assert_cmpint (chatty_item_get_protocols (CHATTY_ITEM (account)), ==, CHATTY_PROTOCOL_MMS_SMS);
 
   chat_list = chatty_mm_account_get_chat_list (account);

@@ -74,6 +74,7 @@ struct _ChattyWindow
   GtkWidget *delete_button;
 
   GtkWidget *chat_view;
+  GtkWidget *settings_dialog;
 
   GtkWidget *protocol_list;
   GtkWidget *protocol_any_row;
@@ -140,7 +141,7 @@ chatty_window_open_item (ChattyWindow *self,
     const char *number;
 
     number = chatty_item_get_username (item);
-    chatty_window_set_uri (self, number);
+    chatty_window_set_uri (self, number, NULL);
 
     return;
   }
@@ -268,77 +269,28 @@ notify_fold_cb (ChattyWindow *self)
 }
 
 static void
-window_new_message_clicked_cb (ChattyWindow *self)
+window_show_new_chat_dialog (ChattyWindow *self,
+                             gboolean      can_multi_select)
 {
   ChattyNewChatDialog *dialog;
-  ChattyItem *item;
-  const char *phone_number = NULL;
-  gint response;
 
   g_assert (CHATTY_IS_WINDOW (self));
 
   dialog = CHATTY_NEW_CHAT_DIALOG (self->new_chat_dialog);
-  chatty_new_chat_dialog_set_multi_selection (dialog, FALSE);
+  chatty_new_chat_dialog_set_multi_selection (dialog, can_multi_select);
+  gtk_window_present (GTK_WINDOW (self->new_chat_dialog));
+}
 
-  response = gtk_dialog_run (GTK_DIALOG (self->new_chat_dialog));
-  gtk_widget_hide (self->new_chat_dialog);
-
-  if (response != GTK_RESPONSE_OK)
-    return;
-
-  item = chatty_new_chat_dialog_get_selected_item (dialog);
-
-  if (CHATTY_IS_CONTACT (item) &&
-      chatty_contact_is_dummy (CHATTY_CONTACT (item)))
-    phone_number = chatty_item_get_username (item);
-
-  if (phone_number)
-    chatty_window_set_uri (self, phone_number);
-  else if (item)
-    chatty_window_open_item (self, item);
-  else
-    g_return_if_reached ();
+static void
+window_new_message_clicked_cb (ChattyWindow *self)
+{
+  window_show_new_chat_dialog (self, FALSE);
 }
 
 static void
 window_new_sms_mms_message_clicked_cb (ChattyWindow *self)
 {
-  g_autoptr(GString) sendlist = g_string_new (NULL);
-  ChattyNewChatDialog *dialog;
-  GPtrArray *items;
-  gint response;
-
-  g_assert (CHATTY_IS_WINDOW (self));
-
-  dialog = CHATTY_NEW_CHAT_DIALOG (self->new_chat_dialog);
-  chatty_new_chat_dialog_set_multi_selection (dialog, TRUE);
-
-  response = gtk_dialog_run (GTK_DIALOG (self->new_chat_dialog));
-  gtk_widget_hide (self->new_chat_dialog);
-
-  if (response != GTK_RESPONSE_OK)
-    return;
-
-  items = chatty_new_chat_dialog_get_selected_items (dialog);
-
-  for (guint i = 0; i < items->len; i++) {
-    const char *phone_number;
-    ChattyItem *item;
-
-    item = items->pdata[i];
-
-    if (CHATTY_IS_CONTACT (item)) {
-      phone_number = chatty_item_get_username (item);
-      sendlist = g_string_append (sendlist, phone_number);
-      g_string_append (sendlist, ",");
-    }
-  }
-
-  /* Remove the trailing "," */
-  if (sendlist->len >= 1)
-    g_string_truncate (sendlist, sendlist->len - 1);
-
-  chatty_window_set_uri (self, sendlist->str);
+  window_show_new_chat_dialog (self, TRUE);
 }
 
 static void
@@ -475,12 +427,11 @@ window_show_chat_info_clicked_cb (ChattyWindow *self)
 static void
 chatty_window_show_settings_dialog (ChattyWindow *self)
 {
-  GtkWidget *dialog;
-
   g_assert (CHATTY_IS_WINDOW (self));
 
-  dialog = chatty_settings_dialog_new (GTK_WINDOW (self));
-  gtk_window_present (GTK_WINDOW (dialog));
+  if (!self->settings_dialog)
+    self->settings_dialog = chatty_settings_dialog_new (GTK_WINDOW (self));
+  gtk_window_present (GTK_WINDOW (self->settings_dialog));
 }
 
 /* Copied from chatty-dialogs.c written by Andrea Schäfer <mosibasu@me.com> */
@@ -615,6 +566,59 @@ protocol_list_header_func (GtkListBoxRow *row,
   }
 }
 
+static void
+new_chat_selection_changed_cb (ChattyWindow        *self,
+                               ChattyNewChatDialog *dialog)
+{
+  g_autoptr(GString) users = g_string_new (NULL);
+  GListModel *model;
+  guint n_items;
+  const char *name;
+
+  g_assert (CHATTY_IS_WINDOW (self));
+  g_assert (CHATTY_IS_NEW_CHAT_DIALOG (dialog));
+
+  model = chatty_new_chat_dialog_get_selected_items (dialog);
+  n_items = g_list_model_get_n_items (model);
+
+  if (n_items == 0)
+    goto end;
+
+  for (guint i = 0; i < n_items; i++) {
+    g_autoptr(ChattyItem) item = NULL;
+    const char *phone_number;
+
+    item = g_list_model_get_item (model, i);
+
+    if (CHATTY_IS_CONTACT (item)) {
+      phone_number = chatty_item_get_username (item);
+      g_string_append (users, phone_number);
+      g_string_append (users, ",");
+    }
+  }
+
+  /* Remove the trailing "," */
+  if (users->len >= 1)
+    g_string_truncate (users, users->len - 1);
+
+  if (n_items == 1) {
+    g_autoptr(ChattyItem) item = NULL;
+
+    item = g_list_model_get_item (model, 0);
+
+    if (!CHATTY_IS_CONTACT (item) ||
+        !chatty_contact_is_dummy (CHATTY_CONTACT (item))) {
+      chatty_window_open_item (self, item);
+      goto end;
+    }
+  }
+
+  name = chatty_new_chat_dialog_get_chat_title (dialog);
+  chatty_window_set_uri (self, users->str, name);
+
+ end:
+  gtk_widget_hide (GTK_WIDGET (dialog));
+}
 
 static void
 chatty_window_unmap (GtkWidget *widget)
@@ -671,6 +675,10 @@ chatty_window_constructed (GObject *object)
     gtk_window_maximize (window);
 
   self->new_chat_dialog = chatty_new_chat_dialog_new (GTK_WINDOW (self));
+  g_signal_connect_object (self->new_chat_dialog, "selection-changed",
+                           G_CALLBACK (new_chat_selection_changed_cb),
+                           self,
+                           G_CONNECT_SWAPPED);
   self->chat_info_dialog = chatty_info_dialog_new (GTK_WINDOW (self));
 
   G_OBJECT_CLASS (chatty_window_parent_class)->constructed (object);
@@ -829,32 +837,10 @@ chatty_window_new (GtkApplication *application)
 
 void
 chatty_window_set_uri (ChattyWindow *self,
-                       const char   *uri)
+                       const char   *uri,
+                       const char   *name)
 {
-  g_autofree char *who = NULL;
-  g_auto(GStrv) recipients = NULL;
-  guint num;
-
-  recipients = g_strsplit (uri, ",", -1);
-  num = g_strv_length (recipients);
-  for (int i = 0; i < num; i++) {
-    who = chatty_utils_check_phonenumber (recipients[i], chatty_settings_get_country_iso_code (self->settings));
-    if (!who) {
-      GtkWidget *dialog;
-
-      dialog = gtk_message_dialog_new (GTK_WINDOW (self),
-                                       GTK_DIALOG_MODAL,
-                                       GTK_MESSAGE_WARNING,
-                                       GTK_BUTTONS_CLOSE,
-                                     _("“%s” is not a valid phone number"), uri);
-      gtk_dialog_run (GTK_DIALOG (dialog));
-      gtk_widget_destroy (dialog);
-
-      return;
-    }
-  }
-
-  if (!chatty_manager_set_uri (self->manager, uri))
+  if (!chatty_manager_set_uri (self->manager, uri, name))
     return;
 
   gtk_widget_hide (self->new_chat_dialog);

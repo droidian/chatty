@@ -129,47 +129,14 @@ sort_message (gconstpointer a,
 static void
 chatty_mat_chat_update_name (ChattyMaChat *self)
 {
-  const char *name_a = NULL, *name_b = NULL;
-  guint n_items, count;
-
   g_assert (CHATTY_IS_MA_CHAT (self));
 
-  n_items = g_list_model_get_n_items (G_LIST_MODEL (self->buddy_list));
-
-  if (self->room_name || n_items == 0)
+  if (self->room_name)
     return;
 
-  count = n_items;
-
-  for (guint i = 0; i < MIN (3, n_items); i++) {
-    g_autoptr(ChattyItem) buddy = NULL;
-
-    buddy = g_list_model_get_item (G_LIST_MODEL (self->buddy_list), i);
-
-    /* Don't add self to create room name */
-    if (g_strcmp0 (chatty_item_get_username (buddy), chatty_item_get_username (CHATTY_ITEM (self))) == 0) {
-      count--;
-      continue;
-    }
-
-    if (!name_a)
-      name_a = chatty_item_get_name (buddy);
-    else
-      name_b = chatty_item_get_name (buddy);
-  }
-
   g_free (self->generated_name);
-
-  if (count == 0)
-    self->generated_name = g_strdup (_("Empty room"));
-  else if (count == 1)
-    self->generated_name = g_strdup (name_a);
-  else if (count == 2)
-    self->generated_name = g_strdup_printf (_("%s and %s"), name_a, name_b);
-  else
-    self->generated_name = g_strdup_printf (g_dngettext (GETTEXT_PACKAGE, "%s and %u other",
-                                                         "%s and %u others", count - 1),
-                                            name_a, count - 1);
+  self->generated_name = chatty_chat_generate_name (CHATTY_CHAT (self),
+                                                    G_LIST_MODEL (self->buddy_list));
   g_signal_emit_by_name (self, "avatar-changed");
   chatty_history_update_chat (self->history_db, CHATTY_CHAT (self));
 }

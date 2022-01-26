@@ -1397,7 +1397,10 @@ chatty_ma_account_save_async (ChattyMaAccount     *self,
   g_return_if_fail (CHATTY_IS_MA_ACCOUNT (self));
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
   g_return_if_fail (*chatty_ma_account_get_login_username (self));
-  g_return_if_fail (*chatty_account_get_password (CHATTY_ACCOUNT (self)));
+
+  if (!*chatty_account_get_password (CHATTY_ACCOUNT (self)))
+    return;
+
   g_return_if_fail (*chatty_ma_account_get_homeserver (self));
 
   task = g_task_new (self, cancellable, callback, user_data);

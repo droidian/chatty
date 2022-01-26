@@ -701,34 +701,38 @@ chatty_manager_find_chat_with_name (ChattyManager  *self,
 
 gboolean
 chatty_manager_set_uri (ChattyManager *self,
-                        const char    *uri)
+                        const char    *uri,
+                        const char    *name)
 {
-  ChattyChat *chat = NULL;
-  g_autofree char *who = NULL;
+  g_autoptr(ChattySmsUri) sms_uri = NULL;
   ChattyAccount *account;
-  const char *country_code;
-  g_auto(GStrv) recipients = NULL;
-  guint num;
-
-  if (!uri || !*uri)
-    return FALSE;
+  ChattyChat *chat;
 
   account = chatty_manager_get_mm_account (self);
+
   if (chatty_account_get_status (account) != CHATTY_CONNECTED)
     return FALSE;
 
-  country_code = chatty_settings_get_country_iso_code (chatty_settings_get_default ());
-  recipients = g_strsplit (uri, ",", -1);
-  num = g_strv_length (recipients);
-  for (int i = 0; i < num; i++) {
-    who = chatty_utils_check_phonenumber (recipients[i], country_code);
-    if (!who)
-      return FALSE;
+  sms_uri = chatty_sms_uri_new (uri);
+
+  if (!chatty_sms_uri_is_valid (sms_uri)) {
+    GtkApplication *app;
+    GtkWidget *dialog;
+
+    app = GTK_APPLICATION (g_application_get_default ());
+    dialog = gtk_message_dialog_new (gtk_application_get_active_window (app),
+                                     GTK_DIALOG_MODAL,
+                                     GTK_MESSAGE_WARNING,
+                                     GTK_BUTTONS_CLOSE,
+                                     _("“%s” is not a valid URI"), uri);
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
+
+    return FALSE;
   }
-  if (num == 1)
-    chat = chatty_mm_account_start_chat (CHATTY_MM_ACCOUNT (account), who);
-  else
-    chat = chatty_mm_account_start_chat (CHATTY_MM_ACCOUNT (account), uri);
+
+  chat = chatty_mm_account_start_chat_with_uri (CHATTY_MM_ACCOUNT (account), sms_uri);
+  chatty_item_set_name (CHATTY_ITEM (chat), name);
 
   g_signal_emit (self, signals[OPEN_CHAT], 0, chat);
 

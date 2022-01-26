@@ -32,6 +32,7 @@ struct _ChattyMessage
 
   ChattyItem      *user;
   char            *user_name;
+  char            *subject;
   char            *message;
   char            *uid;
   char            *id;
@@ -66,6 +67,7 @@ chatty_message_finalize (GObject *object)
 
   g_clear_object (&self->user);
   g_free (self->message);
+  g_free (self->subject);
   g_free (self->uid);
   g_free (self->user_name);
   g_free (self->id);
@@ -129,6 +131,24 @@ chatty_message_new (ChattyItem         *user,
   self->type = type;
 
   return self;
+}
+
+const char *
+chatty_message_get_subject (ChattyMessage *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MESSAGE (self), NULL);
+
+  return self->subject;
+}
+
+void
+chatty_message_set_subject (ChattyMessage *self,
+                            const char    *subject)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+
+  g_free (self->subject);
+  self->subject = g_strdup (subject);
 }
 
 gboolean

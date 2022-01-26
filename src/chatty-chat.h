@@ -94,6 +94,8 @@ void                chatty_chat_set_data           (ChattyChat *self,
                                                     gpointer    account,
                                                     gpointer    history_db);
 gboolean            chatty_chat_is_im              (ChattyChat *self);
+char               *chatty_chat_generate_name      (ChattyChat *self,
+                                                    GListModel *members);
 gboolean            chatty_chat_has_file_upload    (ChattyChat *self);
 const char         *chatty_chat_get_chat_name      (ChattyChat *self);
 ChattyAccount      *chatty_chat_get_account        (ChattyChat *self);

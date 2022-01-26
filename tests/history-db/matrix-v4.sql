@@ -1,0 +1,129 @@
+BEGIN TRANSACTION;
+PRAGMA user_version = 4;
+PRAGMA foreign_keys = ON;
+CREATE TABLE mime_type (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE
+);
+CREATE TABLE files (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  url TEXT NOT NULL UNIQUE,
+  path TEXT,
+  mime_type_id INTEGER REFERENCES mime_type(id),
+  status INT,
+  size INTEGER
+);
+CREATE TABLE file_metadata (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL UNIQUE REFERENCES files(id) ON DELETE CASCADE,
+  width INTEGER,
+  height INTEGER,
+  duration INTEGER,
+  FOREIGN KEY(file_id) REFERENCES files(id)
+);
+CREATE TABLE users (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL,
+  alias TEXT,
+  avatar_id INTEGER REFERENCES files(id),
+  type INTEGER NOT NULL,
+  UNIQUE (username, type)
+);
+INSERT INTO users VALUES(1,'invalid-0000000000000000',NULL,NULL,1);
+CREATE TABLE accounts (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  password TEXT,
+  enabled INTEGER DEFAULT 0,
+  protocol INTEGER NOT NULL,
+  UNIQUE (user_id, protocol)
+);
+INSERT INTO accounts VALUES(1,1,NULL,0,1);
+CREATE TABLE threads (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  alias TEXT,
+  avatar_id INTEGER REFERENCES files(id),
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  type INTEGER NOT NULL,
+  encrypted INTEGER DEFAULT 0,
+  UNIQUE (name, account_id, type)
+);
+CREATE TABLE thread_members (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  UNIQUE (thread_id, user_id)
+);
+CREATE TABLE messages (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  uid TEXT NOT NULL,
+  thread_id INTEGER NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+  sender_id INTEGER REFERENCES users(id),
+  user_alias TEXT,
+  body TEXT NOT NULL,
+  body_type INTEGER NOT NULL,
+  direction INTEGER NOT NULL,
+  time INTEGER NOT NULL,
+  status INTEGER,
+  encrypted INTEGER DEFAULT 0,
+  preview_id INTEGER REFERENCES files(id),
+  subject TEXT,
+  UNIQUE (uid, thread_id, body, time)
+);
+CREATE TABLE mm_messages (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL UNIQUE REFERENCES messages(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  protocol INTEGER NOT NULL,
+  smsc TEXT,
+  time_sent INTEGER,
+  validity INTEGER,
+  reference_number INTEGER
+);
+CREATE TABLE message_files (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  file_id INTEGER NOT NULL REFERENCES files(id),
+  preview_id INTEGER REFERENCES files(id),
+  UNIQUE (message_id, file_id)
+);
+ALTER TABLE threads ADD COLUMN last_read_id INTEGER REFERENCES messages(id);
+ALTER TABLE threads ADD COLUMN visibility INT NOT NULL DEFAULT 0;
+ALTER TABLE threads ADD COLUMN notification INTEGER NOT NULL DEFAULT 1;
+
+INSERT INTO users VALUES(3,'alice',NULL,NULL,4);
+INSERT INTO users VALUES(4,'@charlie:example.com',NULL,NULL,4);
+INSERT INTO users VALUES(5,'@_freenode_hunter2:example.com',NULL,NULL,4);
+INSERT INTO users VALUES(7,'@bob:example.com',NULL,NULL,4);
+INSERT INTO users VALUES(8,'@bob:example.org',NULL,NULL,4);
+INSERT INTO users VALUES(9,'@alice:example.com',NULL,NULL,4);
+
+INSERT INTO accounts VALUES(3,3,NULL,0,4);
+INSERT INTO accounts VALUES(4,8,NULL,0,4);
+INSERT INTO accounts VALUES(5,9,NULL,0,4);
+
+INSERT INTO threads VALUES(1,'!CDFTfyJgtVMvsXDEi:example.com',NULL,NULL,4,1,0,NULL,0,1);
+INSERT INTO threads VALUES(2,'!CDFTfyJgtVMvsXDEi:example.com',NULL,NULL,5,1,0,NULL,0,1);
+INSERT INTO threads VALUES(3,'!VPWUCfyJyeVMxiHYGi:example.com',NULL,NULL,5,1,0,NULL,0,1);
+INSERT INTO threads VALUES(4,'!VPWUCfyJyeVMxiHYGi:example.com',NULL,NULL,3,1,0,NULL,0,1);
+
+INSERT INTO thread_members VALUES(1,1,4);
+INSERT INTO thread_members VALUES(2,1,9);
+INSERT INTO thread_members VALUES(3,2,5);
+INSERT INTO thread_members VALUES(4,3,7);
+INSERT INTO thread_members VALUES(5,3,9);
+INSERT INTO thread_members VALUES(6,4,9);
+
+INSERT INTO messages VALUES(NULL,'10600c18-ecc1-4d42-8f0a-5c5e563b1b3d',1,NULL,NULL,'Another empty author message',2,1,1586447320,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'1dc29876-0f92-11eb-aeb4-d7486be58053',1,4,NULL,'Failed',2,1,1586448432,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'c73bbcbc-0f91-11eb-aab2-8b95affe5e24',1,9,NULL,'Test',2,1,1586448429,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'414d35fa-e50f-441f-a382-3cb8acd7a510',2,5,NULL,'Weird.  All I see is *',2,1,1586448435,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'f86768a5-d0fb-423c-9430-3d3b66d74a67',2,NULL,NULL,'A message with no author',2,1,1586448438,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'12107bfc-0f91-11eb-8501-2314b53187d5',3,7,NULL,'Hi',2,1,1586447316,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'2a5f6c4a-0f91-11eb-af2c-27e3777f4483',3,7,NULL,'Are you there?',2,1,1586447319,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'6b67fa36-0f91-11eb-9714-af849160d937',3,9,NULL,'Hi',2,-1,1586447419,NULL,0,NULL,NULL);
+INSERT INTO messages VALUES(NULL,'3a383ec7-7566-457b-b561-2145b328459c',4,9,NULL,'Why?',2,-1,1586447421,NULL,0,NULL,NULL);
+
+COMMIT;

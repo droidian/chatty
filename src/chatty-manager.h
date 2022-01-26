@@ -61,7 +61,8 @@ ChattyChat     *chatty_manager_find_chat_with_name    (ChattyManager      *self,
                                                        const char         *chat_id);
 ChattyAccount  *chatty_manager_get_mm_account         (ChattyManager      *self);
 gboolean        chatty_manager_set_uri                (ChattyManager      *self,
-                                                       const char         *uri);
+                                                       const char         *uri,
+                                                       const char         *name);
 ChattyHistory  *chatty_manager_get_history            (ChattyManager      *self);
 
 G_END_DECLS

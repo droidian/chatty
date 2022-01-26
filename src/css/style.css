@@ -18,7 +18,7 @@
   border-color: @theme_selected_bg_color;
 }
 
-.button_send_green {
+.button_send_green:not(:disabled) {
   background: #6cba3d;
   border-color: #6cba3d;
   color: white;
@@ -146,4 +146,9 @@ button.delete-button {
   padding: 0px;
   min-height: 27px;
   min-width: 27px;
+}
+
+.no-margin,
+.no-margin > scrolledwindow > viewport > clamp {
+  margin: 0;
 }
