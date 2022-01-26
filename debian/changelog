@@ -1,3 +1,11 @@
+chatty (0.6.0-1) unstable; urgency=medium
+
+  * New upstream version 0.6.0 (Closes: #1002241)
+  * d/control: Add itstool and dbus-x11 as build dependency
+  * d/rules: Set NO_AT_BRIDGE=1 for tests
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Wed, 26 Jan 2022 17:51:14 +0100
+
 chatty (0.5.0~beta3-1) experimental; urgency=medium
 
   * d/control: Drop purple-mm-sms from recommends
