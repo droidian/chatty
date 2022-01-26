@@ -26,6 +26,8 @@ G_DECLARE_FINAL_TYPE (ChattyContact, chatty_contact, CHATTY, CONTACT, ChattyItem
 ChattyContact     *chatty_contact_new                   (EContact          *contact,
                                                          EVCardAttribute   *attr,
                                                          ChattyProtocol     protocol);
+ChattyContact     *chatty_contact_dummy_new             (const char        *name,
+                                                         const char        *value);
 void               chatty_contact_set_name              (ChattyContact     *self,
                                                          const char        *name);
 void               chatty_contact_set_value             (ChattyContact     *self,

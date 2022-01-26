@@ -30,6 +30,10 @@ ChattyMessage      *chatty_message_new             (ChattyItem         *user,
                                                     ChattyMsgDirection  direction,
                                                     ChattyMsgStatus     status);
 
+const char         *chatty_message_get_subject     (ChattyMessage      *self);
+void                chatty_message_set_subject     (ChattyMessage      *self,
+                                                    const char         *subject);
+
 gboolean            chatty_message_get_encrypted   (ChattyMessage      *self);
 void                chatty_message_set_encrypted   (ChattyMessage      *self,
                                                     gboolean            is_encrypted);

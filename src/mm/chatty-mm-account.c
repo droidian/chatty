@@ -394,7 +394,7 @@ chatty_mm_account_append_message (ChattyMmAccount *self,
     g_list_model_items_changed (G_LIST_MODEL (self->chat_list), position, 1, 1);
 }
 
-void
+gboolean
 chatty_mm_account_recieve_mms_cb (ChattyMmAccount *self,
                                   ChattyMessage   *message,
                                   const char      *sender,
@@ -403,29 +403,45 @@ chatty_mm_account_recieve_mms_cb (ChattyMmAccount *self,
   ChattyChat *chat;
   g_autoptr(ChattyMmBuddy) senderbuddy = NULL;
   ChattyMsgDirection message_dir;
-  ChattyMessage  *messagecheck;
-
-  chat = chatty_mm_account_start_chat (self, recipientlist);
-  g_return_if_fail (CHATTY_IS_MM_CHAT (chat));
-
-  /*
-   * Check to see if this message exists (e.g. draft MMS sent)
-   */
-
-  /*
-   *  TODO: I think it would be nicer if I could have a
-   *        chatty_mm_chat_find_message_with_uid (), then this will work if
-   *        chatty is closed and then reopened.
-   */
-  messagecheck = chatty_mm_chat_find_message_with_id (CHATTY_MM_CHAT (chat),
-                                                      chatty_message_get_id(message));
-  if (messagecheck != NULL) {
-    chatty_message_set_status (messagecheck, chatty_message_get_status (message), 0);
-    chatty_history_add_message (self->history_db, chat, message);
-    return;
-  }
+  ChattyMsgStatus msg_status;
 
   message_dir = chatty_message_get_msg_direction (message);
+  msg_status = chatty_message_get_status (message);
+
+  /*
+   * MMS Messages from Chatty will always start our as a Draft, then will
+   * transition to sent, and if deliver reports is on, to delivered.
+   * Thus, if we get a sent message that is sent or delivered, it is already
+   * in the chat
+   */
+  if (message_dir == CHATTY_DIRECTION_OUT &&
+     (msg_status == CHATTY_STATUS_SENT || msg_status == CHATTY_STATUS_DELIVERED)) {
+    ChattyMessage  *messagecheck;
+
+    chat = chatty_mm_account_find_chat (self, recipientlist);
+
+    /* The chat was deleted before the update, so just delete the MMS */
+    if (!chat) {
+      chatty_mmsd_delete_mms (self->mmsd, chatty_message_get_uid (message));
+      return FALSE;
+    }
+
+    messagecheck = chatty_mm_chat_find_message_with_uid (CHATTY_MM_CHAT (chat),
+                                                         chatty_message_get_uid (message));
+    if (messagecheck != NULL) {
+      chatty_message_set_status (messagecheck, chatty_message_get_status (message), 0);
+      chatty_history_add_message (self->history_db, chat, message);
+    } else { /* The MMS was deleted before the update, so just delete the MMS */
+      chatty_mmsd_delete_mms (self->mmsd, chatty_message_get_uid (message));
+      return FALSE;
+    }
+
+    return TRUE;
+  }
+
+  chat = chatty_mm_account_start_chat (self, recipientlist);
+  g_return_val_if_fail (CHATTY_IS_MM_CHAT (chat), FALSE);
+
   if (message_dir == CHATTY_DIRECTION_IN) {
     GListModel *users;
     guint items;
@@ -460,6 +476,8 @@ chatty_mm_account_recieve_mms_cb (ChattyMmAccount *self,
   chatty_message_set_user (message, CHATTY_ITEM (senderbuddy));
 
   chatty_mm_account_append_message (self, message, chat);
+
+  return TRUE;
 }
 
 static void
@@ -987,7 +1005,7 @@ chatty_mm_account_get_protocols (ChattyItem *item)
 static const char *
 chatty_mm_account_get_username (ChattyItem *item)
 {
-  return "SMS";
+  return "invalid-0000000000000000";
 }
 
 static void
@@ -1248,6 +1266,35 @@ chatty_mm_account_start_chat (ChattyMmAccount *self,
   return chat;
 }
 
+ChattyChat *
+chatty_mm_account_start_chat_with_uri (ChattyMmAccount *self,
+                                       ChattySmsUri    *uri)
+{
+  ChattyChat *chat;
+
+  g_return_val_if_fail (CHATTY_IS_MM_ACCOUNT (self), NULL);
+  g_return_val_if_fail (CHATTY_IS_SMS_URI (uri), NULL);
+
+  chat = chatty_mm_account_find_chat (self, chatty_sms_uri_get_numbers_str (uri));
+  if (!chat) {
+    GPtrArray *members;
+
+    members = chatty_sms_uri_get_numbers (uri);
+
+    if (members->len == 1)
+      chat = (ChattyChat *)chatty_mm_chat_new_with_uri (uri, CHATTY_PROTOCOL_MMS_SMS, TRUE);
+    else /* Only MMS has multiple recipients */
+      chat = (ChattyChat *)chatty_mm_chat_new_with_uri (uri, CHATTY_PROTOCOL_MMS, FALSE);
+
+    chatty_chat_set_data (chat, self, self->history_db);
+    chatty_mm_chat_set_eds (CHATTY_MM_CHAT (chat), self->chatty_eds);
+
+    g_list_store_append (self->chat_list, chat);
+    g_object_unref (chat);
+  }
+
+  return chat;
+}
 void
 chatty_mm_account_delete_chat (ChattyMmAccount *self,
                                ChattyChat      *chat)

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: chatty master\n"
 "Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2021-12-07 15:25+0000\n"
-"PO-Revision-Date: 2021-12-03 13:21+0100\n"
+"POT-Creation-Date: 2021-12-17 15:24+0000\n"
+"PO-Revision-Date: 2021-12-20 21:49+0100\n"
 "Last-Translator: Florentina Mușat <florentina.musat.28@gmail.com>\n"
 "Language-Team: Romanian <gnomero-list@lists.sourceforge.net>\n"
 "Language: ro\n"
@@ -187,13 +187,13 @@ msgstr ""
 "S-a produs o eroare la afișarea ajutorului:\n"
 "%s"
 
-#: src/chatty-avatar.c:158 src/dialogs/chatty-new-chat-dialog.c:258
+#: src/chatty-avatar.c:158 src/dialogs/chatty-new-chat-dialog.c:257
 msgid "Send To"
 msgstr "Trimite la"
 
 #: src/chatty-chat-list.c:152
 msgid "Select a contact with the <b>“+”</b> button in the titlebar."
-msgstr "Selectați un contact cu butonul <b>„+”</b> din bara de titlu."
+msgstr "Alege un contact cu butonul <b>„+”</b> din bara de titlu."
 
 #: src/chatty-chat-list.c:156
 msgid "Add instant messaging accounts in Preferences."
@@ -231,11 +231,11 @@ msgstr "Mesajele sunt codate"
 msgid "Your messages are not encrypted"
 msgstr "Mesajele nu sunt codate"
 
-#: src/chatty-chat-view.c:394
+#: src/chatty-chat-view.c:396
 msgid "Select File..."
 msgstr "Alege fișierul..."
 
-#: src/chatty-chat-view.c:397 src/purple/chatty-purple-request.c:175
+#: src/chatty-chat-view.c:399 src/purple/chatty-purple-request.c:175
 #: src/chatty-window.c:395 src/dialogs/chatty-pp-chat-info.c:90
 #: src/dialogs/chatty-ma-account-details.c:119
 #: src/dialogs/chatty-pp-account-details.c:91
@@ -244,7 +244,7 @@ msgstr "Alege fișierul..."
 msgid "Cancel"
 msgstr "Anulează"
 
-#: src/chatty-chat-view.c:398 src/purple/chatty-purple-request.c:177
+#: src/chatty-chat-view.c:400 src/purple/chatty-purple-request.c:177
 #: src/dialogs/chatty-pp-chat-info.c:89
 #: src/dialogs/chatty-ma-account-details.c:118
 #: src/dialogs/chatty-pp-account-details.c:90
@@ -345,6 +345,11 @@ msgstr "Moderator"
 msgid "Member"
 msgstr "Membru"
 
+#: src/chatty-manager.c:726
+#, c-format
+msgid "“%s” is not a valid URI"
+msgstr "„%s” nu este un URI valabil"
+
 #: src/chatty-message-row.c:81
 msgid "Copy"
 msgstr "Copiază"
@@ -390,7 +395,7 @@ msgstr "Utilizatorul %s a adăugat %s la contacte"
 #: src/purple/chatty-purple.c:262
 #, c-format
 msgid "Authorize %s?"
-msgstr "Autorizați %s?"
+msgstr "Autorizezi %s?"
 
 #: src/purple/chatty-purple.c:264 src/matrix/matrix-utils.c:509
 msgid "Reject"
@@ -471,33 +476,28 @@ msgstr ""
 "Florentina Mușat <florentina [dot] musat [dot] 28 [at] gmail [dot] com>, "
 "2020-2021"
 
-#: src/chatty-window.c:803
+#: src/chatty-window.c:804
 msgid "Any Protocol"
 msgstr "Orice Protocol"
 
-#: src/chatty-window.c:804 src/ui/chatty-settings-dialog.ui:551
+#: src/chatty-window.c:805 src/ui/chatty-settings-dialog.ui:551
 msgid "Matrix"
 msgstr "Matrix"
 
-#: src/chatty-window.c:805
+#: src/chatty-window.c:806
 msgid "SMS/MMS"
 msgstr "SMS/MMS"
 
-#: src/chatty-window.c:808 src/ui/chatty-settings-dialog.ui:539
+#: src/chatty-window.c:809 src/ui/chatty-settings-dialog.ui:539
 msgid "XMPP"
 msgstr "XMPP"
 
-#: src/chatty-window.c:811 src/ui/chatty-settings-dialog.ui:565
+#: src/chatty-window.c:812 src/ui/chatty-settings-dialog.ui:565
 msgid "Telegram"
 msgstr "Telegram"
 
-#: src/chatty-window.c:848
-#, c-format
-msgid "“%s” is not a valid phone number"
-msgstr "„%s” nu este un număr de telefon valabil"
-
 #: src/dialogs/chatty-mm-chat-info.c:116
-#: src/dialogs/chatty-new-chat-dialog.c:553
+#: src/dialogs/chatty-new-chat-dialog.c:552
 msgid "Unknown Contact"
 msgstr "Contact necunoscut"
 
@@ -558,7 +558,7 @@ msgstr "ID Matrix:"
 msgid "Telegram ID:"
 msgstr "ID Telegram:"
 
-#: src/dialogs/chatty-new-chat-dialog.c:305
+#: src/dialogs/chatty-new-chat-dialog.c:304
 #, c-format
 msgid "Error opening GNOME Contacts: %s"
 msgstr "Eroare la deschiderea Contacte GNOME: %s"
@@ -695,6 +695,22 @@ msgstr "Certificatul pentru „%s” a fost anulat"
 #, c-format
 msgid "Error validating certificate for ‘%s’"
 msgstr "Eroare la validarea certificatului pentru „%s”"
+
+#. TRANSLATORS: Timestamp for minute accuracy, e.g. “2020-08-11 15:27”.
+#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
+#.
+#: src/mm/chatty-mmsd.c:867
+msgid "%Y-%m-%d %H:%M"
+msgstr "%Y-%m-%d %H:%M"
+
+#: src/mm/chatty-mmsd.c:1149
+#, c-format
+msgid "You received an MMS, but it expired on: %s"
+msgstr "Ai primit un MMS, dar a expirat în: %s"
+
+#: src/mm/chatty-mmsd.c:1152
+msgid "You received an empty MMS."
+msgstr "Ai primit un MMS gol."
 
 #: src/ui/chatty-dialog-join-muc.ui:17
 msgid "New Group Chat"
@@ -1038,27 +1054,3 @@ msgstr "Serviciu: "
 #: src/users/chatty-contact.c:315
 msgid "Other: "
 msgstr "Altele: "
-
-#~ msgid "Request mmsd to handle SMIL"
-#~ msgstr "Solicită ca MMSD să gestioneze SMIL"
-
-#~ msgid "Whether to request mmsd to create SMIL"
-#~ msgstr "Dacă să se solicite ca MMSD să creeze SMIL"
-
-#~ msgid "Carrier mmsc for mmsd"
-#~ msgstr "Operatorul MMSC-ului pentru MMSD"
-
-#~ msgid "The carrier mmsc to set for mmsd"
-#~ msgstr "Operatorul MMSC-ului de stabilit pentru MMSD"
-
-#~ msgid "Carrier mms apn for mmsd"
-#~ msgstr "APN-ul operatorului de MMS pentru MMSD"
-
-#~ msgid "The mms APN to set for mmsd"
-#~ msgstr "APN-ul pentru MMS de stabilit pentru MMSD"
-
-#~ msgid "Carrier mms proxy for mmsd"
-#~ msgstr "Proxy-ul operatorului de MMS pentru MMSD"
-
-#~ msgid "The mms proxy to set for mmsd"
-#~ msgstr "Proxy-ul pentru MMS de stabilit pentru MMSD"

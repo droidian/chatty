@@ -256,6 +256,13 @@ chatty_notification_show_message (ChattyNotification *self,
       g_notification_set_body (self->notification, "Audio File");
       break;
 
+    case CHATTY_MESSAGE_MMS:
+      if (chatty_message_get_text (message) && *chatty_message_get_text (message))
+        g_notification_set_body (self->notification, chatty_message_get_text (message));
+      else
+        g_notification_set_body (self->notification, "MMS");
+      break;
+
     default:
       g_notification_set_body (self->notification, chatty_message_get_text (message));
       break;

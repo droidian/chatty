@@ -6,6 +6,7 @@ libsrc += files([
   'chatty-mm-buddy.c',
   'chatty-mm-chat.c',
   'chatty-mmsd.c',
+  'chatty-sms-uri.c',
 ])
 
 chatty_deps += [

@@ -82,6 +82,9 @@ chatty_mm_chat_info_set_item (ChattyChatInfo *info,
   gtk_container_foreach (GTK_CONTAINER (self->contacts_list_box),
                          (GtkCallback)gtk_widget_destroy, NULL);
 
+  if (!chat)
+    return;
+
   chatty_avatar_set_item (CHATTY_AVATAR (self->avatar), CHATTY_ITEM (chat));
 
   if (chatty_chat_is_im (chat)) {
@@ -104,6 +107,8 @@ chatty_mm_chat_info_set_item (ChattyChatInfo *info,
     contact = chatty_mm_buddy_get_contact (buddy);
     if (contact) {
      contact_row = chatty_list_row_new (CHATTY_ITEM (contact));
+     chatty_list_row_set_call ((ChattyListRow *)contact_row, TRUE);
+
      gtk_list_box_prepend (GTK_LIST_BOX (self->contacts_list_box),
                            GTK_WIDGET (contact_row));
     } else {
@@ -118,6 +123,7 @@ chatty_mm_chat_info_set_item (ChattyChatInfo *info,
 
       contact_row = chatty_list_row_new (CHATTY_ITEM (new_contact));
       chatty_list_row_set_contact ((ChattyListRow *)contact_row, TRUE);
+      chatty_list_row_set_call ((ChattyListRow *)contact_row, TRUE);
 
       /* We validate all multi-user chat users on creation. If there is
        * only one contact, it's possible that it's not a phone number,

@@ -38,6 +38,7 @@ struct _ChattyMmChat
   ChattyEds       *chatty_eds;
   ChattyMmAccount *account;
   ChattyHistory   *history_db;
+  ChattySmsUri    *sms_uri;
   GListStore      *chat_users;
   GListStore      *message_store;
   /* A Queue of #GTask */
@@ -79,43 +80,29 @@ static void
 chatty_mm_chat_update_contact (ChattyMmChat *self)
 {
   guint n_items;
-  GString *title = NULL;
 
   g_assert (CHATTY_IS_MM_CHAT (self));
 
   if (!self->chatty_eds)
     return;
 
-  title = g_string_new (NULL);
   n_items = g_list_model_get_n_items (G_LIST_MODEL (self->chat_users));
 
   for (guint i = 0; i < n_items; i++) {
     g_autoptr(ChattyMmBuddy) buddy = NULL;
     ChattyContact *contact;
-    const char *phone, *name;
+    const char *phone;
 
     buddy = g_list_model_get_item (G_LIST_MODEL (self->chat_users), i);
     phone = chatty_mm_buddy_get_number (buddy);
     contact = chatty_eds_find_by_number (self->chatty_eds, phone);
-    if (contact) {
+    if (contact)
       chatty_mm_buddy_set_contact (buddy, contact);
-      name = chatty_item_get_name (CHATTY_ITEM (contact));
-    } else {
-      name = phone;
-    }
-
-    g_string_append (title, name);
-    /* TODO: Improve so that this is translatable */
-    g_string_append (title, ", ");
   }
 
-  /* Delete the trailing ", " */
-  if (title->len > 2)
-    g_string_truncate (title, title->len - 2);
-
-  if (title->len && (!self->name || !*self->name || !self->has_custom_name || n_items == 1)) {
+  if (!self->name || !*self->name || !self->has_custom_name || n_items == 1) {
     g_free (self->name);
-    self->name = g_string_free (title, FALSE);
+    self->name = chatty_chat_generate_name (CHATTY_CHAT (self), G_LIST_MODEL (self->chat_users));
     self->has_custom_name = FALSE;
 
     g_object_notify (G_OBJECT (self), "name");
@@ -495,7 +482,7 @@ chatty_mm_chat_set_name (ChattyItem *item,
 static const char *
 chatty_mm_chat_get_username (ChattyItem *item)
 {
-  return "SMS";
+  return "invalid-0000000000000000";
 }
 
 static ChattyProtocol
@@ -537,6 +524,7 @@ chatty_mm_chat_finalize (GObject *object)
   g_clear_object (&self->history_db);
   g_clear_object (&self->chatty_eds);
   g_clear_object (&self->account);
+  g_clear_object (&self->sms_uri);
   g_object_unref (self->message_store);
   g_object_unref (self->chat_users);
   g_free (self->last_message);
@@ -606,6 +594,32 @@ chatty_mm_chat_new (const char     *name,
   return self;
 }
 
+ChattyMmChat *
+chatty_mm_chat_new_with_uri (ChattySmsUri   *uri,
+                             ChattyProtocol  protocol,
+                             gboolean        is_im)
+{
+  ChattyMmChat *self;
+  GPtrArray *members;
+
+  g_return_val_if_fail (CHATTY_IS_SMS_URI (uri), NULL);
+
+  self = chatty_mm_chat_new (chatty_sms_uri_get_numbers_str (uri),
+                             NULL, protocol, is_im);
+  self->sms_uri = g_object_ref (uri);
+
+  members = chatty_sms_uri_get_numbers (uri);
+
+  for (guint i = 0; i < members->len; i++) {
+    g_autoptr(ChattyMmBuddy) buddy = NULL;
+
+    buddy = chatty_mm_buddy_new (members->pdata[i], NULL);
+    g_list_store_append (self->chat_users, buddy);
+  }
+
+  return self;
+}
+
 gboolean
 chatty_mm_chat_has_custom_name (ChattyMmChat *self)
 {
@@ -664,6 +678,32 @@ chatty_mm_chat_find_message_with_id (ChattyMmChat *self,
       break;
 
     if (g_str_equal (id, message_id))
+      return message;
+  }
+
+  return NULL;
+}
+
+ChattyMessage *
+chatty_mm_chat_find_message_with_uid (ChattyMmChat *self,
+                                      const char   *uid)
+{
+  guint n_items;
+
+  g_return_val_if_fail (CHATTY_IS_MM_CHAT (self), NULL);
+  g_return_val_if_fail (uid && *uid, NULL);
+
+  n_items = g_list_model_get_n_items (G_LIST_MODEL (self->message_store));
+
+  /* Search from end, the item is more likely to be at the end */
+  for (guint i = n_items; i > 0; i--) {
+    g_autoptr(ChattyMessage) message = NULL;
+    const char *message_uid;
+
+    message = g_list_model_get_item (G_LIST_MODEL (self->message_store), i - 1);
+    message_uid = chatty_message_get_uid (message);
+
+    if (g_str_equal (uid, message_uid))
       return message;
   }
 

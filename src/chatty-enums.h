@@ -131,6 +131,8 @@ typedef enum
   CHATTY_MESSAGE_IMAGE,
   CHATTY_MESSAGE_VIDEO,
   CHATTY_MESSAGE_AUDIO,
+  /* An MMS can have a several files in different formats */
+  CHATTY_MESSAGE_MMS,
 } ChattyMsgType;
 
 typedef enum

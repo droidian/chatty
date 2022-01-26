@@ -98,6 +98,29 @@
           </packing>
         </child>
 
+        <!-- Close Button -->
+        <child>
+          <object class="GtkButton" id="close_button">
+            <property name="visible">0</property>
+            <signal name="clicked" handler="chatty_list_row_delete_clicked_cb" swapped="yes"/>
+            <style>
+              <class name="circular"/>
+              <class name="flat"/>
+            </style>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="width-request">32</property>
+                <property name="height-request">32</property>
+                <property name="icon_name">edit-delete-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="height">2</property>
+          </packing>
+        </child>
+
         <!-- Add Contact -->
         <child>
           <object class="GtkButton" id="add_contact_button">
@@ -109,6 +132,29 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="icon_name">contact-new-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="height">2</property>
+          </packing>
+        </child>
+
+        <child>
+          <object class="GtkButton" id="call_button">
+            <property name="visible">False</property>
+            <property name="can-focus">False</property>
+            <property name="receives-default">False</property>
+            <signal name="clicked" handler="chatty_list_row_call_button_clicked_cb" swapped="yes"/>
+            <child internal-child="accessible">
+              <object class="AtkObject">
+                <property name="accessible-name" translatable="yes">Call</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="icon-name">call-start-symbolic</property>
               </object>
             </child>
           </object>
