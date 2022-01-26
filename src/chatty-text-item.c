@@ -86,25 +86,29 @@ find_url (const char  *buffer,
       break;
   }
 
-  if (url)
-    *end = strchrnul (url, ' ');
+  if (url) {
+    size_t url_end;
+
+    url_end = strcspn (url, " \n()[],\t\r");
+    if (url_end)
+      *end = url + url_end;
+    else
+      *end = url + strlen (url);
+  }
 
   return url;
 }
 
-static void
-text_item_linkify_and_add (ChattyTextItem *self,
-                           const char     *message)
+static char *
+text_item_linkify (ChattyTextItem *self,
+                   const char     *message)
 {
   g_autoptr(GString) link_str = NULL;
-  g_autoptr(GString) str = NULL;
+  GString *str = NULL;
   char *start, *end, *url;
-  GtkLabel *label;
 
-  label = GTK_LABEL (self->content_label);
-
-  if (!message)
-    message = "";
+  if (!message || !*message)
+    return NULL;
 
   str = g_string_sized_new (256);
   link_str = g_string_sized_new (256);
@@ -138,11 +142,7 @@ text_item_linkify_and_add (ChattyTextItem *self,
     g_string_append (str, escaped);
   }
 
-  /* The string is generated only if there is at least one url, hence set as markup */
-  if (str->len)
-    gtk_label_set_markup (label, str->str);
-  else
-    gtk_label_set_text (label, message);
+  return g_string_free (str, FALSE);
 }
 
 static gchar *
@@ -219,6 +219,7 @@ text_item_update_quotes (ChattyTextItem *self)
 static void
 text_item_update_message (ChattyTextItem *self)
 {
+  g_autoptr(GString) str = NULL;
   ChattySettings *settings;
   const char *text;
 
@@ -227,40 +228,65 @@ text_item_update_message (ChattyTextItem *self)
 
   settings = chatty_settings_get_default ();
   text = chatty_message_get_text (self->message);
+  str = g_string_sized_new (256);
 
-  if (!text || !*text) {
-    g_autoptr(GString) files_str = NULL;
+  if (chatty_message_get_files (self->message)) {
     GList *files;
 
-    files_str = g_string_sized_new (256);
     files = chatty_message_get_files (self->message);
 
     for (GList *item = files; item; item = item->next) {
       ChattyFileInfo *file = item->data;
 
+      if (!file || !file->url)
+        continue;
+
       /* file->path is the path to locally saved file */
       if (file->path) {
         if (g_str_has_prefix (file->path, "file://"))
-          g_string_append (files_str, file->path);
+          g_string_append (str, file->path);
+        else if (self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS))
+          g_string_append_printf (str, "file://%s/%s/%s", g_get_user_data_dir (), "chatty", file->path);
         else
-          g_string_append_printf (files_str, "file://%s", file->path);
+          g_string_append_printf (str, "file://%s", file->path);
       } else {
-        g_string_append (files_str, file->url);
+        g_string_append (str, file->url);
       }
 
       if (item->next)
-        g_string_append_c (files_str, ' ');
+        g_string_append (str, "\n\n");
+    }
+  }
+
+  if ((self->protocol == CHATTY_PROTOCOL_MATRIX &&
+       chatty_settings_get_experimental_features (settings)) ||
+      self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
+    g_autofree char *content = NULL;
+    const char *subject;
+
+    subject = chatty_message_get_subject (self->message);
+
+    if (text && *text) {
+      if (str->len)
+        g_string_prepend (str, "\n\n");
+      g_string_prepend (str, text);
+
+      if (subject && *subject)
+        g_string_prepend (str, "\n\nMessage: ");
     }
 
-    if (files_str->len)
-      text_item_linkify_and_add (self, files_str->str);
-    else
-      gtk_label_set_label (GTK_LABEL (self->content_label), "");
+    if (subject && *subject) {
+      g_string_prepend (str, subject);
+      g_string_prepend (str, "Subject: ");
+    }
 
-  } else if ((self->protocol == CHATTY_PROTOCOL_MATRIX &&
-              chatty_settings_get_experimental_features (settings)) ||
-             self->protocol & (CHATTY_PROTOCOL_MMS_SMS | CHATTY_PROTOCOL_MMS)) {
-    text_item_linkify_and_add (self, text);
+    content = text_item_linkify (self, str->str);
+
+    /* The string is generated only if there is at least one url, hence set as markup */
+    if (content && *content)
+      gtk_label_set_markup (GTK_LABEL (self->content_label), content);
+    else
+      gtk_label_set_text (GTK_LABEL (self->content_label), str->str ?: "");
   } else {
     /* This happens only for purple messages */
     g_autofree char *message = NULL;

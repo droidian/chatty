@@ -288,9 +288,10 @@ chat_account_status_changed_cb (ChattyChatView *self)
   g_return_if_fail (account);
 
   enabled = chatty_account_get_status (account) == CHATTY_CONNECTED;
-  gtk_widget_set_sensitive (self->message_input, enabled);
   gtk_widget_set_sensitive (self->send_file_button, enabled);
   gtk_widget_set_sensitive (self->send_message_button, enabled);
+
+  gtk_widget_set_visible (self->send_file_button, chatty_chat_has_file_upload (self->chat));
 }
 
 static GtkWidget *
@@ -424,7 +425,7 @@ chat_view_send_file_button_clicked_cb (ChattyChatView *self,
 
   if (CHATTY_IS_MM_CHAT (self->chat)) {
     chat_view_show_file_chooser (self);
-  } if (CHATTY_IS_MA_CHAT (self->chat)) {
+  } else if (CHATTY_IS_MA_CHAT (self->chat)) {
     /* TODO */
 
   } else {
@@ -525,12 +526,13 @@ chat_view_input_key_pressed_cb (ChattyChatView *self,
 static void
 chat_view_message_input_changed_cb (ChattyChatView *self)
 {
-  gboolean has_text;
+  gboolean has_text, has_files;
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
   has_text = gtk_text_buffer_get_char_count (self->message_input_buffer) > 0;
-  gtk_widget_set_visible (self->send_message_button, has_text);
+  has_files = gtk_revealer_get_reveal_child (GTK_REVEALER (self->attachment_revealer));
+  gtk_widget_set_visible (self->send_message_button, has_text || has_files);
 
   if (chatty_settings_get_send_typing (chatty_settings_get_default ()))
     chatty_update_typing_status (self);

@@ -18,6 +18,7 @@
 #include "chatty-mm-buddy.h"
 #include "chatty-account.h"
 #include "chatty-contact-provider.h"
+#include "chatty-sms-uri.h"
 #include "chatty-enums.h"
 
 G_BEGIN_DECLS
@@ -42,6 +43,8 @@ ChattyChat      *chatty_mm_account_find_chat           (ChattyMmAccount     *sel
                                                         const char          *phone);
 ChattyChat      *chatty_mm_account_start_chat          (ChattyMmAccount     *self,
                                                         const char          *phone);
+ChattyChat      *chatty_mm_account_start_chat_with_uri (ChattyMmAccount     *self,
+                                                        ChattySmsUri        *uri);
 void             chatty_mm_account_delete_chat         (ChattyMmAccount     *self,
                                                         ChattyChat          *chat);
 gboolean         chatty_mm_account_has_mms_feature     (ChattyMmAccount     *self);
@@ -56,7 +59,7 @@ void             chatty_mm_account_send_message_async  (ChattyMmAccount     *sel
 gboolean         chatty_mm_account_send_message_finish (ChattyMmAccount    *self,
                                                         GAsyncResult       *result,
                                                         GError            **error);
-void             chatty_mm_account_recieve_mms_cb      (ChattyMmAccount *self,
+gboolean         chatty_mm_account_recieve_mms_cb      (ChattyMmAccount *self,
                                                         ChattyMessage   *message,
                                                         const char      *sender,
                                                         const char      *recipientlist);

@@ -121,6 +121,9 @@ compare_table (sqlite3    *db,
 
   status = sqlite3_prepare_v2 (db, sql, -1, &stmt, NULL);
   if (status != SQLITE_OK)
+    g_message ("%s", sqlite3_errmsg (db));
+
+  if (status != SQLITE_OK)
     g_warning ("sql: %s", sql);
 
   g_assert_cmpint (status, ==, SQLITE_OK);
@@ -141,8 +144,57 @@ compare_table (sqlite3    *db,
 }
 
 static void
+compare_db_new_columns (sqlite3 *db)
+{
+  g_assert (HISTORY_VERSION == 4);
+
+  /* TO REMOVE */
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT threads.name,a.username,u.username,threads.encrypted,visibility FROM main.thread_members "
+                 "INNER JOIN main.users AS u ON u.id=thread_members.user_id "
+                 "INNER JOIN main.threads ON threads.id=thread_id "
+                 "INNER JOIN main.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN main.users As a ON a.id=accounts.user_id "
+                 "UNION "
+                 "SELECT threads.name,a.username,u.username,threads.encrypted,visibility FROM test.thread_members "
+                 "INNER JOIN test.users AS u ON u.id=thread_members.user_id "
+                 "INNER JOIN test.threads ON threads.id=thread_id "
+                 "INNER JOIN test.accounts ON accounts.id=threads.account_id "
+                 "INNER JOIN test.users As a ON a.id=accounts.user_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.thread_members;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.thread_members;"));
+
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT name FROM main.mime_type "
+                 "UNION "
+                 "SELECT name FROM test.mime_type "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.mime_type;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.mime_type;"));
+
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT f.name,f.url,f.path,f.status,f.size FROM message_files "
+                 "INNER JOIN main.messages AS m ON m.id=message_files.message_id "
+                 "INNER JOIN main.files AS f ON f.id=message_files.file_id "
+                 "UNION "
+                 "SELECT f.name,f.url,f.path,f.status,f.size FROM message_files "
+                 "INNER JOIN main.messages AS m ON m.id=message_files.message_id "
+                 "INNER JOIN main.files AS f ON f.id=message_files.file_id "
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.message_files;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.message_files;"));
+}
+
+static void
 compare_history_db (sqlite3 *db)
 {
+  sqlite3_stmt *stmt;
+  int status;
+
   /* Pragma version should match */
   g_assert_cmpint (history_db_get_int (db, "PRAGMA main.user_version;"), ==,
                    history_db_get_int (db, "PRAGMA test.user_version;"));
@@ -151,6 +203,33 @@ compare_history_db (sqlite3 *db)
   g_assert_cmpint (history_db_get_int (db, "SELECT COUNT(*) FROM main.sqlite_master;"),
                    ==,
                    history_db_get_int (db, "SELECT COUNT(*) FROM test.sqlite_master;"));
+
+  status = sqlite3_prepare_v2 (db, "SELECT DISTINCT tbl_name,type FROM main.sqlite_master "
+                               /* A column with 'sqlite' in name is not ours */
+                               "WHERE NOT instr(name,'sqlite');", -1, &stmt, NULL);
+  g_assert_cmpint (status, ==, SQLITE_OK);
+
+  while ((status = sqlite3_step (stmt)) == SQLITE_ROW) {
+    g_autofree char *main_sql = NULL;
+    g_autofree char *test_sql = NULL;
+    g_autofree char *sql = NULL;
+
+    sql = g_strdup_printf ("SELECT COUNT (*) FROM ("
+                           "SELECT name,type,\"notnull\",dflt_value,pk FROM pragma_table_info('%s', 'main') "
+                           "UNION "
+                           "SELECT name,type,\"notnull\",dflt_value,pk FROM pragma_table_info('%s', 'test') "
+                           ");", sqlite3_column_text (stmt, 0), sqlite3_column_text (stmt, 0));
+    main_sql = g_strdup_printf ("SELECT COUNT(*) FROM pragma_table_info('%s', 'main');",
+                                sqlite3_column_text (stmt, 0));
+    test_sql = g_strdup_printf ("SELECT COUNT(*) FROM pragma_table_info('%s', 'test');",
+                                sqlite3_column_text (stmt, 0));
+    /* DEBUG */
+    /* g_debug ("%d items in '%s' table", history_db_get_int (db, main_sql), sqlite3_column_text (stmt, 0)); */
+    compare_table (db, sql, history_db_get_int (db, main_sql), history_db_get_int (db, test_sql));
+  }
+
+  sqlite3_finalize (stmt);
+  g_assert_cmpint (status, ==, SQLITE_DONE);
 
   /* As duplicate rows are removed, SELECT count should match the size of one table. */
   compare_table (db,
@@ -192,13 +271,13 @@ compare_history_db (sqlite3 *db)
 
   compare_table (db,
                  "SELECT COUNT (*) FROM ("
-                 "SELECT threads.name,a.username,u.username FROM main.thread_members "
+                 "SELECT threads.name,a.username,u.username,threads.encrypted,visibility FROM main.thread_members "
                  "INNER JOIN main.users AS u ON u.id=thread_members.user_id "
                  "INNER JOIN main.threads ON threads.id=thread_id "
                  "INNER JOIN main.accounts ON accounts.id=threads.account_id "
                  "INNER JOIN main.users As a ON a.id=accounts.user_id "
                  "UNION "
-                 "SELECT threads.name,a.username,u.username FROM test.thread_members "
+                 "SELECT threads.name,a.username,u.username,threads.encrypted,visibility FROM test.thread_members "
                  "INNER JOIN test.users AS u ON u.id=thread_members.user_id "
                  "INNER JOIN test.threads ON threads.id=thread_id "
                  "INNER JOIN test.accounts ON accounts.id=threads.account_id "
@@ -219,6 +298,16 @@ compare_history_db (sqlite3 *db)
                  ");",
                  history_db_get_int (db, "SELECT COUNT(*) FROM main.messages;"),
                  history_db_get_int (db, "SELECT COUNT(*) FROM test.messages;"));
+  compare_table (db,
+                 "SELECT COUNT (*) FROM ("
+                 "SELECT f.name,f.url,f.path,mime.name,f.status,f.size FROM main.files as f "
+                 "LEFT JOIN main.mime_type as mime ON f.mime_type_id=mime.id "
+                 "UNION "
+                 "SELECT f.name,f.url,f.path,mime.name,f.status,f.size FROM test.files as f "
+                 "LEFT JOIN test.mime_type as mime ON f.mime_type_id=mime.id"
+                 ");",
+                 history_db_get_int (db, "SELECT COUNT(*) FROM main.files;"),
+                 history_db_get_int (db, "SELECT COUNT(*) FROM test.files;"));
 }
 
 static Message *
@@ -313,6 +402,28 @@ new_message (const char         *account,
     chatty_message_set_files (message->message, g_list_append (NULL, file));
   }
 
+  /* test with some random files for MMS */
+  if (type == CHATTY_MESSAGE_MMS) {
+    GList *files = NULL;
+    guint i;
+
+    i = g_random_int_range (2, 12);
+    g_debug ("files to add: %u", i);
+
+    for (; i > 0; i--) {
+      g_autofree char *uid = NULL;
+      ChattyFileInfo *file;
+
+      uid = g_uuid_string_random ();
+      file = g_new0 (ChattyFileInfo, 1);
+      file->url = g_strdup_printf ("http://example.com/some-file/%s", uid);
+      file->size = g_random_int_range (1000, 5000);
+
+      files = g_list_append (files, file);
+    }
+    chatty_message_set_files (message->message, files);
+  }
+
   message->account = g_strdup (account);
   message->who = g_strdup (buddy);
   message->what = g_strdup (msg_text);
@@ -349,6 +460,7 @@ compare_message (Message       *message,
                  ChattyMessage *chatty_message)
 {
   ChattyMsgType type;
+  GList *files;
 
   if (message == NULL)
     g_assert_null (chatty_message);
@@ -360,19 +472,22 @@ compare_message (Message       *message,
   if (type == CHATTY_MESSAGE_HTML)
     type = CHATTY_MESSAGE_HTML_ESCAPED;
 
-  if (type != CHATTY_MESSAGE_FILE &&
-      type != CHATTY_MESSAGE_IMAGE &&
-      type != CHATTY_MESSAGE_VIDEO &&
-      type != CHATTY_MESSAGE_AUDIO)
-    g_assert_cmpstr (message->what, ==, chatty_message_get_text (chatty_message));
+  g_assert_cmpstr (message->what, ==, chatty_message_get_text (chatty_message));
   g_assert_cmpstr (message->uuid, ==, chatty_message_get_uid (chatty_message));
   g_assert_cmpint (message->when, ==, chatty_message_get_time (chatty_message));
   g_assert_cmpint (message->direction, ==, chatty_message_get_msg_direction (chatty_message));
   g_assert_cmpint (type, ==, chatty_message_get_msg_type (chatty_message));
-  compare_file (g_list_nth_data (chatty_message_get_files (chatty_message), 0),
-                g_list_nth_data (chatty_message_get_files (message->message), 0));
   compare_file (chatty_message_get_preview (chatty_message),
                 chatty_message_get_preview (message->message));
+
+  files = chatty_message_get_files (chatty_message);
+  for (int i = g_list_length (files) - 1; i >= 0; i--) {
+    GList *expected = NULL;
+
+    expected = chatty_message_get_files (message->message);
+    g_assert (expected);
+    compare_file (g_list_nth_data (files, i), g_list_nth_data (expected, i));
+  }
 }
 
 static void
@@ -868,7 +983,7 @@ test_history_raw_message (void)
   add_message (history, msg_array, account, room, who, uuid,
                "geo:51.5008,0.1247", when + 2, CHATTY_MESSAGE_LOCATION, CHATTY_DIRECTION_IN);
   add_message (history, msg_array, account, room, who, uuid,
-               "And one more", when + 3, CHATTY_MESSAGE_TEXT, CHATTY_DIRECTION_IN);
+               "And one more", when + 3, CHATTY_MESSAGE_MMS, CHATTY_DIRECTION_IN);
   g_ptr_array_unref (msg_array);
 
   /* Test deletion */
@@ -936,7 +1051,6 @@ test_value (ChattyHistory *history,
   g_assert_cmpstr (uuid, ==, (char *)sqlite3_column_text (stmt, 1));
   g_assert_cmpstr (message, ==, (char *)sqlite3_column_text (stmt, 2));
   g_assert_cmpint (direction, ==, sqlite3_column_int (stmt, 3));
-  g_debug ("%s %s", sqlite3_column_text (stmt, 4), sqlite3_column_text (stmt, 5));
   g_assert_cmpstr (account, ==, (char *)sqlite3_column_text (stmt, 4));
 
   if (direction == -1)
@@ -1049,7 +1163,7 @@ test_history_migration_db (void)
     sqlite3 *db = NULL;
     int status;
 
-    if (g_str_has_suffix (name, "v3.db"))
+    if (g_str_has_suffix (name, "v4.db"))
       continue;
 
     g_assert_true (g_str_has_suffix (name, "sql"));
@@ -1067,7 +1181,7 @@ test_history_migration_db (void)
     sqlite3_close (db);
 
     /* Export migrated version sql file */
-    expected_file = g_strdelimit (g_strdup (name), "012", '3');
+    expected_file = g_strdelimit (g_strdup (name), "0123", '4');
     export_sql_file (path, expected_file, &db);
 
     /* Open history with old db, which will result in db migration */
@@ -1086,6 +1200,7 @@ test_history_migration_db (void)
     g_assert_cmpint (status, ==, SQLITE_OK);
 
     compare_history_db (db);
+    compare_db_new_columns (db);
     sqlite3_close (db);
   }
 }

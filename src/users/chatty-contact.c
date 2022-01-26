@@ -262,9 +262,23 @@ chatty_contact_new (EContact        *contact,
   ChattyContact *self;
 
   self = g_object_new (CHATTY_TYPE_CONTACT, NULL);
-  self->e_contact = g_object_ref (contact);
+  g_set_object (&self->e_contact, contact);
   self->attribute = attr;
   self->protocol  = protocol;
+
+  return self;
+}
+
+ChattyContact *
+chatty_contact_dummy_new (const char *name,
+                          const char *value)
+{
+  ChattyContact *self;
+
+  self = g_object_new (CHATTY_TYPE_CONTACT, NULL);
+  self->name = g_strdup (name);
+  self->value = g_strdup (value);
+  g_object_set_data (G_OBJECT (self), "dummy", GINT_TO_POINTER (TRUE));
 
   return self;
 }

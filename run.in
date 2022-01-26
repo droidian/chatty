@@ -6,7 +6,7 @@ ABS_SRCDIR='@ABS_SRCDIR@'
 
 if [ "${CHATTY_GDB}" = 1 ]; then
     echo "Running chatty under gdb"
-    WRAPPER="gdb --args"
+    WRAPPER="gdb --directory=${ABS_BUILDDIR}/src --args"
 fi
 
 export GSETTINGS_SCHEMA_DIR="${ABS_BUILDDIR}/data"

@@ -25,6 +25,7 @@ test_items = [
   'matrix-utils',
   'message-text-item',
   'mm-account',
+  'sms-uri',
 ]
 
 foreach item: test_items

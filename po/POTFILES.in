@@ -9,6 +9,7 @@ src/chatty-chat-list.c
 src/chatty-chat-view.c
 src/chatty-chat.c
 src/chatty-chat.h
+src/chatty-contact-list.c
 src/chatty-contact-provider.c
 src/chatty-contact-provider.h
 src/chatty-history.c
@@ -62,6 +63,8 @@ src/matrix/chatty-ma-chat.c
 src/matrix/chatty-ma-chat.h
 src/matrix/matrix-utils.c
 src/matrix/matrix-utils.h
+src/mm/chatty-mmsd.c
+src/mm/chatty-mmsd.h
 src/ui/chatty-chat-view.ui
 src/ui/chatty-contact-row.ui
 src/ui/chatty-dialog-join-muc.ui

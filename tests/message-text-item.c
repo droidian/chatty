@@ -47,6 +47,19 @@ test_message_text_markup (void)
      "<a href=\"www.fsf.org\">www.fsf.org</a> "
     },
     {
+     "www.puri.sm\n",
+     "<a href=\"www.puri.sm\">www.puri.sm</a>\n"
+    },
+    {
+     "www.puri.sm\nwww.gnu.org",
+     "<a href=\"www.puri.sm\">www.puri.sm</a>\n"
+     "<a href=\"www.gnu.org\">www.gnu.org</a>"
+    },
+    {
+     "www.puri.sm, ",
+     "<a href=\"www.puri.sm\">www.puri.sm</a>, "
+    },
+    {
      "file:///home/user/good&bad-file.png ",
      "<a href=\"file:///home/user/good%26bad-file.png\">"
      "file:///home/user/good&amp;bad-file.png</a> "

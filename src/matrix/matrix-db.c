@@ -740,9 +740,44 @@ matrix_db_worker (gpointer user_data)
 }
 
 static void
+ma_finish_cb (GObject      *object,
+              GAsyncResult *result,
+              gpointer      user_data)
+{
+  g_autoptr(GError) error = NULL;
+
+  g_task_propagate_boolean (G_TASK (result), &error);
+
+  if (error)
+    g_warning ("Error: %s", error->message);
+
+  g_task_return_boolean (G_TASK (user_data), !error);
+}
+
+static void
+matrix_db_close (MatrixDb *self)
+{
+  g_autoptr(GTask) task = NULL;
+
+  g_return_if_fail (MATRIX_IS_DB (self));
+
+  if (!self->db)
+    return;
+
+  task = g_task_new (NULL, NULL, NULL, NULL);
+  matrix_db_close_async (self, ma_finish_cb, task);
+
+  /* Wait until the task is completed */
+  while (!g_task_get_completed (task))
+    g_main_context_iteration (NULL, TRUE);
+}
+
+static void
 matrix_db_dispose (GObject *object)
 {
   MatrixDb *self = (MatrixDb *)object;
+
+  matrix_db_close (self);
 
   g_clear_pointer (&self->worker_thread, g_thread_unref);
 

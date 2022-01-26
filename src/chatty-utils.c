@@ -496,7 +496,11 @@ chatty_file_info_new_for_path (const char *path)
    *  https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
    */
   attachment->file_name = g_file_get_basename (file);
-  attachment->mime_type = g_content_type_get_mime_type (g_file_info_get_content_type (file_info));
+  if (g_file_info_get_content_type (file_info) == NULL)
+    attachment->mime_type = g_strdup ("application/octet-stream");
+  else
+    attachment->mime_type = g_content_type_get_mime_type (g_file_info_get_content_type (file_info));
+
   if (attachment->mime_type == NULL) {
     g_warning ("Could not get MIME type! Trying Content Type instead");
     if (g_file_info_get_content_type (file_info) != NULL) {

@@ -111,7 +111,7 @@ application_open_uri (ChattyApplication *self)
   CHATTY_INFO (self->uri, "Opening uri:");
 
   if (self->main_window && self->uri)
-    chatty_window_set_uri (CHATTY_WINDOW (self->main_window), self->uri);
+    chatty_window_set_uri (CHATTY_WINDOW (self->main_window), self->uri, NULL);
 
   g_clear_pointer (&self->uri, g_free);
 

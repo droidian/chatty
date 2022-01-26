@@ -930,6 +930,11 @@ matrix_start_sync (MatrixApi *self)
     }
   } else if (!self->homeserver_verified) {
     matrix_verify_homeserver (self);
+  } else if (!self->password){
+    g_autoptr(GError) error = NULL;
+
+    error = g_error_new (MATRIX_ERROR, M_BAD_PASSWORD, "Empty password");
+    self->callback (self->cb_object, self, MATRIX_PASSWORD_LOGIN, NULL, error);
   } else if (!self->access_token) {
     matrix_login (self);
   } else if (!self->filter_id){
@@ -1370,7 +1375,6 @@ matrix_api_start_sync (MatrixApi *self)
   g_return_if_fail (MATRIX_IS_API (self));
   g_return_if_fail (self->callback);
   g_return_if_fail (self->login_username);
-  g_return_if_fail (self->password || self->access_token);
 
   if (self->is_sync && !self->sync_failed)
     return;
