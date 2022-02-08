@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+#define G_LOG_DOMAIN "chatty-chat-view"
+
 #include "config.h"
 
 #include <glib/gi18n.h>
@@ -21,6 +23,7 @@
 #include "chatty-message-row.h"
 #include "chatty-attachments-view.h"
 #include "chatty-chat-view.h"
+#include "chatty-log.h"
 
 struct _ChattyChatView
 {
@@ -46,17 +49,23 @@ struct _ChattyChatView
   GtkWidget  *scroll_down_button;
   GtkTextBuffer *message_input_buffer;
   GtkAdjustment *vadjustment;
+  ChattyHistory *history;
 
   GDBusProxy *osk_proxy;
 
   ChattyChat *chat;
-  gdouble     last_vadj_upper;
+  ChattyMessage *draft_message;
   guint       refresh_typing_id;
+  guint       save_timeout_id;
+  gboolean    draft_is_loading;
+
+  gdouble     last_vadj_upper;
   guint       update_view_id;
   guint       osk_id;
   gboolean    first_scroll_to_bottom;
 };
 
+#define SAVE_TIMEOUT      300 /* milliseconds */
 #define INDICATOR_WIDTH   60
 #define INDICATOR_HEIGHT  40
 #define INDICATOR_MARGIN   2
@@ -383,6 +392,16 @@ chat_view_message_items_changed (ChattyChatView *self)
 }
 
 static void
+chat_view_chat_changed_cb (ChattyChatView *self)
+{
+  if (!self->chat)
+    return;
+
+  if (CHATTY_IS_MM_CHAT (self->chat))
+    chatty_chat_set_unread_count (self->chat, 0);
+}
+
+static void
 chat_view_show_file_chooser (ChattyChatView *self)
 {
   GtkWindow *window;
@@ -464,6 +483,9 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 #ifdef PURPLE_ENABLED
   if (CHATTY_IS_PP_CHAT (self->chat) &&
       chatty_pp_chat_run_command (CHATTY_PP_CHAT (self->chat), message)) {
+    g_clear_handle_id (&self->save_timeout_id, g_source_remove);
+    g_clear_object (&self->draft_message);
+
     gtk_widget_hide (self->send_message_button);
     gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
 
@@ -473,7 +495,7 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
 
   account = chatty_chat_get_account (self->chat);
   if (chatty_account_get_status (account) != CHATTY_CONNECTED)
-    return;
+    goto end;
 
   gtk_widget_grab_focus (self->message_input);
 
@@ -501,6 +523,12 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
   chatty_attachments_view_reset (CHATTY_ATTACHMENTS_VIEW (self->attachment_view));
 
   gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
+  chatty_message_set_text (self->draft_message, "");
+  chatty_history_add_message (self->history, self->chat, self->draft_message);
+
+ end:
+  g_clear_handle_id (&self->save_timeout_id, g_source_remove);
+  g_clear_object (&self->draft_message);
 }
 
 static gboolean
@@ -522,6 +550,27 @@ chat_view_input_key_pressed_cb (ChattyChatView *self,
   return FALSE;
 }
 
+static gboolean
+chat_view_save_message_to_db (gpointer user_data)
+{
+  ChattyChatView *self = user_data;
+  g_autofree char *text = NULL;
+
+  g_assert (CHATTY_IS_CHAT_VIEW (self));
+
+  g_clear_handle_id (&self->save_timeout_id, g_source_remove);
+  g_return_val_if_fail (self->chat, G_SOURCE_REMOVE);
+
+  CHATTY_TRACE (chatty_chat_get_chat_name (self->chat), "Saving draft to");
+
+  g_object_get (self->message_input_buffer, "text", &text, NULL);
+
+  chatty_message_set_text (self->draft_message, text);
+  chatty_history_add_message (self->history, self->chat, self->draft_message);
+  gtk_text_buffer_set_modified (self->message_input_buffer, FALSE);
+
+  return G_SOURCE_REMOVE;
+}
 
 static void
 chat_view_message_input_changed_cb (ChattyChatView *self)
@@ -530,9 +579,17 @@ chat_view_message_input_changed_cb (ChattyChatView *self)
 
   g_assert (CHATTY_IS_CHAT_VIEW (self));
 
+  g_clear_handle_id (&self->save_timeout_id, g_source_remove);
   has_text = gtk_text_buffer_get_char_count (self->message_input_buffer) > 0;
   has_files = gtk_revealer_get_reveal_child (GTK_REVEALER (self->attachment_revealer));
   gtk_widget_set_visible (self->send_message_button, has_text || has_files);
+
+  if (!self->draft_is_loading)
+    self->save_timeout_id = g_timeout_add (SAVE_TIMEOUT,
+                                           chat_view_save_message_to_db,
+                                           self);
+  if (self->draft_is_loading)
+    return;
 
   if (chatty_settings_get_send_typing (chatty_settings_get_default ()))
     chatty_update_typing_status (self);
@@ -744,6 +801,22 @@ oks_vanished_cb (GDBusConnection *connection,
 }
 
 static void
+chat_get_draft_cb (GObject      *object,
+                   GAsyncResult *result,
+                   gpointer      user_data)
+{
+  g_autoptr(ChattyChatView) self = user_data;
+  g_autofree char *draft = NULL;
+
+  draft = chatty_history_get_draft_finish (self->history, result, NULL);
+
+  self->draft_is_loading = TRUE;
+  chatty_message_set_text (self->draft_message, draft);
+  g_object_set (self->message_input_buffer, "text", draft ? draft : "", NULL);
+  self->draft_is_loading = FALSE;
+}
+
+static void
 chatty_chat_view_map (GtkWidget *widget)
 {
   ChattyChatView *self = (ChattyChatView *)widget;
@@ -761,7 +834,13 @@ chatty_chat_view_finalize (GObject *object)
   g_clear_handle_id (&self->osk_id, g_bus_unwatch_name);
   g_clear_handle_id (&self->update_view_id, g_source_remove);
   g_clear_object (&self->osk_proxy);
+
+  g_clear_handle_id (&self->save_timeout_id, g_source_remove);
+  g_clear_object (&self->draft_message);
+  g_clear_object (&self->history);
+
   g_clear_object (&self->chat);
+  g_clear_object (&self->draft_message);
 
   G_OBJECT_CLASS (chatty_chat_view_parent_class)->finalize (object);
 }
@@ -887,9 +966,14 @@ chatty_chat_view_set_chat (ChattyChatView *self,
     g_signal_handlers_disconnect_by_func (chatty_chat_get_messages (self->chat),
                                           chat_view_message_items_changed,
                                           self);
+    g_signal_handlers_disconnect_by_func (chatty_chat_get_messages (self->chat),
+                                          chat_view_chat_changed_cb,
+                                          self);
 
     gtk_widget_hide (self->scroll_down_button);
     self->first_scroll_to_bottom = FALSE;
+    g_clear_handle_id (&self->save_timeout_id, g_source_remove);
+    g_clear_object (&self->draft_message);
   }
 
   gtk_widget_set_sensitive (self->message_input, !!chat);
@@ -897,6 +981,17 @@ chatty_chat_view_set_chat (ChattyChatView *self,
 
   if (!g_set_object (&self->chat, chat))
     return;
+
+  {
+    g_autofree char *uid = NULL;
+
+    g_clear_object (&self->draft_message);
+
+    uid = g_uuid_string_random ();
+    self->draft_message = chatty_message_new (NULL, NULL, uid, time (NULL),
+                                              CHATTY_MESSAGE_TEXT,
+                                              CHATTY_DIRECTION_OUT, CHATTY_STATUS_DRAFT);
+  }
 
   if (chat)
     gtk_stack_set_visible_child (GTK_STACK (self), self->message_view);
@@ -916,11 +1011,18 @@ chatty_chat_view_set_chat (ChattyChatView *self,
   g_signal_connect_object (messages, "items-changed",
                            G_CALLBACK (chat_view_message_items_changed),
                            self, G_CONNECT_SWAPPED);
+  g_signal_connect_object (chat, "changed",
+                           G_CALLBACK (chat_view_chat_changed_cb),
+                           self, G_CONNECT_SWAPPED);
   chat_view_message_items_changed (self);
+  chat_view_chat_changed_cb (self);
 
   if (g_list_model_get_n_items (messages) <= 3)
     chatty_chat_load_past_messages (chat, -1);
 
+  chatty_history_get_draft_async (self->history, self->chat,
+                                  chat_get_draft_cb,
+                                  g_object_ref (self));
 
   if (account)
     g_signal_connect_object (account, "notify::status",
@@ -959,4 +1061,14 @@ chatty_chat_view_get_chat (ChattyChatView *self)
   g_return_val_if_fail (CHATTY_IS_CHAT_VIEW (self), NULL);
 
   return self->chat;
+}
+
+void
+chatty_chat_view_set_db (ChattyChatView *self,
+                         ChattyHistory  *history)
+{
+  g_return_if_fail (CHATTY_IS_CHAT_VIEW (self));
+  g_return_if_fail (CHATTY_IS_HISTORY (history));
+
+  g_set_object (&self->history, history);
 }

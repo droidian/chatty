@@ -677,7 +677,9 @@ add_chatty_message (ChattyHistory      *history,
   message = chatty_message_new (CHATTY_ITEM (contact), what, uuid, when, type, direction, status);
   g_clear_pointer (&uuid, g_free);
   g_assert (CHATTY_IS_MESSAGE (message));
-  g_ptr_array_add (msg_array, message);
+
+  if (status != CHATTY_STATUS_DRAFT)
+    g_ptr_array_add (msg_array, message);
 
   task = g_task_new (NULL, NULL, NULL, NULL);
   chatty_history_add_message_async (history, chat, message, finish_bool_cb, task);
@@ -719,6 +721,20 @@ add_chatty_message (ChattyHistory      *history,
 
     g_assert_finalize_object (task);
     g_ptr_array_unref (old_msg_array);
+  }
+
+  if (status == CHATTY_STATUS_DRAFT) {
+    g_autofree char *draft = NULL;
+
+    task = g_task_new (NULL, NULL, NULL, NULL);
+    chatty_history_get_draft_async (history, chat, finish_pointer_cb, task);
+
+    while (!g_task_get_completed (task))
+      g_main_context_iteration (NULL, TRUE);
+
+    draft = g_task_propagate_pointer (task, NULL);
+    g_assert_cmpstr (draft, ==, what);
+    g_clear_object (&task);
   }
 }
 
@@ -837,6 +853,13 @@ test_history_message (void)
                       CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT, 0);
   /* FIXME */
   /* g_assert_finalize_object (chat); */
+
+  add_chatty_message (history, chat, msg_array, "Draft message", when + 1,
+                      CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT, CHATTY_STATUS_DRAFT);
+  add_chatty_message (history, chat, msg_array, "changed draft message", when + 3,
+                      CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT, CHATTY_STATUS_DRAFT);
+  add_chatty_message (history, chat, msg_array, "yet another draft", when + 2,
+                      CHATTY_MESSAGE_HTML_ESCAPED, CHATTY_DIRECTION_OUT, CHATTY_STATUS_DRAFT);
 
   g_ptr_array_unref (msg_array);
   chatty_history_close (history);

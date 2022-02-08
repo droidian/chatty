@@ -21,14 +21,9 @@
 #include "chatty-contact-list.h"
 #include "chatty-chat.h"
 #include "chatty-avatar.h"
+#include "chatty-clock.h"
 #include "chatty-list-row.h"
 #include "chatty-contact-provider.h"
-
-#define SECONDS_PER_MINUTE 60.0
-#define SECONDS_PER_HOUR   3600.0
-#define SECONDS_PER_MONTH  2592000.0
-#define SECONDS_PER_YEAR   31536000.0
-
 
 struct _ChattyListRow
 {
@@ -46,175 +41,10 @@ struct _ChattyListRow
 
   ChattyItem    *item;
   gboolean       hide_chat_details;
-  int            last_modified_timeout;
+  gulong         clock_id;
 };
 
 G_DEFINE_TYPE (ChattyListRow, chatty_list_row, GTK_TYPE_LIST_BOX_ROW)
-
-
-/* Copied from chatty-utils by Andrea Schäfer */
-static char *
-chatty_time_ago_in_words (time_t time_stamp)
-{
-  // based on the ruby on rails method 'distance_of_time_in_words'
-
-  time_t time_now;
-  struct tm  *timeinfo;
-
-  g_autofree gchar *iso_timestamp = NULL;
-
-  const char *unit;
-  const char *prefix;
-
-  const char *str_about, *str_less_than;
-  const char *str_seconds, *str_minute, *str_minutes;
-  const char *str_hour, *str_hours, *str_day, *str_days;
-  const char *str_month, *str_months, *str_year, *str_years;
-
-  int number, seconds, minutes, hours, days, months, years, offset, remainder;
-
-  gboolean show_date = FALSE;
-
-  double dist_in_seconds;
-
-  str_about     =    "~";
-  str_less_than =    "<";
-  /* Translators: Timestamp seconds suffix */
-  str_seconds   = C_("timestamp-suffix-seconds", "s");
-  /* Translators: Timestamp minute suffix */
-  str_minute    = C_("timestamp-suffix-minute", "m");
-  /* Translators: Timestamp minutes suffix */
-  str_minutes   = C_("timestamp-suffix-minutes", "m");
-  /* Translators: Timestamp hour suffix */
-  str_hour      = C_("timestamp-suffix-hour", "h");
-  /* Translators: Timestamp hours suffix */
-  str_hours     = C_("timestamp-suffix-hours", "h");
-  /* Translators: Timestamp day suffix */
-  str_day       = C_("timestamp-suffix-day", "d");
-  /* Translators: Timestamp days suffix */
-  str_days      = C_("timestamp-suffix-days", "d");
-  /* Translators: Timestamp month suffix */
-  str_month     = C_("timestamp-suffix-month", "mo");
-  /* Translators: Timestamp months suffix */
-  str_months    = C_("timestamp-suffix-months", "mos");
-  /* Translators: Timestamp year suffix */
-  str_year      = C_("timestamp-suffix-year", "y");
-  /* Translators: Timestamp years suffix */
-  str_years     = C_("timestamp-suffix-years", "y");
-
-  time_now = time (NULL);
-
-  timeinfo = localtime (&time_stamp);
-
-  iso_timestamp = g_malloc0 (MAX_GMT_ISO_SIZE * sizeof(char));
-
-  strftime (iso_timestamp,
-            MAX_GMT_ISO_SIZE * sizeof(char),
-            "%d.%m.%y",
-            timeinfo);
-
-  dist_in_seconds = difftime (time_now, time_stamp);
-
-  seconds = (int)dist_in_seconds;
-  minutes = (int)(dist_in_seconds / SECONDS_PER_MINUTE);
-  hours   = (int)(dist_in_seconds / SECONDS_PER_HOUR);
-  days    = (int)(dist_in_seconds / SECONDS_PER_DAY);
-  months  = (int)(dist_in_seconds / SECONDS_PER_MONTH);
-  years   = (int)(dist_in_seconds / SECONDS_PER_YEAR);
-
-  switch (minutes) {
-  case 0 ... 1:
-    unit = str_seconds;
-
-    switch (seconds) {
-    case 0 ... 14:
-      prefix = str_less_than;
-      number = 15;
-      break;
-    case 15 ... 29:
-      prefix = str_less_than;
-      number = 30;
-      break;
-    case 30 ... 59:
-      prefix = str_less_than;
-      number = 1;
-      unit = str_minute;
-      break;
-    default:
-      prefix = str_about;
-      number = 1;
-      unit = str_minute;
-      break;
-    }
-    break;
-
-  case 2 ... 44:
-    prefix = "";
-    number = minutes;
-    unit = str_minutes;
-    break;
-  case 45 ... 89:
-    prefix = str_about;
-    number = 1;
-    unit = str_hour;
-    break;
-  case 90 ... 1439:
-    prefix = str_about;
-    number = hours;
-    unit = str_hours;
-    break;
-  case 1440 ... 2529:
-    prefix = str_about;
-    number = 1;
-    unit = str_day;
-    show_date = TRUE;
-    break;
-  case 2530 ... 43199:
-    prefix = "";
-    number = days;
-    unit = str_days;
-    show_date = TRUE;
-    break;
-  case 43200 ... 86399:
-    prefix = str_about;
-    number = 1;
-    unit = str_month;
-    show_date = TRUE;
-    break;
-  case 86400 ... 525600:
-    prefix = "";
-    number = months;
-    unit = str_months;
-    show_date = TRUE;
-    break;
-
-  default:
-    number = years;
-
-    unit = (number == 1) ? str_year : str_years;
-
-    offset = (int)((float)years / 4.0) * 1440.0;
-
-    remainder = (minutes - offset) % 525600;
-    show_date = TRUE;
-
-    if (remainder < 131400) {
-      prefix = str_about;
-    } else if (remainder < 394200) {
-      /* Translators: Timestamp prefix (e.g. Over 5h) */
-      prefix = _("Over");
-    } else {
-      ++number;
-      unit = str_years;
-      /* Translators: Timestamp prefix (e.g. Almost 5h) */
-      prefix = _("Almost");
-    }
-    break;
-  }
-
-  return show_date ? g_strdup_printf ("%s", iso_timestamp) :
-    g_strdup_printf ("%s%d%s", prefix, number, unit);
-}
 
 static gboolean
 chatty_list_row_item_is_valid (ChattyItem *item)
@@ -226,40 +56,55 @@ chatty_list_row_item_is_valid (ChattyItem *item)
     CHATTY_IS_CHAT (item);
 }
 
+static const char *
+list_row_get_clock_signal (time_t time_stamp)
+{
+  double diff;
+
+  diff = difftime (time (NULL), time_stamp);
+
+  if (diff >= - SECONDS_PER_MINUTE &&
+      diff < SECONDS_PER_WEEK)
+    return g_intern_static_string ("day-changed");
+
+  return NULL;
+}
+
 static gboolean
 chatty_list_row_update_last_modified (ChattyListRow *self)
 {
   ChattyChat *item;
   g_autofree char *str = NULL;
-  double delta_secs;
+  const char *time_signal;
   time_t last_message_time;
-  time_t time_now;
-
-  self->last_modified_timeout = 0;
 
   item = CHATTY_CHAT (self->item);
   last_message_time = chatty_chat_get_last_msg_time (item);
-  if (!last_message_time)
-    return G_SOURCE_REMOVE;
+  if (!last_message_time) {
+    g_clear_signal_handler (&self->clock_id, chatty_clock_get_default ());
 
-  str = chatty_time_ago_in_words (last_message_time);
+    return G_SOURCE_REMOVE;
+  }
+
+  str = chatty_clock_get_human_time (chatty_clock_get_default (),
+                                     last_message_time, FALSE);
   if (str)
     gtk_label_set_label (GTK_LABEL (self->last_modified), str);
 
-  time_now = time (NULL);
-  delta_secs = difftime (time_now, last_message_time);
+  time_signal = list_row_get_clock_signal (last_message_time);
 
-  if (delta_secs < SECONDS_PER_HOUR * 24) {
-    /* Update the time when it's 20% older and at least 30 seconds have passed */
-    int update_delay = MAX (delta_secs * 0.2, 30);
+  if (time_signal != g_object_get_data (G_OBJECT (self), "time-signal")) {
+    g_clear_signal_handler (&self->clock_id, chatty_clock_get_default ());
+    g_object_set_data (G_OBJECT (self), "time-signal", (gpointer)time_signal);
 
-    self->last_modified_timeout =
-      g_timeout_add_seconds (update_delay,
-                             G_SOURCE_FUNC (chatty_list_row_update_last_modified),
-                             self);
+    if (time_signal)
+      self->clock_id = g_signal_connect_object (chatty_clock_get_default (), time_signal,
+                                                G_CALLBACK (chatty_list_row_update_last_modified),
+                                                self, G_CONNECT_SWAPPED);
+    return G_SOURCE_REMOVE;
   }
 
-  return G_SOURCE_REMOVE;
+  return G_SOURCE_CONTINUE;
 }
 
 #ifdef PURPLE_ENABLED
@@ -294,8 +139,6 @@ chatty_list_row_update (ChattyListRow *self)
 
   g_assert (CHATTY_IS_LIST_ROW (self));
   g_assert (CHATTY_IS_ITEM (self->item));
-
-  g_clear_handle_id (&self->last_modified_timeout, g_source_remove);
 
 #ifdef PURPLE_ENABLED
   if (CHATTY_IS_PP_BUDDY (self->item)) {
@@ -435,7 +278,6 @@ chatty_list_row_finalize (GObject *object)
 {
   ChattyListRow *self = (ChattyListRow *)object;
 
-  g_clear_handle_id (&self->last_modified_timeout, g_source_remove);
   g_clear_object (&self->item);
 
   G_OBJECT_CLASS (chatty_list_row_parent_class)->finalize (object);

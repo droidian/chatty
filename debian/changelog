@@ -1,3 +1,52 @@
+chatty (0.6.1) byzantium; urgency=medium
+
+  [ Matheus Barbosa ]
+  * Update Brazilian Portuguese translation
+  * Update Brazilian Portuguese translation
+
+  [ Chris Talbot ]
+  * mmsd: Don't append draft outgoing MMS if it is in the chat
+
+  [ Mohammed Sadiq ]
+  * enums: Add draft status type
+  * history: Use a different variable for message status
+  * history: Add support for draft messages
+  * message: Add API to change message text
+  * chat-view: Add draft message support
+  * tests: Add draft message tests
+  * Add chatty-clock
+  * message-row: Use chatty-clock to get human time
+  * list-row: Use chatty-clock to get human time
+  * utils: Remove no longer used function
+  * list-row: Remove SECONDS_PER_HOUR macro
+  * clock: Add some macros
+  * message-row: Hook to chatty-clock to update time
+  * list-row: Hook to chatty-clock signal to update time
+  * application: Toggle clock on focus changes
+  * window: Update copyright year
+  * mm-account: Increment unread message count on new messages
+  * chat-view: Reset unread message count for active SMS/MMS chats
+  * text-item: Avoid escaping allowed charaters in URL path or delimiters
+  * window: Credit Chris Talbot in about window
+  * history: Add APIs to handle unread message count
+  * mm-chat: Save last read message info to history
+  * settings-dialog: Show homeserver entry for matrix logins with email
+  * settings-dialog: Apply error style when validating entries
+  * settings-dialog: Fill librem.one homeserver details for matching user ID
+  * mmsd: Fix various memory leaks
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+  [ Rafael Fontenelle ]
+  * mmsd: use ratio Unicode char for time
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Tue, 08 Feb 2022 08:47:44 +0530
+
 chatty (0.6.0) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]

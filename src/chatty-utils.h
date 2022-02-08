@@ -13,7 +13,6 @@
 #include "chatty-enums.h"
 
 #define MAX_GMT_ISO_SIZE 256
-#define SECONDS_PER_DAY    86400.0
 
 typedef struct _ChattyFileInfo ChattyFileInfo;
 
@@ -44,7 +43,6 @@ gboolean chatty_utils_get_item_position (GListModel *list,
                                          guint      *position);
 gboolean chatty_utils_remove_list_item  (GListStore *store,
                                          gpointer    item);
-char       *chatty_utils_get_human_time (time_t unix_time);
 GdkPixbuf           *chatty_utils_get_pixbuf_from_data  (const guchar *buf,
                                                          gsize         count);
 void                 chatty_file_info_free              (ChattyFileInfo     *file_info);

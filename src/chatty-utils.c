@@ -11,7 +11,6 @@
 #endif
 
 #include <glib.h>
-#include <glib/gi18n.h>
 #ifdef PURPLE_ENABLED
 # include <purple.h>
 #endif
@@ -23,7 +22,6 @@
 #include <libebook-contacts/libebook-contacts.h>
 #define GNOME_DESKTOP_USE_UNSTABLE_API
 #include <libgnome-desktop/gnome-desktop-thumbnail.h>
-#include <gdesktop-enums.h>
 
 #include "chatty-log.h"
 
@@ -353,61 +351,6 @@ chatty_utils_remove_list_item (GListStore *store,
     }
 
   return FALSE;
-}
-
-char *
-chatty_utils_get_human_time (time_t unix_time)
-{
-  g_autoptr(GDateTime) now = NULL;
-  g_autoptr(GDateTime) utc_time = NULL;
-  g_autoptr(GDateTime) local_time = NULL;
-  gint year_now, month_now, day_now;
-  gint year, month, day;
-
-  g_return_val_if_fail (unix_time >= 0, g_strdup (""));
-
-  now = g_date_time_new_now_local ();
-  utc_time = g_date_time_new_from_unix_utc (unix_time);
-  local_time = g_date_time_to_local (utc_time);
-
-  g_date_time_get_ymd (now, &year_now, &month_now, &day_now);
-  g_date_time_get_ymd (local_time, &year, &month, &day);
-
-  /* If the message is from the current month */
-  if (year  == year_now && month == month_now) {
-    g_autoptr(GSettings) settings = NULL;
-    GDesktopClockFormat clock_format;
-
-    settings = g_settings_new ("org.gnome.desktop.interface");
-    clock_format = g_settings_get_enum (settings, "clock-format");
-
-    /* If the message was today */
-    if (day == day_now) {
-      if (clock_format == G_DESKTOP_CLOCK_FORMAT_24H)
-        return g_date_time_format (local_time, "%H∶%M");
-      else
-        return g_date_time_format (local_time, "%I∶%M %p");
-    }
-
-    /* If the message was in the last 7 days */
-    if (day_now - day <= 7) {
-      if (clock_format == G_DESKTOP_CLOCK_FORMAT_24H)
-        /* TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
-           See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-         */
-        return g_date_time_format (local_time, _("%A %H∶%M"));
-      else
-        /* TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
-          See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-         */
-        return g_date_time_format (local_time, _("%A %I∶%M %p"));
-    }
-  }
-
-  /* TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
-     See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-   */
-  return g_date_time_format (local_time, _("%Y-%m-%d"));
 }
 
 GdkPixbuf *
