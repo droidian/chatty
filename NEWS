@@ -1,3 +1,14 @@
+Overview of Changes in Chats 0.6.1. Tue, 08 Feb 2022
+====================================================
+* Add support for per chat draft message
+* Fix unread message count for SMS/MMS chats
+* Improve time presentation for messages and chats
+* Update Translations
+  - Swedish
+  - Ukrainian
+  - Brazilian
+
+
 Overview of Changes in Chats 0.6.0. Tue, 25 Jan 2022
 ====================================================
 * MMS

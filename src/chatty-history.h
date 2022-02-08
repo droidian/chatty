@@ -47,6 +47,13 @@ void           chatty_history_get_messages_async  (ChattyHistory        *self,
 GPtrArray     *chatty_history_get_messages_finish (ChattyHistory        *self,
                                                    GAsyncResult         *result,
                                                    GError              **error);
+void           chatty_history_get_draft_async     (ChattyHistory        *self,
+                                                   ChattyChat           *chat,
+                                                   GAsyncReadyCallback  callback,
+                                                   gpointer             user_data);
+char          *chatty_history_get_draft_finish    (ChattyHistory        *self,
+                                                   GAsyncResult         *result,
+                                                   GError              **error);
 void           chatty_history_add_message_async   (ChattyHistory        *self,
                                                    ChattyChat           *chat,
                                                    ChattyMessage        *message,
@@ -80,6 +87,9 @@ void           chatty_history_load_account_async  (ChattyHistory       *self,
 gboolean       chatty_history_load_account_finish (ChattyHistory        *self,
                                                    GAsyncResult         *result,
                                                    GError              **error);
+void           chatty_history_set_last_read_msg   (ChattyHistory        *self,
+                                                   ChattyChat           *chat,
+                                                   ChattyMessage        *message);
 
 /* old APIs */
 void           chatty_history_open                (ChattyHistory         *self,

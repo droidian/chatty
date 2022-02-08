@@ -276,6 +276,22 @@ chatty_mm_chat_set_unread_count (ChattyChat *chat,
 
   self->unread_count = unread_count;
   g_signal_emit_by_name (self, "changed", 0);
+
+  /* If there is no users, the chat is being loaded from history,
+   * and so we shouldn't update history again.
+   * And so, in history, the unread count should be set before adding
+   * chat users.
+   */
+  if (g_list_model_get_n_items (G_LIST_MODEL (self->chat_users)) > 0) {
+    g_autoptr(ChattyMessage) last_unread_msg = NULL;
+    guint n_items;
+
+    n_items = g_list_model_get_n_items (G_LIST_MODEL (self->message_store));
+    if (unread_count)
+      last_unread_msg = g_list_model_get_item (G_LIST_MODEL (self->message_store),
+                                               n_items - unread_count);
+    chatty_history_set_last_read_msg (self->history_db, chat, last_unread_msg);
+  }
 }
 
 static void mm_chat_send_message_from_queue (ChattyMmChat *self);

@@ -1,9 +1,14 @@
-chatty (0.6.0-2) UNRELEASED; urgency=medium
+chatty (0.6.1-1) unstable; urgency=medium
 
+  [ Debian Janitor ]
   * Refer to common license file for CC0-1.0.
   * Set upstream metadata fields: Repository.
 
- -- Debian Janitor <janitor@jelmer.uk>  Wed, 02 Feb 2022 16:53:55 -0000
+  [ Evangelos Ribeiro Tzaras ]
+  * d/gbp.conf: Sign tags when importing new tarball
+  * New upstream version 0.6.1
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 08 Feb 2022 18:25:51 +0100
 
 chatty (0.6.0-1) unstable; urgency=medium
 

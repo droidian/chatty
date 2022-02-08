@@ -126,7 +126,8 @@ text_item_linkify (ChattyTextItem *self,
     link = g_strndup (url, end - url);
     escaped_link = g_markup_escape_text (url, end - url);
     g_string_set_size (link_str, 0);
-    g_string_append_uri_escaped (link_str, link, ":/", TRUE);
+    /* Don't escape sub-delims and gen-delims */
+    g_string_append_uri_escaped (link_str, link, ":/?#[]@!$&'()*+,;=", TRUE);
     escaped = g_markup_escape_text (link_str->str, link_str->len);
     g_string_append_printf (str, "<a href=\"%s\">%s</a>", escaped, escaped_link);
     g_free (escaped);

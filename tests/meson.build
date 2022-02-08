@@ -16,6 +16,7 @@ if purple_dep.found()
 endif
 
 test_items = [
+  'clock',
   'history',
   'settings',
   'utils',

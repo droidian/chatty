@@ -51,6 +51,7 @@ libsrc += [
   'chatty-log.c',
   'chatty-avatar.c',
   'chatty-chat.c',
+  'chatty-clock.c',
   'chatty-media.c',
   'chatty-contact-provider.c',
   'chatty-message.c',

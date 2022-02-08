@@ -39,7 +39,7 @@ test_message_text_markup (void)
      "അത് <a href=\"http://www.example.com/മലയാളം\">http://www.example.com/മലയാളം</a> ആണ്"},
     {
      "http://www.example.com/user's-image.png",
-     "<a href=\"http://www.example.com/user%27s-image.png\">http://www.example.com/user&apos;s-image.png</a>"},
+     "<a href=\"http://www.example.com/user&apos;s-image.png\">http://www.example.com/user&apos;s-image.png</a>"},
     {
      "www.puri.sm www.gnu.org www.fsf.org ",
      "<a href=\"www.puri.sm\">www.puri.sm</a> "
@@ -61,7 +61,7 @@ test_message_text_markup (void)
     },
     {
      "file:///home/user/good&bad-file.png ",
-     "<a href=\"file:///home/user/good%26bad-file.png\">"
+     "<a href=\"file:///home/user/good&amp;bad-file.png\">"
      "file:///home/user/good&amp;bad-file.png</a> "
     },
   };

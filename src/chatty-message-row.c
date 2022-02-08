@@ -16,10 +16,9 @@
 #include "chatty-utils.h"
 #include "chatty-image-item.h"
 #include "chatty-text-item.h"
+#include "chatty-clock.h"
 #include "chatty-message-row.h"
 
-
-#define MAX_GMT_ISO_SIZE 256
 
 struct _ChattyMessageRow
 {
@@ -43,7 +42,9 @@ struct _ChattyMessageRow
 
   ChattyMessage *message;
   ChattyProtocol protocol;
+  gulong         clock_id;
   gboolean       is_im;
+  gboolean       force_hide_footer;
 };
 
 G_DEFINE_TYPE (ChattyMessageRow, chatty_message_row, GTK_TYPE_LIST_BOX_ROW)
@@ -130,18 +131,44 @@ message_activate_gesture_cb (ChattyMessageRow *self)
   gtk_show_uri_on_window (NULL, uri, GDK_CURRENT_TIME, NULL);
 }
 
-static void
-message_row_update_message (ChattyMessageRow *self)
+static const char *
+message_row_get_clock_signal (time_t time_stamp)
 {
-  g_autofree char *message = NULL;
+  double diff;
+
+  diff = difftime (time (NULL), time_stamp);
+
+  if (diff >= - SECONDS_PER_MINUTE &&
+      diff <= SECONDS_PER_HOUR)
+    return g_intern_static_string ("changed");
+
+  if (diff < 0)
+    return NULL;
+
+  if (diff < SECONDS_PER_WEEK)
+    return g_intern_static_string ("day-changed");
+
+  return NULL;
+}
+
+static gboolean
+chatty_message_row_update_footer (ChattyMessageRow *self)
+{
   g_autofree char *time_str = NULL;
   g_autofree char *footer = NULL;
-  const char *status_str = "";
+  const char *status_str = "", *time_signal;
   ChattyMsgStatus status;
   time_t time_stamp;
 
   g_assert (CHATTY_IS_MESSAGE_ROW (self));
   g_assert (self->message);
+
+  if (self->force_hide_footer) {
+    g_clear_signal_handler (&self->clock_id, chatty_clock_get_default ());
+    g_object_set_data (G_OBJECT (self), "time-signal", NULL);
+
+    return G_SOURCE_REMOVE;
+  }
 
   status = chatty_message_get_status (self->message);
 
@@ -153,11 +180,38 @@ message_row_update_message (ChattyMessageRow *self)
     status_str = "<span color='#6cba3d'> ✓</span>";
 
   time_stamp = chatty_message_get_time (self->message);
-  time_str = chatty_utils_get_human_time (time_stamp);
+  time_str = chatty_clock_get_human_time (chatty_clock_get_default (),
+                                          time_stamp, TRUE);
 
   footer = g_strconcat (time_str, status_str, NULL);
   gtk_label_set_markup (GTK_LABEL (self->footer_label), footer);
   gtk_widget_set_visible (self->footer_label, footer && *footer);
+
+  time_signal = message_row_get_clock_signal (time_stamp);
+
+  if (time_signal != g_object_get_data (G_OBJECT (self), "time-signal")) {
+    g_clear_signal_handler (&self->clock_id, chatty_clock_get_default ());
+    g_object_set_data (G_OBJECT (self), "time-signal", (gpointer)time_signal);
+
+    if (time_signal)
+      self->clock_id = g_signal_connect_object (chatty_clock_get_default (), time_signal,
+                                                G_CALLBACK (chatty_message_row_update_footer),
+                                                self, G_CONNECT_SWAPPED);
+    return G_SOURCE_REMOVE;
+  }
+
+  return G_SOURCE_CONTINUE;
+}
+
+static void
+message_row_update_message (ChattyMessageRow *self)
+{
+  g_autofree char *message = NULL;
+
+  g_assert (CHATTY_IS_MESSAGE_ROW (self));
+  g_assert (self->message);
+
+  chatty_message_row_update_footer (self);
 
   /* Don't show author label for outgoing SMS/MMS */
   if (chatty_message_get_msg_direction (self->message) == CHATTY_DIRECTION_OUT &&
@@ -319,6 +373,7 @@ chatty_message_row_hide_footer (ChattyMessageRow *self)
 {
   g_return_if_fail (CHATTY_IS_MESSAGE_ROW (self));
 
+  self->force_hide_footer = TRUE;
   gtk_widget_hide (self->footer_label);
 }
 
