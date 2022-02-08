@@ -731,6 +731,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
                              GVariant   *message_t)
 {
   g_autoptr(GFile) parent = NULL;
+  g_autoptr(GFile) savepath = NULL;
   g_autoptr(GVariant) recipients = NULL;
   g_autoptr(GVariant) attachments = NULL;
   g_autoptr(GDateTime) date_time = NULL;
@@ -744,7 +745,6 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
   GVariantIter iter;
   GFile *container = NULL;
   GList *files = NULL;
-  GFile *savepath;
   g_autofree char *objectpath = NULL;
   g_autofree char *date = NULL;
   g_autofree char *sender = NULL;
@@ -823,7 +823,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
   /* TRANSLATORS: Timestamp for minute accuracy, e.g. “2020-08-11 15:27”.
      See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
    */
-    expire_time_string = g_date_time_format (expire_time, _("%Y-%m-%d %H:%M"));
+    expire_time_string = g_date_time_format (expire_time, _("%Y-%m-%d %H∶%M"));
   } else {
     /* This is a state Chatty cannot support yet */
     return NULL;
@@ -1007,6 +1007,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
         files = g_list_append (files, attachment);
         attachment = NULL;
         attachment = g_try_new0 (ChattyFileInfo, 1);
+        g_clear_object (&new);
       }
     }
     filename = g_strdup (filenode);
@@ -1079,6 +1080,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
 
     files = g_list_prepend (files, attachment);
     attachment = NULL;
+    g_clear_object (&new);
   }
   if (attachments)
     g_object_unref (container);

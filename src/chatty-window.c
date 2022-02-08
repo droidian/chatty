@@ -442,6 +442,7 @@ chatty_window_show_about_dialog (ChattyWindow *self)
     "Adrien Plazas <kekun.plazas@laposte.net>",
     "Andrea Schäfer <mosibasu@me.com>",
     "Benedikt Wildenhain <benedikt.wildenhain@hs-bochum.de>",
+    "Chris Talbot (kop316) <chris@talbothome.com>",
     "Guido Günther <agx@sigxcpu.org>",
     "Julian Sparber <jsparber@gnome.org>",
     "Leland Carlye <leland.carlye@protonmail.com>",
@@ -472,7 +473,7 @@ chatty_window_show_about_dialog (ChattyWindow *self)
                          "version", GIT_VERSION,
                          "comments", _("An SMS and XMPP messaging client"),
                          "website", "https://source.puri.sm/Librem5/chatty",
-                         "copyright", "© 2018–2021 Purism SPC",
+                         "copyright", "© 2018–2022 Purism SPC",
                          "license-type", GTK_LICENSE_GPL_3_0,
                          "authors", authors,
                          "artists", artists,
@@ -798,6 +799,8 @@ chatty_window_init (ChattyWindow *self)
   hdy_search_bar_connect_entry (HDY_SEARCH_BAR (self->chats_search_bar),
                                 GTK_ENTRY (self->chats_search_entry));
   self->manager = g_object_ref (chatty_manager_get_default ());
+  chatty_chat_view_set_db (CHATTY_CHAT_VIEW (self->chat_view),
+                           chatty_manager_get_history (self->manager));
   g_signal_connect_object (self->manager, "chat-deleted",
                            G_CALLBACK (window_chat_deleted_cb), self,
                            G_CONNECT_SWAPPED);

@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: chatty master\n"
 "Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2022-01-18 15:25+0000\n"
-"PO-Revision-Date: 2022-01-21 22:28+0100\n"
+"POT-Creation-Date: 2022-02-01 17:45+0000\n"
+"PO-Revision-Date: 2022-02-01 21:34+0100\n"
 "Last-Translator: Anders Jonsson <anders.jonsson@norsjovallen.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
@@ -20,7 +20,7 @@ msgstr ""
 "X-Generator: Poedit 3.0.1\n"
 
 #: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
-#: src/chatty-application.c:313 src/ui/chatty-window.ui:200
+#: src/chatty-application.c:333 src/ui/chatty-window.ui:200
 msgid "Chats"
 msgstr "Chattar"
 
@@ -156,27 +156,27 @@ msgstr "Chattar är ett meddelandeprogram med stöd för XMPP och SMS."
 msgid "Chats message window"
 msgstr "Meddelandefönster för Chattar"
 
-#: src/chatty-application.c:75
+#: src/chatty-application.c:76
 msgid "Show release version"
 msgstr "Visa utgåvans version"
 
-#: src/chatty-application.c:76
+#: src/chatty-application.c:77
 msgid "Start in daemon mode"
 msgstr "Starta i demonläge"
 
-#: src/chatty-application.c:77
+#: src/chatty-application.c:78
 msgid "Disable all accounts"
 msgstr "Inaktivera alla konton"
 
-#: src/chatty-application.c:78
+#: src/chatty-application.c:79
 msgid "Enable libpurple debug messages"
 msgstr "Aktivera libpurple-felsökningsmeddelanden"
 
-#: src/chatty-application.c:80
+#: src/chatty-application.c:81
 msgid "Enable verbose libpurple debug messages"
 msgstr "Aktivera utförliga libpurple-felsökningsmeddelanden"
 
-#: src/chatty-application.c:141
+#: src/chatty-application.c:142
 #, c-format
 msgid ""
 "There was an error displaying help:\n"
@@ -209,31 +209,31 @@ msgstr "Försök med en annan sökning"
 msgid "Start Chatting"
 msgstr "Börja chatta"
 
-#: src/chatty-chat-view.c:203
+#: src/chatty-chat-view.c:212
 msgid "This is an SMS conversation"
 msgstr "Detta är en SMS-konversation"
 
-#: src/chatty-chat-view.c:205 src/chatty-chat-view.c:211
+#: src/chatty-chat-view.c:214 src/chatty-chat-view.c:220
 msgid "Your messages are not encrypted, and carrier rates may apply"
 msgstr "Dina meddelanden krypteras inte, och operatörskostnader kan tillkomma"
 
-#: src/chatty-chat-view.c:209
+#: src/chatty-chat-view.c:218
 msgid "This is an IM conversation"
 msgstr "Detta är en snabbmeddelandekonversation"
 
-#: src/chatty-chat-view.c:215
+#: src/chatty-chat-view.c:224
 msgid "Your messages are encrypted"
 msgstr "Dina meddelanden krypteras"
 
-#: src/chatty-chat-view.c:218
+#: src/chatty-chat-view.c:227
 msgid "Your messages are not encrypted"
 msgstr "Dina meddelanden krypteras inte"
 
-#: src/chatty-chat-view.c:395
+#: src/chatty-chat-view.c:414
 msgid "Select File..."
 msgstr "Välj fil…"
 
-#: src/chatty-chat-view.c:398 src/purple/chatty-purple-request.c:175
+#: src/chatty-chat-view.c:417 src/purple/chatty-purple-request.c:175
 #: src/chatty-window.c:347 src/dialogs/chatty-pp-chat-info.c:90
 #: src/dialogs/chatty-ma-account-details.c:119
 #: src/dialogs/chatty-pp-account-details.c:91
@@ -242,7 +242,7 @@ msgstr "Välj fil…"
 msgid "Cancel"
 msgstr "Avbryt"
 
-#: src/chatty-chat-view.c:399 src/purple/chatty-purple-request.c:177
+#: src/chatty-chat-view.c:418 src/purple/chatty-purple-request.c:177
 #: src/dialogs/chatty-pp-chat-info.c:89
 #: src/dialogs/chatty-ma-account-details.c:118
 #: src/dialogs/chatty-pp-account-details.c:90
@@ -266,7 +266,7 @@ msgid_plural "%s and %u others"
 msgstr[0] "%s och %u till"
 msgstr[1] "%s och %u till"
 
-#: src/chatty-contact-list.c:247 src/dialogs/chatty-mm-chat-info.c:118
+#: src/chatty-contact-list.c:247 src/dialogs/chatty-mm-chat-info.c:121
 msgid "Unknown Contact"
 msgstr "Okänd kontakt"
 
@@ -280,97 +280,69 @@ msgstr ""
 msgid "No Contacts"
 msgstr "Inga kontakter"
 
+#: src/chatty-clock.c:86
+msgid "Just Now"
+msgstr "Just nu"
+
+#. TRANSLATORS: Timestamp with 12 hour time, e.g. “06∶42 PM”.
+#. * See https://docs.gtk.org/glib/method.DateTime.format.html
+#.
+#: src/chatty-clock.c:95 src/chatty-clock.c:125
+msgid "%I∶%M %p"
+msgstr "%I∶%M %p"
+
+#: src/chatty-clock.c:104
+#, c-format
+msgid "%lu minute ago"
+msgid_plural "%lu minutes ago"
+msgstr[0] "%lu minut sedan"
+msgstr[1] "%lu minuter sedan"
+
+#: src/chatty-clock.c:112
+msgid "Today %H∶%M"
+msgstr "Idag %H∶%M"
+
+#. TRANSLATORS: Timestamp with 12 hour time, e.g. “Today 06∶42 PM”.
+#. * See https://docs.gtk.org/glib/method.DateTime.format.html
+#.
+#: src/chatty-clock.c:120
+msgid "Today %I∶%M %p"
+msgstr "Idag %I∶%M %p"
+
+#: src/chatty-clock.c:132
+msgid "Yesterday %H∶%M"
+msgstr "Igår %H∶%M"
+
+#. TRANSLATORS: Timestamp with 12 hour time, e.g. “Yesterday 06∶42 PM”.
+#. * See https://docs.gtk.org/glib/method.DateTime.format.html
+#.
+#: src/chatty-clock.c:137
+msgid "Yesterday %I∶%M %p"
+msgstr "Igår %I∶%M %p"
+
+#. TRANSLATORS: Timestamp from more than 7 days ago or future date
+#. * (eg: when the system time is wrong), e.g. “2022-01-01”.
+#. * See https://docs.gtk.org/glib/method.DateTime.format.html
+#.
+#: src/chatty-clock.c:153
+msgid "%Y-%m-%d"
+msgstr "%Y-%m-%d"
+
 #. TRANSLATORS: %s is the Device ID
 #: src/chatty-fp-row.c:131
 #, c-format
 msgid "Device ID %s fingerprint:"
 msgstr "Fingeravtryck för enhets-ID %s:"
 
-#. Translators: Timestamp seconds suffix
-#: src/chatty-list-row.c:83
-msgctxt "timestamp-suffix-seconds"
-msgid "s"
-msgstr "s"
-
-#. Translators: Timestamp minute suffix
-#: src/chatty-list-row.c:85
-msgctxt "timestamp-suffix-minute"
-msgid "m"
-msgstr "m"
-
-#. Translators: Timestamp minutes suffix
-#: src/chatty-list-row.c:87
-msgctxt "timestamp-suffix-minutes"
-msgid "m"
-msgstr "m"
-
-#. Translators: Timestamp hour suffix
-#: src/chatty-list-row.c:89
-msgctxt "timestamp-suffix-hour"
-msgid "h"
-msgstr "h"
-
-#. Translators: Timestamp hours suffix
-#: src/chatty-list-row.c:91
-msgctxt "timestamp-suffix-hours"
-msgid "h"
-msgstr "h"
-
-#. Translators: Timestamp day suffix
-#: src/chatty-list-row.c:93
-msgctxt "timestamp-suffix-day"
-msgid "d"
-msgstr "d"
-
-#. Translators: Timestamp days suffix
-#: src/chatty-list-row.c:95
-msgctxt "timestamp-suffix-days"
-msgid "d"
-msgstr "d"
-
-#. Translators: Timestamp month suffix
-#: src/chatty-list-row.c:97
-msgctxt "timestamp-suffix-month"
-msgid "mo"
-msgstr "mån"
-
-#. Translators: Timestamp months suffix
-#: src/chatty-list-row.c:99
-msgctxt "timestamp-suffix-months"
-msgid "mos"
-msgstr "mån"
-
-#. Translators: Timestamp year suffix
-#: src/chatty-list-row.c:101
-msgctxt "timestamp-suffix-year"
-msgid "y"
-msgstr "å"
-
-#. Translators: Timestamp years suffix
-#: src/chatty-list-row.c:103
-msgctxt "timestamp-suffix-years"
-msgid "y"
-msgstr "å"
-
-#. Translators: Timestamp prefix (e.g. Over 5h)
-#: src/chatty-list-row.c:205
-msgid "Over"
-msgstr "Över"
-
-#. Translators: Timestamp prefix (e.g. Almost 5h)
-#: src/chatty-list-row.c:210
-msgid "Almost"
-msgstr "Nästan"
-
-#: src/chatty-list-row.c:273
+#: src/chatty-list-row.c:118
 msgid "Owner"
 msgstr "Ägare"
 
-#: src/chatty-list-row.c:276
+#: src/chatty-list-row.c:121
 msgid "Moderator"
 msgstr "Moderator"
 
-#: src/chatty-list-row.c:279
+#: src/chatty-list-row.c:124
 msgid "Member"
 msgstr "Medlem"
 
@@ -379,7 +351,7 @@ msgstr "Medlem"
 msgid "“%s” is not a valid URI"
 msgstr "”%s” är inte en giltig URI"
 
-#: src/chatty-message-row.c:81
+#: src/chatty-message-row.c:82
 msgid "Copy"
 msgstr "Kopiera"
 
@@ -452,27 +424,6 @@ msgstr "Kontrollera ID och lösenord"
 msgid "Chatty password for \"%s\""
 msgstr "Chatty-lösenord för ”%s”"
 
-#. TRANSLATORS: Timestamp from the last week with 24 hour time, e.g. “Tuesday 18∶42”.
-#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-#.
-#: src/chatty-utils.c:398
-msgid "%A %H∶%M"
-msgstr "%A %H∶%M"
-
-#. TRANSLATORS: Timestamp from the last week with 12 hour time, e.g. “Tuesday 06∶42 PM”.
-#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-#.
-#: src/chatty-utils.c:403
-msgid "%A %I∶%M %p"
-msgstr "%A %I∶%M %p"
-
-#. TRANSLATORS: Timestamp from more than 7 days ago, e.g. “2020-08-11”.
-#. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
-#.
-#: src/chatty-utils.c:410
-msgid "%Y-%m-%d"
-msgstr "%Y-%m-%d"
-
 #: src/chatty-window.c:333
 #, c-format
 msgid "Delete chat with “%s”"
@@ -495,37 +446,37 @@ msgstr "Detta tar bort chatten från chattlistan"
 msgid "Delete"
 msgstr "Ta bort"
 
-#: src/chatty-window.c:473
+#: src/chatty-window.c:474
 msgid "An SMS and XMPP messaging client"
 msgstr "En SMS- och XMPP-meddelandeklient"
 
-#: src/chatty-window.c:480
+#: src/chatty-window.c:481
 msgid "translator-credits"
 msgstr ""
 "Anders Jonsson <anders.jonsson@norsjovallen.se>\n"
 "Luna Jernberg <droidbittin@gmail.com>"
 
-#: src/chatty-window.c:807
+#: src/chatty-window.c:815
 msgid "Any Protocol"
 msgstr "Alla protokoll"
 
-#: src/chatty-window.c:808 src/ui/chatty-settings-dialog.ui:552
+#: src/chatty-window.c:816 src/ui/chatty-settings-dialog.ui:552
 msgid "Matrix"
 msgstr "Matrix"
 
-#: src/chatty-window.c:809
+#: src/chatty-window.c:817
 msgid "SMS/MMS"
 msgstr "SMS/MMS"
 
-#: src/chatty-window.c:812 src/ui/chatty-settings-dialog.ui:540
+#: src/chatty-window.c:820 src/ui/chatty-settings-dialog.ui:540
 msgid "XMPP"
 msgstr "XMPP"
 
-#: src/chatty-window.c:815 src/ui/chatty-settings-dialog.ui:566
+#: src/chatty-window.c:823 src/ui/chatty-settings-dialog.ui:566
 msgid "Telegram"
 msgstr "Telegram"
 
-#: src/dialogs/chatty-mm-chat-info.c:137
+#: src/dialogs/chatty-mm-chat-info.c:140
 msgctxt "Refer to self in contact list"
 msgid "You"
 msgstr "Du"
@@ -725,16 +676,16 @@ msgstr "Fel vid validering av certifikat för ”%s”"
 #. TRANSLATORS: Timestamp for minute accuracy, e.g. “2020-08-11 15:27”.
 #. See https://developer.gnome.org/glib/stable/glib-GDateTime.html#g-date-time-format
 #.
-#: src/mm/chatty-mmsd.c:824
-msgid "%Y-%m-%d %H:%M"
-msgstr "%Y-%m-%d %H:%M"
+#: src/mm/chatty-mmsd.c:826
+msgid "%Y-%m-%d %H∶%M"
+msgstr "%Y-%m-%d %H∶%M"
 
-#: src/mm/chatty-mmsd.c:1084
+#: src/mm/chatty-mmsd.c:1107
 #, c-format
 msgid "You received an MMS, but it expired on: %s"
 msgstr "Du tog emot ett MMS, men det gick ut: %s"
 
-#: src/mm/chatty-mmsd.c:1087
+#: src/mm/chatty-mmsd.c:1110
 msgid "You received an empty MMS."
 msgstr "Du tog emot ett tomt MMS."
 
@@ -1068,3 +1019,53 @@ msgstr "Arbete: "
 #: src/users/chatty-contact.c:329
 msgid "Other: "
 msgstr "Annat: "
+
+#~ msgctxt "timestamp-suffix-seconds"
+#~ msgid "s"
+#~ msgstr "s"
+
+#~ msgctxt "timestamp-suffix-minute"
+#~ msgid "m"
+#~ msgstr "m"
+
+#~ msgctxt "timestamp-suffix-minutes"
+#~ msgid "m"
+#~ msgstr "m"
+
+#~ msgctxt "timestamp-suffix-hour"
+#~ msgid "h"
+#~ msgstr "h"
+
+#~ msgctxt "timestamp-suffix-hours"
+#~ msgid "h"
+#~ msgstr "h"
+
+#~ msgctxt "timestamp-suffix-day"
+#~ msgid "d"
+#~ msgstr "d"
+
+#~ msgctxt "timestamp-suffix-days"
+#~ msgid "d"
+#~ msgstr "d"
+
+#~ msgctxt "timestamp-suffix-month"
+#~ msgid "mo"
+#~ msgstr "mån"
+
+#~ msgctxt "timestamp-suffix-months"
+#~ msgid "mos"
+#~ msgstr "mån"
+
+#~ msgctxt "timestamp-suffix-year"
+#~ msgid "y"
+#~ msgstr "å"
+
+#~ msgctxt "timestamp-suffix-years"
+#~ msgid "y"
+#~ msgstr "å"
+
+#~ msgid "Over"
+#~ msgstr "Över"
+
+#~ msgid "Almost"
+#~ msgstr "Nästan"

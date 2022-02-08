@@ -313,6 +313,25 @@ chatty_message_get_text (ChattyMessage *self)
   return self->message;
 }
 
+/**
+ * chatty_message_set_text:
+ * @self: A #ChattyMessage
+ * @text: A string to set as message text
+ *
+ * Set @self message text.  message text can be
+ * modified only if the message is a draft.
+ */
+void
+chatty_message_set_text (ChattyMessage *self,
+                         const char    *text)
+{
+  g_return_if_fail (CHATTY_IS_MESSAGE (self));
+  g_return_if_fail (self->status == CHATTY_STATUS_DRAFT);
+
+  g_free (self->message);
+  self->message = g_strdup (text);
+}
+
 void
 chatty_message_set_user (ChattyMessage *self,
                          ChattyItem    *sender)

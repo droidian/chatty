@@ -37,6 +37,7 @@
 #include "chatty-application.h"
 #include "chatty-settings.h"
 #include "chatty-history.h"
+#include "chatty-clock.h"
 #include "chatty-log.h"
 
 #define LIBFEEDBACK_USE_UNSTABLE_API
@@ -201,8 +202,17 @@ main_window_focus_changed_cb (ChattyApplication *self)
 {
   ChattyChat *chat = NULL;
   GtkWindow *window;
+  gboolean has_focus;
 
   g_assert (CHATTY_IS_APPLICATION (self));
+
+  window = (GtkWindow *)self->main_window;
+  has_focus = window && gtk_window_has_toplevel_focus (window);
+
+  if (has_focus)
+    chatty_clock_start (chatty_clock_get_default ());
+  else
+    chatty_clock_stop (chatty_clock_get_default ());
 
   if (!self->main_window)
     return;
@@ -212,11 +222,21 @@ main_window_focus_changed_cb (ChattyApplication *self)
   if (gtk_application_get_active_window (GTK_APPLICATION (self)) != window)
     return;
 
-  if (gtk_window_has_toplevel_focus (window))
+  if (has_focus)
     chat = chatty_application_get_active_chat (self);
 
   if (chat)
     chatty_chat_set_unread_count (chat, 0);
+}
+
+static void
+app_window_removed_cb (ChattyApplication *self,
+                       GtkWidget         *window)
+{
+  g_assert (CHATTY_IS_APPLICATION (self));
+
+  if (window == self->main_window)
+    chatty_clock_stop (chatty_clock_get_default ());
 }
 
 static void
@@ -328,6 +348,10 @@ chatty_application_startup (GApplication *application)
                            G_CALLBACK (application_open_chat),
                            self, G_CONNECT_SWAPPED);
   chatty_manager_load (self->manager);
+
+  g_signal_connect_object (self, "window-removed",
+                           G_CALLBACK (app_window_removed_cb),
+                           self, G_CONNECT_AFTER);
 
   provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_resource (provider,
