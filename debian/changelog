@@ -1,3 +1,10 @@
+chatty (0.6.2-1) unstable; urgency=medium
+
+  * New upstream version 0.6.2
+  * d/gbp.conf: Sign tags by default
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Mon, 07 Mar 2022 10:09:00 +0100
+
 chatty (0.6.1-1) unstable; urgency=medium
 
   [ Debian Janitor ]
