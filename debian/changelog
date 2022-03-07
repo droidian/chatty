@@ -1,3 +1,10 @@
+chatty (0.6.2) byzantium; urgency=medium
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Fri, 25 Feb 2022 20:59:56 +0530
+
 chatty (0.6.1) byzantium; urgency=medium
 
   [ Matheus Barbosa ]
