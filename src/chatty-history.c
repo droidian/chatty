@@ -103,7 +103,7 @@
 /* Shouldn't be modified, new values should be appended */
 #define MESSAGE_STATUS_UNKNOWN          0
 #define MESSAGE_STATUS_DRAFT            1
-#define MESSAGE_STATUS_RECIEVED         2
+#define MESSAGE_STATUS_RECEIVED         2
 #define MESSAGE_STATUS_SENT             3
 #define MESSAGE_STATUS_DELIVERED        4
 #define MESSAGE_STATUS_READ             5
@@ -317,8 +317,8 @@ static int
 history_msg_status_to_value (ChattyMsgStatus status)
 {
   switch (status) {
-  case CHATTY_STATUS_RECIEVED:
-    return MESSAGE_STATUS_RECIEVED;
+  case CHATTY_STATUS_RECEIVED:
+    return MESSAGE_STATUS_RECEIVED;
 
   case CHATTY_STATUS_DRAFT:
     return MESSAGE_STATUS_DRAFT;
@@ -356,8 +356,8 @@ history_msg_status_from_value (int value)
     return CHATTY_STATUS_UNKNOWN;
   if (value == MESSAGE_STATUS_DRAFT)
     return CHATTY_STATUS_DRAFT;
-  if (value == MESSAGE_STATUS_RECIEVED)
-    return CHATTY_STATUS_RECIEVED;
+  if (value == MESSAGE_STATUS_RECEIVED)
+    return CHATTY_STATUS_RECEIVED;
   if (value == MESSAGE_STATUS_SENT)
     return CHATTY_STATUS_SENT;
   if (value == MESSAGE_STATUS_DELIVERED)

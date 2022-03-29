@@ -1,3 +1,10 @@
+chatty (0.6.3-1) unstable; urgency=medium
+
+  * New upstream version 0.6.3
+  * Patch out clock test which fails on some architectures
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Tue, 29 Mar 2022 16:37:54 +0200
+
 chatty (0.6.2-1) unstable; urgency=medium
 
   * New upstream version 0.6.2

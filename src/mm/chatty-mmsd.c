@@ -76,7 +76,7 @@ struct _ChattyMmsd {
   char             *default_modem_number;
   GPtrArray        *mms_arr;
   GHashTable       *mms_hash_table;
-  int               max_attach_size;
+  gsize             max_attach_size;
   int               max_num_attach;
   char             *carrier_mmsc;
   char             *mms_apn;
@@ -482,7 +482,8 @@ chatty_mmsd_send_mms_create_attachments (ChattyMmsd    *self,
     g_debug ("Total Number of attachments %d", total_files_count);
     other_attachments_size = attachments_size-image_attachments_size;
     if (other_attachments_size > self->max_attach_size) {
-      g_warning ("Size of attachments that can't be resized %ld greater then maximum attachment size %d",
+      g_warning ("Size of attachments that can't be resized %" G_GSIZE_FORMAT
+                 " greater then maximum attachment size %" G_GSIZE_FORMAT,
                  other_attachments_size, self->max_attach_size);
       return NULL;
     }
@@ -796,7 +797,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
     mms_status = CHATTY_STATUS_DELIVERED;
   } else if (g_strcmp0 (status, "received") == 0) {
     direction = CHATTY_DIRECTION_IN;
-    mms_status = CHATTY_STATUS_RECIEVED;
+    mms_status = CHATTY_STATUS_RECEIVED;
   } else if (g_strcmp0 (status, "downloaded") == 0) {
     /* This is an internal mmsd-tng state, and shouldn't be shown */
     return NULL;
@@ -807,12 +808,12 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
      * it like a "received" message.
      */
     direction = CHATTY_DIRECTION_IN;
-    mms_status = CHATTY_STATUS_RECIEVED;
+    mms_status = CHATTY_STATUS_RECEIVED;
   } else if (g_strcmp0 (status, "expired") == 0) {
     g_autoptr(GDateTime) expire_time = NULL;
     g_autofree char *expire_date = NULL;
     direction = CHATTY_DIRECTION_IN;
-    mms_status = CHATTY_STATUS_RECIEVED;
+    mms_status = CHATTY_STATUS_RECEIVED;
 
     g_variant_dict_lookup (&dict, "Expire", "s", &expire_date);
 
@@ -1013,6 +1014,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
     filename = g_strdup (filenode);
     g_strdelimit (filename, "<>", ' ');
     g_strstrip (filename);
+    g_strdelimit (filename, " ", '_');
     filename = g_path_get_basename (filename);
     new = g_file_get_child (savepath, filename);
     out = g_file_create (new, G_FILE_CREATE_PRIVATE, NULL, &error);
@@ -1356,18 +1358,19 @@ chatty_mmsd_get_mmsd_service_settings_cb (GObject      *service,
   } else {
     g_autoptr(GVariant) all_settings = NULL;
     GVariantDict dict;
-    int max_attach_total_size, max_attachments;
+    int max_attach_total_size;
+    int max_attachments;
     gboolean autocreatesmil;
 
     g_variant_get (ret, "(@a{?*})", &all_settings);
     g_variant_dict_init (&dict, all_settings);
 
     if (g_variant_dict_lookup (&dict, "TotalMaxAttachmentSize", "i", &max_attach_total_size))
-      self->max_attach_size = max_attach_total_size;
+      self->max_attach_size = (gsize) max_attach_total_size;
     else
       self->max_attach_size = DEFAULT_MAXIMUM_ATTACHMENT_SIZE;
 
-    g_debug ("TotalMaxAttachmentSize is set to %d", self->max_attach_size);
+    g_debug ("TotalMaxAttachmentSize is set to %" G_GSIZE_FORMAT, self->max_attach_size);
 
     if (g_variant_dict_lookup (&dict, "MaxAttachments", "i", &max_attachments))
       self->max_num_attach = max_attachments;

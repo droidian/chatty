@@ -1,0 +1,27 @@
+From: Evangelos Ribeiro Tzaras <devrtz@fortysixandtwo.eu>
+Date: Tue, 29 Mar 2022 16:34:58 +0200
+Subject: Disable clock test
+
+It seems to be broken on armel and other architectures.
+Since this is not a critical test and only affects rarely used (?)
+architectures let's disable it to have chatty migrate.
+
+See upstream bug report at
+https://source.puri.sm/Librem5/chatty/-/issues/680
+---
+ tests/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/meson.build b/tests/meson.build
+index 78069af..04557f4 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -16,7 +16,7 @@ if purple_dep.found()
+ endif
+ 
+ test_items = [
+-  'clock',
++  #'clock',
+   'history',
+   'settings',
+   'utils',

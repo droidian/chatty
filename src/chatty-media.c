@@ -202,7 +202,7 @@ chatty_media_scale_image_to_size_sync (ChattyFileInfo *input_file,
     }
     new_size = g_file_info_get_size (file_info);
     if (new_size <= desired_size) {
-      g_debug ("Resized at quality %s to size %lu", *quality, new_size);
+      g_debug ("Resized at quality %s to size %" G_GSIZE_FORMAT, *quality, new_size);
       break;
     }
   }
