@@ -1,3 +1,13 @@
+Overview of Changes in Chats 0.6.3. Tue, 26 March 2022
+====================================================
+* Fix calculating MMS max attachment size
+* Fix some compile time warnings
+* Fix parsing links with spaces in messages
+* Update Translations
+  - Turkish
+  - Italian
+
+
 Overview of Changes in Chats 0.6.2. Tue, 25 Feb 2022
 ====================================================
 * Update Translations

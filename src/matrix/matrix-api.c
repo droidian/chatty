@@ -551,7 +551,7 @@ handle_one_time_keys (MatrixApi  *self,
 
   /* If we don't have enough onetime keys add some */
   if (count < limit) {
-    CHATTY_TRACE_MSG ("generating %lu onetime keys", limit - count);
+    CHATTY_TRACE_MSG ("generating %" G_GSIZE_FORMAT " onetime keys", limit - count);
     matrix_enc_create_one_time_keys (self->matrix_enc, limit - count);
 
     if (!self->key)

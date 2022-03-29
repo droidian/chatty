@@ -701,7 +701,7 @@ mm_account_messaging_list_cb (GObject      *object,
 }
 
 static void
-mm_account_sms_recieved_cb (ChattyMmAccount  *self,
+mm_account_sms_received_cb (ChattyMmAccount  *self,
                             char             *arg_path,
                             gboolean          arg_received,
                             MMModemMessaging *mm_messaging)
@@ -805,7 +805,7 @@ mm_object_added_cb (ChattyMmAccount *self,
 
   g_signal_connect_swapped (mm_object_peek_modem_messaging (MM_OBJECT (object)),
                             "added",
-                            G_CALLBACK (mm_account_sms_recieved_cb), self);
+                            G_CALLBACK (mm_account_sms_received_cb), self);
   CHATTY_TRACE_MSG ("List messages from modem %p", object);
 
   data = g_new0 (MessagingData, 1);

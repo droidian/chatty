@@ -1,3 +1,26 @@
+chatty (0.6.3) byzantium; urgency=medium
+
+  [ Evangelos Ribeiro Tzaras ]
+  * media: Use G_GSIZE_FORMAT as format identifier for size types
+  * mmsd: Use gsize type and suitable format identifier
+  * matrix: Use G_GSIZE_FORMAT as format identifier for size types
+  * tests: Bump timeout to 5 minutes
+  * mmsd: Fix total max attachment size
+
+  [ Vittorio Monti ]
+  * Update Italian translation
+
+  [ Chris Talbot ]
+  * mmsd: replace spaces with underlines for new files
+
+  [ Gilles Filippini ]
+  * fix typo: RECIEVED -> RECEIVED
+
+  [ Emin Tufan Çetin ]
+  * po: Update Turkish translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Sat, 26 Mar 2022 20:08:55 +0530
+
 chatty (0.6.2) byzantium; urgency=medium
 
   [ Daniel Șerbănescu ]
