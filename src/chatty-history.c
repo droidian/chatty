@@ -372,8 +372,6 @@ history_msg_status_from_value (int value)
   return CHATTY_STATUS_UNKNOWN;
 }
 
-#if 0
-
 static ChattyItemState
 history_value_to_visibility (int value)
 {
@@ -388,6 +386,8 @@ history_value_to_visibility (int value)
 
   g_return_val_if_reached (CHATTY_ITEM_VISIBLE);
 }
+
+#if 0
 
 static int
 id_type_to_value (ChattyIdType type)
@@ -2774,13 +2774,13 @@ history_get_chats (ChattyHistory *self,
   sqlite3_prepare_v2 (self->db,
                       /*           0           1             2              3                4  */
                       "SELECT threads.id,threads.name,threads.alias,threads.encrypted,threads.type,"
-                      "files.url,files.path "
+                      "files.url,files.path,visibility "
                       "FROM threads "
                       "INNER JOIN accounts ON accounts.id=threads.account_id "
                       "INNER JOIN users ON users.id=accounts.user_id "
                       "AND users.username=? AND accounts.protocol=? "
                       "LEFT JOIN files ON threads.avatar_id=files.id "
-                      "WHERE visibility=" STRING(THREAD_VISIBILITY_VISIBLE),
+                      "WHERE visibility!=" STRING(THREAD_VISIBILITY_HIDDEN),
                       -1, &stmt, NULL);
   history_bind_text (stmt, 1, user_id, "binding when getting threads");
   history_bind_int (stmt, 2, protocol, "binding when getting threads");
@@ -2790,7 +2790,7 @@ history_get_chats (ChattyHistory *self,
     ChattyFileInfo *file = NULL;
     const char *name, *alias;
     ChattyChat *chat;
-    int thread_id;
+    int thread_id, visibility;
 
     if (!threads)
       threads = g_ptr_array_new_full (30, g_object_unref);
@@ -2799,6 +2799,7 @@ history_get_chats (ChattyHistory *self,
     name = (const char *)sqlite3_column_text (stmt, 1);
     alias = (const char *)sqlite3_column_text (stmt, 2);
     encrypted = sqlite3_column_int (stmt, 3);
+    visibility = sqlite3_column_int (stmt, 7);
 
     if (sqlite3_column_text (stmt, 5)) {
       file = g_new0 (ChattyFileInfo, 1);
@@ -2809,9 +2810,11 @@ history_get_chats (ChattyHistory *self,
     if (CHATTY_IS_MA_ACCOUNT (account)) {
       chat = (gpointer)chatty_ma_chat_new (name, alias, file, encrypted);
     } else if (sqlite3_column_int (stmt, 4) == THREAD_GROUP_CHAT) {
-      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS, FALSE);
+      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS, FALSE,
+                                           history_value_to_visibility (visibility));
     } else {
-      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS_SMS, TRUE);
+      chat = (gpointer)chatty_mm_chat_new (name, alias, CHATTY_PROTOCOL_MMS_SMS, TRUE,
+                                           history_value_to_visibility (visibility));
     }
 
     messages = get_messages_before_time (self, chat, NULL, thread_id, INT_MAX, 1);

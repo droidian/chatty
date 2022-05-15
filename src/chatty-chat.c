@@ -322,6 +322,9 @@ chatty_chat_real_show_notification (ChattyChat *self,
 
   g_assert (CHATTY_IS_CHAT (self));
 
+  if (chatty_item_get_state (CHATTY_ITEM (self)) == CHATTY_ITEM_BLOCKED)
+    return;
+
   messages = chatty_chat_get_messages (self);
   n_items = g_list_model_get_n_items (messages);
 

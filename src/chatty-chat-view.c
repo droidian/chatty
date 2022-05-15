@@ -523,8 +523,11 @@ chat_view_send_message_button_clicked_cb (ChattyChatView *self)
   chatty_attachments_view_reset (CHATTY_ATTACHMENTS_VIEW (self->attachment_view));
 
   gtk_text_buffer_delete (self->message_input_buffer, &start, &end);
-  chatty_message_set_text (self->draft_message, "");
-  chatty_history_add_message (self->history, self->chat, self->draft_message);
+
+  if (self->draft_message) {
+    chatty_message_set_text (self->draft_message, "");
+    chatty_history_add_message (self->history, self->chat, self->draft_message);
+  }
 
  end:
   g_clear_handle_id (&self->save_timeout_id, g_source_remove);
@@ -564,6 +567,17 @@ chat_view_save_message_to_db (gpointer user_data)
   CHATTY_TRACE (chatty_chat_get_chat_name (self->chat), "Saving draft to");
 
   g_object_get (self->message_input_buffer, "text", &text, NULL);
+
+  if (!self->draft_message) {
+    g_autofree char *uid = NULL;
+
+    g_clear_object (&self->draft_message);
+
+    uid = g_uuid_string_random ();
+    self->draft_message = chatty_message_new (NULL, NULL, uid, time (NULL),
+                                              CHATTY_MESSAGE_TEXT,
+                                              CHATTY_DIRECTION_OUT, CHATTY_STATUS_DRAFT);
+    }
 
   chatty_message_set_text (self->draft_message, text);
   chatty_history_add_message (self->history, self->chat, self->draft_message);

@@ -29,7 +29,8 @@ G_DECLARE_FINAL_TYPE (ChattyMmChat, chatty_mm_chat, CHATTY, MM_CHAT, ChattyChat)
 ChattyMmChat     *chatty_mm_chat_new                    (const char     *name,
                                                          const char     *alias,
                                                          ChattyProtocol  protocol,
-                                                         gboolean        is_im);
+                                                         gboolean        is_im,
+                                                         ChattyItemState state);
 ChattyMmChat     *chatty_mm_chat_new_with_uri           (ChattySmsUri   *uri,
                                                          ChattyProtocol  protocol,
                                                          gboolean        is_im);

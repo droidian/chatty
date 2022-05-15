@@ -14,6 +14,19 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
+            <property name="text" translatable="yes" context="show archived chat list when clicked">Archived</property>
+            <signal name="clicked" handler="chatty_window_show_archived" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
             <property name="text" translatable="yes">Preferences</property>
             <signal name="clicked" handler="chatty_window_show_settings_dialog" swapped="yes"/>
           </object>
@@ -157,6 +170,58 @@
           </packing>
         </child>
         <child>
+          <object class="GtkModelButton" id="block_button">
+            <property name="visible">False</property>
+            <property name="can_focus">False</property>
+            <property name="receives_default">False</property>
+            <property name="text" translatable="yes">Block Contact</property>
+            <signal name="clicked" handler="window_block_contact_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton" id="unblock_button">
+            <property name="visible">False</property>
+            <property name="can_focus">False</property>
+            <property name="receives_default">False</property>
+            <property name="text" translatable="yes">Unblock Contact</property>
+            <signal name="clicked" handler="window_unblock_contact_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton" id="archive_button">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="receives_default">False</property>
+            <property name="text" translatable="yes">Archive chat</property>
+            <signal name="clicked" handler="window_archive_chat_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton" id="unarchive_button">
+            <property name="visible">False</property>
+            <property name="can_focus">False</property>
+            <property name="receives_default">False</property>
+            <property name="text" translatable="yes">Unarchive chat</property>
+            <signal name="clicked" handler="window_unarchive_chat_clicked_cb" swapped="yes"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="delete_button">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -199,6 +264,21 @@
                 <property name="show_close_button">True</property>
                 <property name="title" translatable="yes">Chats</property>
                 <child>
+                  <object class="GtkButton" id="header_back_button">
+                    <property name="visible">False</property>
+                    <property name="can_focus">False</property>
+                    <property name="receives_default">False</property>
+                    <signal name="clicked" handler="window_show_unarchived_clicked_cb" swapped="yes"/>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="icon_name">go-previous-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
                   <object class="GtkMenuButton" id="header_add_chat_button">
                     <property name="visible">True</property>
                     <property name="sensitive">False</property>
@@ -216,7 +296,7 @@
                 </child>
                 <child>
                   <object class="GtkMenuButton">
-                    <property name="visible">True</property>
+                    <property name="visible" bind-source="header_add_chat_button" bind-property="visible" bind-flags="sync-create"/>
                     <property name="can_focus">False</property>
                     <property name="receives_default">False</property>
                     <property name="popover">header_view_chat_list_popover</property>
