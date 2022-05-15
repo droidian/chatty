@@ -356,6 +356,24 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="HdyActionRow">
+                        <property name="visible">True</property>
+                        <property name="activatable">True</property>
+                        <property name="selectable">False</property>
+                        <property name="title" translatable="yes">Blocked Contacts</property>
+                        <signal name="activated" handler="blocked_list_action_activated_cb" swapped="yes"/>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="visible">1</property>
+                            <property name="icon-name">go-next-symbolic</property>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
 
@@ -413,6 +431,63 @@
               </object>
               <packing>
                 <property name="name">message-settings-view</property>
+              </packing>
+            </child>
+
+            <child>
+              <object class="HdyPreferencesPage">
+                <property name="visible">True</property>
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible">True</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="wrap">True</property>
+                        <property name="label" translatable="yes">You shall not be notified for the messages from blocked contacts</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible" bind-source="blocked_list" bind-property="visible" bind-flags="sync-create"/>
+                    <child>
+                      <object class="GtkListBox" id="blocked_list">
+                        <property name="visible">True</property>
+                        <property name="selection-mode">none</property>
+                        <style>
+                          <class name="content"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="HdyPreferencesGroup">
+                    <property name="visible" bind-source="blocked_list" bind-property="visible" bind-flags="sync-create|invert-boolean"/>
+                    <!-- HACK: We use a different list box for placeholder since "content" style is broken otherwise -->
+                    <child>
+                      <object class="GtkListBox">
+                        <property name="visible">True</property>
+                        <property name="selection-mode">none</property>
+                        <style>
+                          <class name="content"/>
+                        </style>
+                        <child type="placeholder">
+                          <object class="HdyActionRow">
+                            <property name="visible">True</property>
+                            <property name="sensitive">False</property>
+                            <property name="title" translatable="yes">Blocked chat list empty</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="name">blocked-list-view</property>
               </packing>
             </child>
 

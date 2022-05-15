@@ -49,11 +49,14 @@ struct _ChattyChatList
   char               *chat_needle;
   GtkFilter          *filter;
   GtkFilterListModel *filter_model;
+  GtkFilterListModel *archive_filter_model;
   ChattyProtocol     protocol_filter;
 
   ChattyManager     *manager;
   GPtrArray         *selected_items;
   GtkSelectionMode   mode;
+
+  gboolean           show_archived;
 };
 
 G_DEFINE_TYPE (ChattyChatList, chatty_chat_list, GTK_TYPE_BOX)
@@ -64,6 +67,26 @@ enum {
 };
 
 static guint signals[N_SIGNALS];
+
+static gboolean
+chat_list_filter_archived_chat (ChattyItem     *item,
+                                ChattyChatList *self)
+{
+  ChattyItemState state;
+
+  g_assert (CHATTY_IS_CHAT (item));
+  g_assert (CHATTY_IS_CHAT_LIST (self));
+
+  state = chatty_item_get_state (item);
+
+  if (self->show_archived && state == CHATTY_ITEM_VISIBLE)
+    return FALSE;
+
+  if (!self->show_archived && state != CHATTY_ITEM_VISIBLE)
+    return FALSE;
+
+  return TRUE;
+}
 
 static gboolean
 chat_list_filter_chat (ChattyItem     *item,
@@ -193,7 +216,10 @@ chat_list_filter_changed_cb (ChattyChatList *self)
     hdy_status_page_set_description (page, _("Try different search"));
   } else {
     hdy_status_page_set_icon_name (page, "sm.puri.Chatty-symbolic");
-    hdy_status_page_set_title (page, _("Start Chatting"));
+    if (self->show_archived)
+      hdy_status_page_set_title (page, _("No archived chats"));
+    else
+      hdy_status_page_set_title (page, _("Start Chatting"));
     hdy_status_page_set_description (page, NULL);
   }
 }
@@ -294,6 +320,7 @@ chatty_chat_list_class_init (ChattyChatListClass *klass)
 static void
 chatty_chat_list_init (ChattyChatList *self)
 {
+  g_autoptr(GtkFilter) archive_filter = NULL;
   GListModel *chat_list;
 
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -302,10 +329,16 @@ chatty_chat_list_init (ChattyChatList *self)
   g_set_weak_pointer (&self->manager, chatty_manager_get_default ());
   self->selected_items = g_ptr_array_new_full (1, g_object_unref);
 
+  chat_list = chatty_manager_get_chat_list (self->manager);
+  archive_filter = gtk_custom_filter_new ((GtkCustomFilterFunc)chat_list_filter_archived_chat,
+                                          g_object_ref (self),
+                                          g_object_unref);
+  self->archive_filter_model = gtk_filter_list_model_new (chat_list, archive_filter);
+
   self->filter = gtk_custom_filter_new ((GtkCustomFilterFunc)chat_list_filter_chat,
                                         g_object_ref (self),
                                         g_object_unref);
-  chat_list = chatty_manager_get_chat_list (self->manager);
+  chat_list = G_LIST_MODEL (self->archive_filter_model);
   self->filter_model = gtk_filter_list_model_new (chat_list, self->filter);
 
   gtk_list_box_bind_model (GTK_LIST_BOX (self->chats_listbox),
@@ -384,4 +417,49 @@ chatty_chat_list_filter_string (ChattyChatList *self,
     self->chat_needle = g_strdup (needle);
 
   gtk_filter_changed (self->filter, GTK_FILTER_CHANGE_DIFFERENT);
+}
+
+void
+chatty_chat_list_show_archived (ChattyChatList *self,
+                                gboolean        show_archived)
+{
+  g_return_if_fail (CHATTY_IS_CHAT_LIST (self));
+
+  show_archived = !!show_archived;
+
+  if (self->show_archived == show_archived)
+    return;
+
+  /* Reset filters */
+  self->protocol_filter = CHATTY_PROTOCOL_ANY;
+  g_clear_pointer (&self->chat_needle, g_free);
+
+  self->show_archived = show_archived;
+  chat_list_filter_changed_cb (self);
+  chatty_chat_list_refilter (self);
+}
+
+gboolean
+chatty_chat_list_is_archived (ChattyChatList *self)
+{
+  g_return_val_if_fail (CHATTY_IS_CHAT_LIST (self), FALSE);
+
+  return self->show_archived;
+}
+
+void
+chatty_chat_list_refilter (ChattyChatList *self)
+{
+  GtkFilter *filter;
+
+  filter = gtk_filter_list_model_get_filter (self->archive_filter_model);
+  gtk_filter_changed (filter, GTK_FILTER_CHANGE_DIFFERENT);
+}
+
+GListModel *
+chatty_chat_list_get_filter_model (ChattyChatList *self)
+{
+  g_return_val_if_fail (CHATTY_IS_CHAT_LIST (self), NULL);
+
+  return G_LIST_MODEL (self->archive_filter_model);
 }

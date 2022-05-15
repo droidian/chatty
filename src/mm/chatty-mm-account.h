@@ -33,6 +33,7 @@ void             chatty_mm_account_set_eds             (ChattyMmAccount     *sel
 void             chatty_mm_account_set_history_db      (ChattyMmAccount     *self,
                                                         gpointer             history_db);
 GListModel      *chatty_mm_account_get_chat_list       (ChattyMmAccount     *self);
+GListModel      *chatty_mm_account_get_blocked_chat_list (ChattyMmAccount     *self);
 void             chatty_mm_account_load_async          (ChattyMmAccount     *self,
                                                         GAsyncReadyCallback  callback,
                                                         gpointer             user_data);
