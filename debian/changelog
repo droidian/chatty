@@ -1,3 +1,38 @@
+chatty (0.6.4) byzantium; urgency=medium
+
+  [ Mohammed Sadiq ]
+  * mm-chat: Emit "changed" after unread is completely set
+  * chat-view: Fix saving draft after a message is sent
+  * window: Bind header bar label with item name
+  * chat: Don't show notification for blocked chats
+  * mm-chat: Add support for blocking chat
+  * mm-account: Add list of blocked chats
+  * window: Add UI for blocking and unblocking chats
+  * mm-chat: Set visibility when chat is created
+  * settings-dialog: Show list of blocked chats
+  * chat-list: Add support for filtering archived chats
+  * mm-chat: Unarchive archived chat on new message
+  * window: Add support for listing archived chats
+  * subprojects: Pin libgd to a specific commit
+
+  [ Yuri Chornoivan ]
+  * po: Update Ukrainian translation
+  * po: Update Ukrainian translation
+
+  [ Luna Jernberg ]
+  * po: Update Swedish translation
+
+  [ Vittorio Monti ]
+  * Update Italian translation
+
+  [ Pablo Correa Gómez ]
+  * po: Update Spanish translation
+
+  [ Anders Jonsson ]
+  * po: Update Swedish translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 27 Apr 2022 11:08:06 +0530
+
 chatty (0.6.3) byzantium; urgency=medium
 
   [ Evangelos Ribeiro Tzaras ]

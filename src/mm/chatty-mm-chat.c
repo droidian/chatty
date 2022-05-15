@@ -52,6 +52,7 @@ struct _ChattyMmChat
   char            *name;
   guint            unread_count;
   ChattyProtocol   protocol;
+  ChattyItemState  visibility_state;
   gboolean         is_im;
   gboolean         history_is_loading;
   gboolean         is_sending_message;
@@ -274,8 +275,8 @@ chatty_mm_chat_set_unread_count (ChattyChat *chat,
   if (self->unread_count == unread_count)
     return;
 
-  self->unread_count = unread_count;
-  g_signal_emit_by_name (self, "changed", 0);
+  if (chatty_item_get_state (CHATTY_ITEM (self)) == CHATTY_ITEM_BLOCKED)
+    self->unread_count = 0;
 
   /* If there is no users, the chat is being loaded from history,
    * and so we shouldn't update history again.
@@ -292,6 +293,7 @@ chatty_mm_chat_set_unread_count (ChattyChat *chat,
                                                n_items - unread_count);
     chatty_history_set_last_read_msg (self->history_db, chat, last_unread_msg);
   }
+  g_signal_emit_by_name (self, "changed", 0);
 }
 
 static void mm_chat_send_message_from_queue (ChattyMmChat *self);
@@ -501,6 +503,38 @@ chatty_mm_chat_get_username (ChattyItem *item)
   return "invalid-0000000000000000";
 }
 
+static ChattyItemState
+chatty_mm_chat_get_state (ChattyItem *item)
+{
+  ChattyMmChat *self = (ChattyMmChat *)item;
+
+  g_assert (CHATTY_IS_MM_CHAT (self));
+
+  return self->visibility_state;
+}
+
+static void
+chatty_mm_chat_set_state (ChattyItem      *item,
+                          ChattyItemState  state)
+{
+  ChattyMmChat *self = (ChattyMmChat *)item;
+  ChattyItemState old;
+  gboolean success;
+
+  g_assert (CHATTY_IS_MM_CHAT (self));
+
+  if (state == self->visibility_state)
+    return;
+
+  old = self->visibility_state;
+  self->visibility_state = state;
+  success = chatty_history_update_chat (self->history_db, CHATTY_CHAT (item));
+
+  if (!success)
+    self->visibility_state = old;
+  g_signal_emit_by_name (self, "changed", 0);
+}
+
 static ChattyProtocol
 chatty_mm_chat_get_protocols (ChattyItem *item)
 {
@@ -561,6 +595,8 @@ chatty_mm_chat_class_init (ChattyMmChatClass *klass)
   item_class->get_name = chatty_mm_chat_get_name;
   item_class->set_name = chatty_mm_chat_set_name;
   item_class->get_username = chatty_mm_chat_get_username;
+  item_class->get_state = chatty_mm_chat_get_state;
+  item_class->set_state = chatty_mm_chat_set_state;
   item_class->get_protocols = chatty_mm_chat_get_protocols;
   item_class->get_avatar = chatty_mm_chat_get_avatar;
 
@@ -594,10 +630,11 @@ chatty_mm_chat_init (ChattyMmChat *self)
 }
 
 ChattyMmChat *
-chatty_mm_chat_new (const char     *name,
-                    const char     *alias,
-                    ChattyProtocol  protocol,
-                    gboolean        is_im)
+chatty_mm_chat_new (const char      *name,
+                    const char      *alias,
+                    ChattyProtocol   protocol,
+                    gboolean         is_im,
+                    ChattyItemState  state)
 {
   ChattyMmChat *self;
 
@@ -606,6 +643,7 @@ chatty_mm_chat_new (const char     *name,
   self->name = g_strdup (alias);
   self->protocol = protocol;
   self->is_im = !!is_im;
+  self->visibility_state = state;
 
   return self;
 }
@@ -621,7 +659,7 @@ chatty_mm_chat_new_with_uri (ChattySmsUri   *uri,
   g_return_val_if_fail (CHATTY_IS_SMS_URI (uri), NULL);
 
   self = chatty_mm_chat_new (chatty_sms_uri_get_numbers_str (uri),
-                             NULL, protocol, is_im);
+                             NULL, protocol, is_im, CHATTY_ITEM_VISIBLE);
   self->sms_uri = g_object_ref (uri);
 
   members = chatty_sms_uri_get_numbers (uri);

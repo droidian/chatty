@@ -91,6 +91,7 @@ struct _ChattySettingsDialog
 
   GtkWidget      *delivery_reports_switch;
   GtkWidget      *handle_smil_switch;
+  GtkWidget      *blocked_list;
   GtkWidget      *carrier_mmsc_entry;
   GtkWidget      *mms_apn_entry;
   GtkWidget      *mms_proxy_entry;
@@ -671,6 +672,8 @@ settings_dialog_page_changed_cb (ChattySettingsDialog *self)
     gtk_window_set_title (GTK_WINDOW (self), _("Purple Settings"));
   else if (g_strcmp0 (name, "add-account-view") == 0)
     gtk_window_set_title (GTK_WINDOW (self), _("New Account"));
+  else if (g_strcmp0 (name, "blocked-list-view") == 0)
+    gtk_window_set_title (GTK_WINDOW (self), _("Blocked Contacts"));
   else
     gtk_window_set_title (GTK_WINDOW (self), _("Preferences"));
 }
@@ -812,13 +815,33 @@ account_list_row_activated_cb (ChattySettingsDialog *self,
 }
 
 static void
+blocked_list_action_activated_cb (ChattySettingsDialog *self)
+{
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  gtk_widget_hide (self->mms_save_button);
+  gtk_widget_hide (self->mms_cancel_button);
+  gtk_widget_show (self->back_button);
+
+  gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "blocked-list-view");
+}
+
+static void
 chatty_settings_back_clicked_cb (ChattySettingsDialog *self)
 {
   const gchar *visible_child;
 
   visible_child = gtk_stack_get_visible_child_name (GTK_STACK (self->main_stack));
 
-  if (g_str_equal (visible_child, "main-settings"))
+  if (g_str_equal (visible_child, "blocked-list-view"))
+    {
+      gtk_widget_show (self->mms_save_button);
+      gtk_widget_show (self->mms_cancel_button);
+      gtk_widget_hide (self->back_button);
+
+      gtk_stack_set_visible_child_name (GTK_STACK (self->main_stack), "message-settings-view");
+    }
+  else if (g_str_equal (visible_child, "main-settings"))
     {
         gtk_widget_hide (GTK_WIDGET (self));
     }
@@ -984,6 +1007,70 @@ chatty_account_row_new (ChattyAccount *account)
   return GTK_WIDGET (row);
 }
 
+static void
+blocked_list_items_changed_cb (ChattySettingsDialog *self)
+{
+  GListModel *list;
+  gboolean empty;
+
+  g_assert (CHATTY_IS_SETTINGS_DIALOG (self));
+
+  list = chatty_mm_account_get_blocked_chat_list (self->mm_account);
+  empty = g_list_model_get_n_items (list) == 0;
+
+  gtk_widget_set_visible (self->blocked_list, !empty);
+}
+
+static void
+row_unblock_button_clicked_cb (HdyActionRow *row)
+{
+  ChattyChat *chat;
+
+  g_assert (HDY_IS_ACTION_ROW (row));
+
+  chat = g_object_get_data (G_OBJECT (row), "chat");
+  g_assert (chat);
+
+  chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_VISIBLE);
+}
+
+static GtkWidget *
+chatty_settings_blocked_row_new (ChattyChat           *chat,
+                                 ChattySettingsDialog *self)
+{
+  HdyActionRow *row;
+  GtkWidget *button, *image, *popover, *child;
+  const char *username;
+
+  g_assert (CHATTY_IS_CHAT (chat));
+  row = HDY_ACTION_ROW (hdy_action_row_new ());
+  g_object_set_data (G_OBJECT (row), "chat", chat);
+
+  button = gtk_menu_button_new ();
+  image = gtk_image_new_from_icon_name ("view-more-symbolic", GTK_ICON_SIZE_BUTTON);
+  gtk_button_set_image (GTK_BUTTON (button), image);
+  gtk_widget_show_all (button);
+  gtk_widget_set_valign (button, GTK_ALIGN_CENTER);
+  gtk_container_add (GTK_CONTAINER (row), button);
+
+  child = gtk_model_button_new ();
+  gtk_button_set_label (GTK_BUTTON (child), _("Unblock contact"));
+  g_signal_connect_object (child, "clicked",
+                           G_CALLBACK (row_unblock_button_clicked_cb),
+                           row, G_CONNECT_SWAPPED);
+  g_object_set (child, "margin", 12, NULL);
+  gtk_widget_show (child);
+
+  popover = gtk_popover_menu_new ();
+  gtk_container_add (GTK_CONTAINER (popover), child);
+  gtk_menu_button_set_popover (GTK_MENU_BUTTON (button), popover);
+
+  username = chatty_chat_get_chat_name (chat);
+  hdy_preferences_row_set_title (HDY_PREFERENCES_ROW (row), username);
+
+  return GTK_WIDGET (row);
+}
+
 static GtkWidget *
 chatty_settings_account_row_new (ChattyAccount        *account,
                                  ChattySettingsDialog *self)
@@ -1110,6 +1197,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, delivery_reports_switch);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, handle_smil_switch);
+  gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, blocked_list);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, carrier_mmsc_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, mms_apn_entry);
   gtk_widget_class_bind_template_child (widget_class, ChattySettingsDialog, mms_proxy_entry);
@@ -1137,6 +1225,7 @@ chatty_settings_dialog_class_init (ChattySettingsDialogClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, mms_carrier_settings_apply_button_clicked_cb);
 
   gtk_widget_class_bind_template_callback (widget_class, account_list_row_activated_cb);
+  gtk_widget_class_bind_template_callback (widget_class, blocked_list_action_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_back_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, chatty_settings_cancel_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, settings_new_detail_changed_cb);
@@ -1185,6 +1274,14 @@ chatty_settings_dialog_init (ChattySettingsDialog *self)
 
   gtk_widget_set_visible (self->accounts_list_box, show_account_box);
 
+  g_signal_connect_object (chatty_mm_account_get_blocked_chat_list (self->mm_account),
+                           "items-changed",
+                           G_CALLBACK (blocked_list_items_changed_cb),
+                           self, G_CONNECT_SWAPPED);
+  gtk_list_box_bind_model (GTK_LIST_BOX (self->blocked_list),
+                           chatty_mm_account_get_blocked_chat_list (self->mm_account),
+                           (GtkListBoxCreateWidgetFunc)chatty_settings_blocked_row_new,
+                           g_object_ref (self), g_object_unref);
   gtk_list_box_bind_model (GTK_LIST_BOX (self->accounts_list_box),
                            chatty_manager_get_accounts (manager),
                            (GtkListBoxCreateWidgetFunc)chatty_settings_account_row_new,

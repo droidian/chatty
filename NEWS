@@ -1,5 +1,19 @@
+Overview of Changes in Chats 0.6.4. Tue, 27 April 2022
+======================================================
+* Add support for blocking and unblocking SMS/MMS Contacts
+* Add archived chat support for SMS/MMS Chats
+* Fix issue(s) #431, #563, #664, #676, #689
+* Update Translations
+  - Ukrainian
+  - Swedish
+  - Italian
+  - Spanish
+  - Swedish
+
+
+
 Overview of Changes in Chats 0.6.3. Tue, 26 March 2022
-====================================================
+======================================================
 * Fix calculating MMS max attachment size
 * Fix some compile time warnings
 * Fix parsing links with spaces in messages

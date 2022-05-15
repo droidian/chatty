@@ -29,6 +29,10 @@ void        chatty_chat_list_filter_protocol     (ChattyChatList   *self,
                                                   ChattyProtocol    protocol);
 void        chatty_chat_list_filter_string       (ChattyChatList   *self,
                                                   const char       *needle);
-
+void        chatty_chat_list_show_archived       (ChattyChatList   *self,
+                                                  gboolean          show_archived);
+gboolean    chatty_chat_list_is_archived         (ChattyChatList   *self);
+void        chatty_chat_list_refilter            (ChattyChatList   *self);
+GListModel *chatty_chat_list_get_filter_model    (ChattyChatList   *self);
 
 G_END_DECLS

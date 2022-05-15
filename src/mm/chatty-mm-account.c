@@ -115,6 +115,7 @@ struct _ChattyMmAccount
   MMManager        *mm_manager;
   GListStore       *device_list;
   GListStore       *chat_list;
+  GListStore       *blocked_chat_list;
   GHashTable       *pending_sms;
   GCancellable     *cancellable;
 
@@ -381,6 +382,10 @@ chatty_mm_account_append_message (ChattyMmAccount *self,
   g_assert (CHATTY_IS_MM_ACCOUNT (self));
   g_assert (CHATTY_IS_MESSAGE (message));
   g_assert (CHATTY_IS_CHAT (chat));
+
+  /* Unarchive archived chat on new message */
+  if (chatty_item_get_state (CHATTY_ITEM (chat)) == CHATTY_ITEM_ARCHIVED)
+    chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_VISIBLE);
 
   chatty_mm_chat_append_message (CHATTY_MM_CHAT (chat), message);
   chatty_history_add_message (self->history_db, chat, message);
@@ -1059,6 +1064,7 @@ chatty_mm_account_class_init (ChattyMmAccountClass *klass)
 static void
 chatty_mm_account_init (ChattyMmAccount *self)
 {
+  self->blocked_chat_list = g_list_store_new (CHATTY_TYPE_MM_CHAT);
   self->chat_list = g_list_store_new (CHATTY_TYPE_MM_CHAT);
   self->device_list = g_list_store_new (CHATTY_TYPE_MM_DEVICE);
   self->mmsd = chatty_mmsd_new (self);
@@ -1113,6 +1119,14 @@ chatty_mm_account_get_chat_list (ChattyMmAccount *self)
   return G_LIST_MODEL (self->chat_list);
 }
 
+GListModel *
+chatty_mm_account_get_blocked_chat_list (ChattyMmAccount *self)
+{
+  g_return_val_if_fail (CHATTY_IS_MM_ACCOUNT (self), NULL);
+
+  return G_LIST_MODEL (self->blocked_chat_list);
+}
+
 static void
 get_bus_cb (GObject      *object,
             GAsyncResult *result,
@@ -1139,6 +1153,27 @@ get_bus_cb (GObject      *object,
 }
 
 static void
+mm_chat_changed_cb (ChattyMmAccount *self,
+                    ChattyChat      *chat)
+{
+  ChattyItemState state;
+  GListModel *model;
+  gboolean has_item;
+
+  g_assert (CHATTY_IS_MM_ACCOUNT (self));
+  g_assert (CHATTY_IS_CHAT (chat));
+
+  state = chatty_item_get_state (CHATTY_ITEM (chat));
+  model = G_LIST_MODEL (self->blocked_chat_list);
+
+  has_item = chatty_utils_get_item_position (model, chat, NULL);
+  if (state == CHATTY_ITEM_BLOCKED && !has_item)
+    g_list_store_append (self->blocked_chat_list, chat);
+  else if (state == CHATTY_ITEM_VISIBLE && has_item)
+    chatty_utils_remove_list_item (self->blocked_chat_list, chat);
+}
+
+static void
 mm_get_chats_cb (GObject      *object,
                  GAsyncResult *result,
                  gpointer      user_data)
@@ -1161,6 +1196,13 @@ mm_get_chats_cb (GObject      *object,
 
   if (chats) {
     for (guint i = 0; i < chats->len; i++) {
+
+      if (chatty_item_get_state (chats->pdata[i]) == CHATTY_ITEM_BLOCKED)
+        g_list_store_append (self->blocked_chat_list, chats->pdata[i]);
+
+      g_signal_connect_object (chats->pdata[i], "changed",
+                               G_CALLBACK (mm_chat_changed_cb),
+                               self, G_CONNECT_SWAPPED);
       chatty_chat_set_data (chats->pdata[i], self, self->history_db);
       chatty_mm_chat_set_eds (chats->pdata[i], self->chatty_eds);
     }
@@ -1262,14 +1304,17 @@ chatty_mm_account_start_chat (ChattyMmAccount *self,
     sorted_name = create_sorted_numbers (recipientlist, members);
 
     if (members->len == 1)
-      chat = (ChattyChat *)chatty_mm_chat_new (sorted_name, NULL, CHATTY_PROTOCOL_MMS_SMS, TRUE);
+      chat = (ChattyChat *)chatty_mm_chat_new (sorted_name, NULL, CHATTY_PROTOCOL_MMS_SMS, TRUE, CHATTY_ITEM_VISIBLE);
     else /* Only MMS has multiple recipients */
-      chat = (ChattyChat *)chatty_mm_chat_new (sorted_name, NULL, CHATTY_PROTOCOL_MMS, FALSE);
+      chat = (ChattyChat *)chatty_mm_chat_new (sorted_name, NULL, CHATTY_PROTOCOL_MMS, FALSE, CHATTY_ITEM_VISIBLE);
 
     chatty_mm_chat_add_users (CHATTY_MM_CHAT (chat), members);
     chatty_chat_set_data (chat, self, self->history_db);
     chatty_mm_chat_set_eds (CHATTY_MM_CHAT (chat), self->chatty_eds);
 
+    g_signal_connect_object (chat, "changed",
+                             G_CALLBACK (mm_chat_changed_cb),
+                             self, G_CONNECT_SWAPPED);
     g_list_store_append (self->chat_list, chat);
     g_object_unref (chat);
   }
@@ -1300,6 +1345,9 @@ chatty_mm_account_start_chat_with_uri (ChattyMmAccount *self,
     chatty_chat_set_data (chat, self, self->history_db);
     chatty_mm_chat_set_eds (CHATTY_MM_CHAT (chat), self->chatty_eds);
 
+    g_signal_connect_object (chat, "changed",
+                             G_CALLBACK (mm_chat_changed_cb),
+                             self, G_CONNECT_SWAPPED);
     g_list_store_append (self->chat_list, chat);
     g_object_unref (chat);
   }
