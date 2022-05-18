@@ -1,1 +1,1 @@
-custom-library-search-path RUNPATH /usr/lib/purple-2 [usr/bin/chatty]
+custom-library-search-path RUNPATH /usr/lib/*/purple-2 [usr/bin/chatty]

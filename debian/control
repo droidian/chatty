@@ -25,7 +25,7 @@ Build-Depends:
  libmm-glib-dev (>= 1.12.0),
  libolm-dev,
  libphonenumber-dev,
- libpurple-dev,
+ libpurple-dev (>= 2.14.9),
  libsecret-1-dev,
  libsoup2.4-dev,
  libsqlite3-dev,
