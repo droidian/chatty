@@ -1,3 +1,16 @@
+chatty (0.6.4-1) unstable; urgency=medium
+
+  [ Richard Laager ]
+  * Update for multiarch libpurple0 2.14.9-1 (Closes: 1011166)
+    Thanks to Paul Gevers
+
+  [ Evangelos Ribeiro Tzaras ]
+  * New upstream version 0.6.4
+  * Declare compliance with Debian Policy 4.6.1
+  * Remove unneeded dh_shlibdeps override
+
+ -- Evangelos Ribeiro Tzaras <devrtz-debian@fortysixandtwo.eu>  Thu, 19 May 2022 23:58:49 +0200
+
 chatty (0.6.3-1) unstable; urgency=medium
 
   * New upstream version 0.6.3
