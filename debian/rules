@@ -5,9 +5,6 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 %:
 	dh $@ --builddirectory=_build
 
-override_dh_shlibdeps:
-	dh_shlibdeps -l/usr/lib/purple-2
-
 # Generate manpage with help2man
 override_dh_installman:
 	mkdir -p debian/chatty/usr/share/man/man1
