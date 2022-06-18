@@ -5,8 +5,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: purism-chatty\n"
 "Report-Msgid-Bugs-To: https://source.puri.sm/Librem5/chatty/issues\n"
-"POT-Creation-Date: 2022-04-20 15:25+0000\n"
-"PO-Revision-Date: 2022-04-20 16:35+0200\n"
+"POT-Creation-Date: 2022-04-28 15:25+0000\n"
+"PO-Revision-Date: 2022-05-03 15:18+0200\n"
 "Last-Translator: antpanlinux <ant.pandolfo@gmail.com>\n"
 "Language-Team: Italian\n"
 "Language: it\n"
@@ -17,13 +17,10 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 #: data/sm.puri.Chatty.desktop.in:3 data/sm.puri.Chatty.metainfo.xml.in:6
-#: src/chatty-application.c:333 src/ui/chatty-window.ui:226
+#: src/chatty-application.c:333 src/chatty-window.c:330
+#: src/ui/chatty-window.ui:265
 msgid "Chats"
 msgstr "Chats"
-
-#: data/sm.puri.Chatty.desktop.in:5
-msgid "sm.puri.Chatty"
-msgstr "sm.puri.Chatty"
 
 #: data/sm.puri.Chatty.desktop.in:6
 msgid "SMS and XMPP chat application"
@@ -186,24 +183,28 @@ msgstr ""
 msgid "Send To"
 msgstr "Invia a"
 
-#: src/chatty-chat-list.c:152
+#: src/chatty-chat-list.c:175
 msgid "Select a contact with the <b>“+”</b> button in the titlebar."
 msgstr ""
 "Seleziona un contatto con il pulsante <b>“+”</b> della barra del titolo."
 
-#: src/chatty-chat-list.c:156
+#: src/chatty-chat-list.c:179
 msgid "Add instant messaging accounts in Preferences."
 msgstr "Aggiungi gli account di messaggistica istantanea in Preferenze."
 
-#: src/chatty-chat-list.c:192 src/chatty-contact-list.c:282
+#: src/chatty-chat-list.c:215 src/chatty-contact-list.c:282
 msgid "No Search Results"
 msgstr "Non è stato trovato nulla "
 
-#: src/chatty-chat-list.c:193
+#: src/chatty-chat-list.c:216
 msgid "Try different search"
 msgstr "Cerca in modo diverso"
 
-#: src/chatty-chat-list.c:196
+#: src/chatty-chat-list.c:220
+msgid "No archived chats"
+msgstr "Nessuna chat archiviata"
+
+#: src/chatty-chat-list.c:222
 msgid "Start Chatting"
 msgstr "Inizia a chattare"
 
@@ -234,7 +235,7 @@ msgid "Select File..."
 msgstr "Seleziona file..."
 
 #: src/chatty-chat-view.c:417 src/purple/chatty-purple-request.c:175
-#: src/chatty-window.c:352 src/dialogs/chatty-pp-chat-info.c:90
+#: src/chatty-window.c:413 src/dialogs/chatty-pp-chat-info.c:90
 #: src/dialogs/chatty-ma-account-details.c:119
 #: src/dialogs/chatty-pp-account-details.c:91
 #: src/ui/chatty-dialog-join-muc.ui:21 src/ui/chatty-info-dialog.ui:44
@@ -424,59 +425,63 @@ msgstr "Per favore controlla ID e password"
 msgid "Chatty password for \"%s\""
 msgstr "Password Chatty per \"%s\""
 
-#: src/chatty-window.c:338
+#: src/chatty-window.c:399
 #, c-format
 msgid "Delete chat with “%s”"
 msgstr "Elimina chat con “%s”"
 
-#: src/chatty-window.c:339
+#: src/chatty-window.c:400
 msgid "This deletes the conversation history"
 msgstr "Questo elimina la cronologia delle conversazioni"
 
-#: src/chatty-window.c:341
+#: src/chatty-window.c:402
 #, c-format
 msgid "Disconnect group chat “%s”"
 msgstr "Disconnetti la chat di gruppo “%s”"
 
-#: src/chatty-window.c:342
+#: src/chatty-window.c:403
 msgid "This removes chat from chats list"
 msgstr "Questo rimuove la chat dalla lista delle chat"
 
-#: src/chatty-window.c:354
+#: src/chatty-window.c:415
 msgid "Delete"
 msgstr "Elimina"
 
-#: src/chatty-window.c:433
+#: src/chatty-window.c:493
 msgid "You shall no longer be notified for new messages, continue?"
 msgstr "Non sarai più notificato se riceverai nuovi messaggi. Vuoi continuare?"
 
-#: src/chatty-window.c:529
+#: src/chatty-window.c:568
+msgid "Archived"
+msgstr "Archiviata"
+
+#: src/chatty-window.c:621
 msgid "An SMS and XMPP messaging client"
 msgstr "Un client di messaggistica SMS e XMPP"
 
-#: src/chatty-window.c:536
+#: src/chatty-window.c:628
 msgid "translator-credits"
 msgstr ""
 "Pandolfo Antonio <ant.pandolfo@gmail.com>\n"
 "Vittorio <postav@pm.me>, 2021"
 
-#: src/chatty-window.c:874
+#: src/chatty-window.c:978
 msgid "Any Protocol"
 msgstr "Qualsiasi Protocollo"
 
-#: src/chatty-window.c:875 src/ui/chatty-settings-dialog.ui:627
+#: src/chatty-window.c:979 src/ui/chatty-settings-dialog.ui:627
 msgid "Matrix"
 msgstr "Matrix"
 
-#: src/chatty-window.c:876
+#: src/chatty-window.c:980
 msgid "SMS/MMS"
 msgstr "SMS/MMS"
 
-#: src/chatty-window.c:879 src/ui/chatty-settings-dialog.ui:615
+#: src/chatty-window.c:983 src/ui/chatty-settings-dialog.ui:615
 msgid "XMPP"
 msgstr "XMPP"
 
-#: src/chatty-window.c:882 src/ui/chatty-settings-dialog.ui:641
+#: src/chatty-window.c:986 src/ui/chatty-settings-dialog.ui:641
 msgid "Telegram"
 msgstr "Telegram"
 
@@ -626,7 +631,7 @@ msgid "Blocked Contacts"
 msgstr "Contatti bloccati"
 
 #: src/dialogs/chatty-settings-dialog.c:678 src/ui/chatty-settings-dialog.ui:7
-#: src/ui/chatty-window.ui:17
+#: src/ui/chatty-window.ui:30
 msgid "Preferences"
 msgstr "Preferenze"
 
@@ -742,7 +747,7 @@ msgstr "Aggiungi ai contatti"
 msgid "Remove Attachment"
 msgstr "Rimuovi allegato"
 
-#: src/ui/chatty-info-dialog.ui:17 src/ui/chatty-window.ui:126
+#: src/ui/chatty-info-dialog.ui:17 src/ui/chatty-window.ui:139
 msgid "Chat Details"
 msgstr "Dettagli chat"
 
@@ -820,7 +825,7 @@ msgstr "Vuoto per impostazione predefinita"
 msgid "Group Members"
 msgstr "Membri del gruppo"
 
-#: src/ui/chatty-list-row.ui:151 src/ui/chatty-window.ui:379
+#: src/ui/chatty-list-row.ui:151 src/ui/chatty-window.ui:433
 msgid "Call"
 msgstr "Chiama"
 
@@ -977,43 +982,56 @@ msgstr "Server personale"
 msgid "Add _new account…"
 msgstr "Aggiungi _nuovo account…"
 
-#: src/ui/chatty-window.ui:28
+#: src/ui/chatty-window.ui:17
+msgctxt "show archived chat list when clicked"
+msgid "Archived"
+msgstr "Archiviate"
+
+#: src/ui/chatty-window.ui:41
 msgid "Keyboard _Shortcuts"
 msgstr "_Scorciatoie da tastiera"
 
-#: src/ui/chatty-window.ui:35
+#: src/ui/chatty-window.ui:48
 msgid "Help"
 msgstr "Aiuto"
 
-#: src/ui/chatty-window.ui:44
+#: src/ui/chatty-window.ui:57
 msgid "About Chats"
 msgstr "Informazioni su Chats"
 
-#: src/ui/chatty-window.ui:72
+#: src/ui/chatty-window.ui:85
 msgid "New Message…"
 msgstr "Nuovo messaggio…"
 
-#: src/ui/chatty-window.ui:85
+#: src/ui/chatty-window.ui:98
 msgid "New SMS/MMS Message…"
 msgstr "Nuovo messaggio SMS/MMS…"
 
-#: src/ui/chatty-window.ui:98
+#: src/ui/chatty-window.ui:111
 msgid "New Group Message…"
 msgstr "Nuovo messaggio di gruppo…"
 
-#: src/ui/chatty-window.ui:151
+#: src/ui/chatty-window.ui:164
 msgid "Leave Chat"
 msgstr "Lascia la chat"
 
-#: src/ui/chatty-window.ui:164
+#: src/ui/chatty-window.ui:177
 msgid "Block Contact"
 msgstr "Blocca contatto"
 
-#: src/ui/chatty-window.ui:177
+#: src/ui/chatty-window.ui:190
 msgid "Unblock Contact"
 msgstr "Sblocca contatto"
 
-#: src/ui/chatty-window.ui:190
+#: src/ui/chatty-window.ui:203
+msgid "Archive chat"
+msgstr "Archivia la chat"
+
+#: src/ui/chatty-window.ui:216
+msgid "Unarchive chat"
+msgstr "Disarchivia la chat"
+
+#: src/ui/chatty-window.ui:229
 msgid "Delete Chat"
 msgstr "Elimina la chat"
 

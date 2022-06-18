@@ -945,6 +945,9 @@ insert_or_ignore_thread (ChattyHistory *self,
       number = chatty_mm_buddy_get_number (buddy);
       user_id = history_add_phone_user (self, task, number, name);
 
+      if (!user_id)
+        return 0;
+
       sqlite3_prepare_v2 (self->db,
                           "INSERT OR IGNORE INTO thread_members(thread_id,user_id) "
                           "VALUES(?,?);",
