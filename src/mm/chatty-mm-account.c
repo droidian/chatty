@@ -372,12 +372,13 @@ sms_create_cb (GObject      *object,
                g_steal_pointer (&task));
 }
 
-static void
+static gboolean
 chatty_mm_account_append_message (ChattyMmAccount *self,
                                   ChattyMessage   *message,
                                   ChattyChat      *chat)
 {
   guint position;
+  gboolean success;
 
   g_assert (CHATTY_IS_MM_ACCOUNT (self));
   g_assert (CHATTY_IS_MESSAGE (message));
@@ -388,7 +389,7 @@ chatty_mm_account_append_message (ChattyMmAccount *self,
     chatty_item_set_state (CHATTY_ITEM (chat), CHATTY_ITEM_VISIBLE);
 
   chatty_mm_chat_append_message (CHATTY_MM_CHAT (chat), message);
-  chatty_history_add_message (self->history_db, chat, message);
+  success = chatty_history_add_message (self->history_db, chat, message);
   chatty_chat_set_unread_count (chat, chatty_chat_get_unread_count (chat) + 1);
   g_signal_emit_by_name (chat, "changed", 0);
   if (chatty_message_get_msg_direction (message) == CHATTY_DIRECTION_IN) {
@@ -398,6 +399,8 @@ chatty_mm_account_append_message (ChattyMmAccount *self,
 
   if (chatty_utils_get_item_position (G_LIST_MODEL (self->chat_list), chat, &position))
     g_list_model_items_changed (G_LIST_MODEL (self->chat_list), position, 1, 1);
+
+  return success;
 }
 
 gboolean
@@ -530,6 +533,7 @@ mm_account_add_sms (ChattyMmAccount *self,
   const char *msg;
   ChattyMsgDirection direction = CHATTY_DIRECTION_UNKNOWN;
   gint64 unix_time = 0;
+  gboolean message_added;
 
   g_assert (CHATTY_IS_MM_ACCOUNT (self));
   g_assert (MM_IS_SMS (sms));
@@ -567,12 +571,12 @@ mm_account_add_sms (ChattyMmAccount *self,
   message = chatty_message_new (CHATTY_ITEM (senderbuddy),
                                 msg, uuid, unix_time, CHATTY_MESSAGE_TEXT, direction, 0);
 
-  chatty_mm_account_append_message (self, message, chat);
+  message_added = chatty_mm_account_append_message (self, message, chat);
 
-  if (direction == CHATTY_DIRECTION_IN)
+  if (message_added && direction == CHATTY_DIRECTION_IN)
     mm_account_delete_message_async (self, device, sms, NULL, NULL);
 
-  return TRUE;
+  return message_added;
 }
 
 static void
@@ -627,21 +631,22 @@ parse_sms (ChattyMmAccount *self,
     delivery_state = mm_sms_get_delivery_state (sms);
     if (delivery_state <= MM_SMS_DELIVERY_STATE_COMPLETED_REPLACED_BY_SC) {
       ChattyMessage *message;
+      ChattyChat *chat = NULL;
+      gboolean success = FALSE;
 
       message = g_hash_table_lookup (self->pending_sms, GINT_TO_POINTER (sms_id));
       if (message) {
-        ChattyChat *chat;
-
         chatty_message_set_status (message, CHATTY_STATUS_DELIVERED, 0);
         chat = chatty_mm_account_find_chat (self, mm_sms_get_number (sms));
         if (chat)
-          chatty_history_add_message (self->history_db, chat, message);
+          success = chatty_history_add_message (self->history_db, chat, message);
       }
 
       CHATTY_TRACE_MSG ("deleting message %s", mm_sms_get_path (sms));
-      mm_modem_messaging_delete (mm_object_peek_modem_messaging (device->mm_object),
-                                 mm_sms_get_path (sms),
-                                 NULL, NULL, NULL);
+      if (!chat || success)
+        mm_modem_messaging_delete (mm_object_peek_modem_messaging (device->mm_object),
+                                   mm_sms_get_path (sms),
+                                   NULL, NULL, NULL);
       g_hash_table_remove (self->pending_sms, GINT_TO_POINTER (sms_id));
     }
   } else if (type == MM_SMS_PDU_TYPE_CDMA_DELIVER ||

@@ -1,3 +1,25 @@
+chatty (0.6.6) byzantium; urgency=high
+
+  [ Mohammed Sadiq ]
+  * window: Allow swiping back from chat view
+  * mm-account: Delete modem SMS only if succeeded adding to db
+  * history: Return early on fail
+
+  [ Kyle Evans ]
+  * Apply 1 suggestion(s) to 1 file(s)
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Tue, 07 Jun 2022 12:58:02 +0530
+
+chatty (0.6.5) byzantium; urgency=medium
+
+  [ Daniel Șerbănescu ]
+  * po: Update Romanian translation
+
+  [ Vittorio Monti ]
+  * Update Italian translation
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Wed, 25 May 2022 21:27:44 +0530
+
 chatty (0.6.4) byzantium; urgency=medium
 
   [ Mohammed Sadiq ]
