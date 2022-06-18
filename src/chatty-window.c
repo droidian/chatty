@@ -49,6 +49,7 @@ struct _ChattyWindow
   GtkWidget *chat_list;
 
   GtkWidget *content_box;
+  GtkWidget *sidebar;
   GtkWidget *header_box;
   GtkWidget *header_group;
 
@@ -322,6 +323,14 @@ notify_fold_cb (ChattyWindow *self)
   }
 }
 
+static void
+window_content_box_changed (ChattyWindow *self)
+{
+  if (hdy_leaflet_get_folded (HDY_LEAFLET (self->content_box)) &&
+      hdy_leaflet_get_visible_child (HDY_LEAFLET (self->content_box)) == self->sidebar) {
+    window_set_item (self, NULL);
+  }
+}
 static void
 window_show_unarchived_clicked_cb (ChattyWindow *self)
 {
@@ -899,6 +908,7 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, chats_search_entry);
 
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, content_box);
+  gtk_widget_class_bind_template_child (widget_class, ChattyWindow, sidebar);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_box);
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, header_group);
 
@@ -910,6 +920,7 @@ chatty_window_class_init (ChattyWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, ChattyWindow, protocol_list);
 
   gtk_widget_class_bind_template_callback (widget_class, notify_fold_cb);
+  gtk_widget_class_bind_template_callback (widget_class, window_content_box_changed);
   gtk_widget_class_bind_template_callback (widget_class, window_show_unarchived_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_new_message_clicked_cb);
   gtk_widget_class_bind_template_callback (widget_class, window_new_sms_mms_message_clicked_cb);

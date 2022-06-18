@@ -1,3 +1,16 @@
+Overview of Changes in Chats 0.6.6. Tue, 07 June 2022
+====================================================
+* Delete modem messages only if successfully added to DB.
+* Add support for swiping back from chat view
+* Fix issue(s) #698, #699
+
+Overview of Changes in Chats 0.6.5. Tue, 25 May 2022
+====================================================
+* Update Translations
+  - Romanian
+  - Italian
+
+
 Overview of Changes in Chats 0.6.4. Tue, 27 April 2022
 ======================================================
 * Add support for blocking and unblocking SMS/MMS Contacts
@@ -9,7 +22,6 @@ Overview of Changes in Chats 0.6.4. Tue, 27 April 2022
   - Italian
   - Spanish
   - Swedish
-
 
 
 Overview of Changes in Chats 0.6.3. Tue, 26 March 2022
