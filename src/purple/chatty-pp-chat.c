@@ -57,6 +57,8 @@ struct _ChattyPpChat
   PurpleAccount      *account;
   PurpleBuddy        *buddy;
   char               *username;
+  gpointer            avatar_data; /* purple icon data */
+  GdkPixbuf          *avatar;
 
   PurpleChat         *pp_chat;
   PurpleConversation *conv;
@@ -102,8 +104,9 @@ emit_avatar_changed (ChattyPpChat *self)
   g_signal_emit_by_name (self, "avatar-changed");
 }
 
-static GdkPixbuf *
-chatty_pp_chat_get_buddy_icon (PurpleBlistNode *node)
+static void
+chatty_pp_chat_update_buddy_icon (ChattyPpChat    *self,
+                                  PurpleBlistNode *node)
 {
   PurpleStoredImage *custom_img;
   const guchar *data = NULL;
@@ -118,10 +121,14 @@ chatty_pp_chat_get_buddy_icon (PurpleBlistNode *node)
 
   purple_imgstore_unref (custom_img);
 
-  if (data != NULL)
-    return chatty_utils_get_pixbuf_from_data (data, len);
+  if (data == self->avatar_data)
+    return;
 
-  return NULL;
+  self->avatar_data = (gpointer)data;
+  g_clear_object (&self->avatar);
+
+  if (data != NULL)
+    self->avatar = chatty_utils_get_pixbuf_from_data (data, len);
 }
 
 static void
@@ -919,9 +926,9 @@ chatty_pp_chat_get_avatar (ChattyItem *item)
   }
 
   if (self->pp_chat)
-    return chatty_pp_chat_get_buddy_icon ((PurpleBlistNode *)self->pp_chat);
+    chatty_pp_chat_update_buddy_icon (self, (PurpleBlistNode *)self->pp_chat);
 
-  return NULL;
+  return self->avatar;
 }
 
 static void
@@ -975,6 +982,7 @@ chatty_pp_chat_finalize (GObject *object)
   g_object_unref (self->message_store);
   g_object_unref (self->chat_users);
   g_object_unref (self->sorted_chat_users);
+  g_clear_object (&self->avatar);
   g_free (self->last_message);
   g_free (self->chat_name);
   g_free (self->username);

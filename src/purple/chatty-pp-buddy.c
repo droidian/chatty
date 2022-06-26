@@ -86,33 +86,6 @@ chatty_pp_buddy_update_protocol (ChattyPpBuddy *self)
   self->protocol = chatty_item_get_protocols (item);
 }
 
-
-static GdkPixbuf *
-chatty_icon_from_data (const guchar *buf,
-                       gsize         size)
-{
-  g_autoptr(GdkPixbufLoader) loader = NULL;
-  g_autoptr(GError) error = NULL;
-  GdkPixbuf *pixbuf = NULL;
-
-  loader = gdk_pixbuf_loader_new ();
-  gdk_pixbuf_loader_write (loader, buf, size, &error);
-
-  if (!error)
-    gdk_pixbuf_loader_close (loader, &error);
-
-  if (error)
-    g_warning ("Error: %s: %s", __func__, error->message);
-  else
-    pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-
-  if (!pixbuf)
-    g_warning ("%s: pixbuf creation failed", __func__);
-
-  return g_object_ref (pixbuf);
-}
-
-
 /* copied and modified from chatty_blist_add_buddy */
 static void
 chatty_add_new_buddy (ChattyPpBuddy *self)
@@ -327,7 +300,7 @@ load_icon (gpointer user_data)
 
   g_clear_object (&self->avatar);
   self->avatar_data = (gpointer)data;
-  self->avatar = chatty_icon_from_data (data, len);
+  self->avatar = chatty_utils_get_pixbuf_from_data (data, len);
   g_signal_emit_by_name (self, "avatar-changed");
 
   return G_SOURCE_REMOVE;

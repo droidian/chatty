@@ -597,31 +597,6 @@ chatty_pp_account_set_username (ChattyItem *item,
 }
 
 static GdkPixbuf *
-chatty_icon_from_data (const guchar *buf,
-                       gsize         size)
-{
-  g_autoptr(GdkPixbufLoader) loader = NULL;
-  g_autoptr(GError) error = NULL;
-  GdkPixbuf *pixbuf = NULL;
-
-  loader = gdk_pixbuf_loader_new ();
-  gdk_pixbuf_loader_write (loader, buf, size, &error);
-
-  if (!error)
-    gdk_pixbuf_loader_close (loader, &error);
-
-  if (error)
-    g_warning ("Error: %s: %s", __func__, error->message);
-  else
-    pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
-
-  if (!pixbuf)
-    g_warning ("%s: pixbuf creation failed", __func__);
-
-  return g_object_ref (pixbuf);
-}
-
-static GdkPixbuf *
 chatty_pp_account_get_avatar (ChattyItem *item)
 {
   ChattyPpAccount *self = (ChattyPpAccount *)item;
@@ -642,8 +617,8 @@ chatty_pp_account_get_avatar (ChattyItem *item)
   self->pp_avatar = img;
 
   if (img != NULL)
-    self->avatar = chatty_icon_from_data (purple_imgstore_get_data (img),
-                                          purple_imgstore_get_size (img));
+    self->avatar = chatty_utils_get_pixbuf_from_data (purple_imgstore_get_data (img),
+                                                      purple_imgstore_get_size (img));
   return self->avatar;
 }
 

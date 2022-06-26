@@ -267,9 +267,12 @@ text_item_update_message (ChattyTextItem *self)
 
     subject = chatty_message_get_subject (self->message);
 
-    if (text && *text) {
+    if ((subject && *subject) || (text && *text)) {
       if (str->len)
         g_string_prepend (str, "\n\n");
+    }
+
+    if (text && *text) {
       g_string_prepend (str, text);
 
       if (subject && *subject)
