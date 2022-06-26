@@ -32,6 +32,7 @@ struct _ChattyFileInfo {
 
 const char *chatty_utils_get_purple_dir (void);
 char *chatty_utils_jabber_id_strip (const char *name);
+void chatty_utils_sanitize_filename (char *name);
 char *chatty_utils_check_phonenumber (const char *phone_number,
                                       const char *country);
 ChattyProtocol chatty_utils_username_is_valid  (const char     *name,
