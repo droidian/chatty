@@ -1,3 +1,20 @@
+chatty (0.6.7) byzantium; urgency=medium
+
+  [ Andrey Skvortsov ]
+  * text-item: fix missing new line if there is subject, but no text in MMS
+
+  [ Chris Talbot ]
+  * utils: add chatty_utils_sanitize_filename()
+  * mmsd: sanitize incoming filenames
+
+  [ Mohammed Sadiq ]
+  * pp-account: Use utils API to get pixbuf from data
+  * pp-buddy: Use utils API to get pixbuf from data
+  * pp-chat: Fix leaking avatar
+  * utils: Scale down pixbuf when load from data
+
+ -- Mohammed Sadiq <sadiq@sadiqpk.org>  Sat, 25 Jun 2022 21:22:58 +0530
+
 chatty (0.6.6) byzantium; urgency=high
 
   [ Mohammed Sadiq ]

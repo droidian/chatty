@@ -1,3 +1,9 @@
+Overview of Changes in Chats 0.6.7. Tue, 25 June 2022
+=====================================================
+* Scale down user avatar to speed up UI
+* MMS
+  - fix missing new line if there is subject, but no text
+
 Overview of Changes in Chats 0.6.6. Tue, 07 June 2022
 ====================================================
 * Delete modem messages only if successfully added to DB.

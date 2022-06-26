@@ -282,6 +282,18 @@ chatty_utils_jabber_id_strip (const char *name)
 
   return stripped;
 }
+/*
+ * chatty_utils_sanitize_filename:
+ * @filename: the filename to sanitize
+ *
+ * Sanitizes a filename by modifying the passed in string in place.
+ * It's basically the reverse of `ChattyTextItem.find_url()`.
+ */
+void
+chatty_utils_sanitize_filename (char *filename)
+{
+  g_strdelimit (filename, " ()[],", '_');
+}
 
 
 gboolean
@@ -353,6 +365,22 @@ chatty_utils_remove_list_item (GListStore *store,
   return FALSE;
 }
 
+static void
+pixbuf_size_prepared_cb (GdkPixbufLoader *loader,
+                         int              width,
+                         int              height)
+{
+  int scale;
+
+  g_assert (GDK_IS_PIXBUF_LOADER (loader));
+
+  scale = width / 384;
+
+  /* Scale down the image as we show them only as thumbnails */
+  if (scale)
+    gdk_pixbuf_loader_set_size (loader, width / scale, height / scale);
+}
+
 GdkPixbuf *
 chatty_utils_get_pixbuf_from_data (const guchar *buf,
                                    gsize         count)
@@ -365,6 +393,9 @@ chatty_utils_get_pixbuf_from_data (const guchar *buf,
     return NULL;
 
   loader = gdk_pixbuf_loader_new ();
+  g_signal_connect_object (loader, "size-prepared",
+                           G_CALLBACK (pixbuf_size_prepared_cb),
+                           loader, 0);
   gdk_pixbuf_loader_write (loader, buf, count, &error);
 
   if (!error)

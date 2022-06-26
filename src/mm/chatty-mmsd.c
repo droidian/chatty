@@ -1014,7 +1014,7 @@ chatty_mmsd_receive_message (ChattyMmsd *self,
     filename = g_strdup (filenode);
     g_strdelimit (filename, "<>", ' ');
     g_strstrip (filename);
-    g_strdelimit (filename, " ", '_');
+    chatty_utils_sanitize_filename (filename);
     filename = g_path_get_basename (filename);
     new = g_file_get_child (savepath, filename);
     out = g_file_create (new, G_FILE_CREATE_PRIVATE, NULL, &error);
