@@ -15,4 +15,4 @@ override_dh_installman:
 # otherwise the tests running gtk-builder-tool to validate
 # .ui files might fail
 override_dh_auto_test:
-	NO_AT_BRIDGE=1 LANGUAGE=C.UTF-8 xvfb-run dh_auto_test
+	GSETTINGS_BACKEND=memory NO_AT_BRIDGE=1 LANGUAGE=C.UTF-8 xvfb-run dh_auto_test
