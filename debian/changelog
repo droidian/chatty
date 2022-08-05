@@ -1,3 +1,10 @@
+chatty (0.6.7-2) unstable; urgency=medium
+
+  * utils: update for GNOME Desktop 43 thumbnail API changes.
+    Thanks to Jeremy Bicha for the patch. (Closes: #1016171)
+
+ -- Guido Günther <agx@sigxcpu.org>  Tue, 02 Aug 2022 10:28:06 +0200
+
 chatty (0.6.7-1) unstable; urgency=medium
 
   * New upstream version 0.6.7
