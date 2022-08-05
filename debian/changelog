@@ -1,7 +1,10 @@
 chatty (0.6.7-2) unstable; urgency=medium
 
+  * Mark as team upload
   * utils: update for GNOME Desktop 43 thumbnail API changes.
     Thanks to Jeremy Bicha for the patch. (Closes: #1016171)
+  * d/rules: Use gsettings memory backend
+    This avoids test failures when dconf backend can't be written.
 
  -- Guido Günther <agx@sigxcpu.org>  Tue, 02 Aug 2022 10:28:06 +0200
 
