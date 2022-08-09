@@ -467,9 +467,8 @@ matrix_account_sync_cb (ChattyMaAccount *self,
              error->code, error->message);
 
   if (error &&
-      ((error->domain == SOUP_HTTP_ERROR &&
-        error->code <= SOUP_STATUS_TLS_FAILED &&
-        error->code > SOUP_STATUS_CANCELLED) ||
+      (error->domain == SOUP_TLD_ERROR ||
+       error->domain == G_TLS_ERROR ||
        g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NETWORK_UNREACHABLE) ||
        g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT) ||
        error->domain == G_RESOLVER_ERROR ||

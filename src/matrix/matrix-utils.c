@@ -363,37 +363,6 @@ matrix_utils_json_object_get_array (JsonObject *object,
   return NULL;
 }
 
-JsonObject *
-matrix_utils_get_message_json_object (SoupMessage *message,
-                                      const char  *member)
-{
-  g_autoptr(JsonParser) parser = NULL;
-  g_autoptr(SoupBuffer) buffer = NULL;
-  JsonObject *object = NULL;
-  gboolean is_json;
-
-  if (!message || !message->response_body)
-    return NULL;
-
-  buffer = soup_message_body_flatten (message->response_body);
-  parser = json_parser_new ();
-  is_json = json_parser_load_from_data (parser, buffer->data, buffer->length, NULL);
-
-  if (is_json) {
-    JsonNode *root;
-
-    root = json_parser_get_root (parser);
-
-    if (root && JSON_NODE_HOLDS_OBJECT (root))
-      object = json_node_get_object (root);
-
-    if (member && object)
-      object = json_object_get_object_member (object, member);
-  }
-
-  return object ? json_object_ref (object) : NULL;
-}
-
 static gboolean
 cancel_read_uri (gpointer user_data)
 {
@@ -447,16 +416,17 @@ matrix_utils_handle_ssl_error (SoupMessage *message)
   GApplication *app;
   GtkWidget *dialog;
   GtkWindow *window = NULL;
-  SoupURI *uri;
+  GUri *uri;
   g_autofree char *msg = NULL;
   const char *host;
   GTlsCertificateFlags err_flags;
   gboolean cancelled = FALSE;
 
   if (!SOUP_IS_MESSAGE (message) ||
-      !soup_message_get_https_status (message, &cert, &err_flags) ||
-      !err_flags)
+      !(err_flags = soup_message_get_tls_peer_certificate_errors (message)))
     return cancelled;
+  
+  cert = soup_message_get_tls_peer_certificate(message);
 
   app = g_application_get_default ();
   if (app)
@@ -466,7 +436,7 @@ matrix_utils_handle_ssl_error (SoupMessage *message)
     return cancelled;
 
   uri = soup_message_get_uri (message);
-  host = soup_uri_get_host (uri);
+  host = g_uri_get_host (uri);
 
   switch (err_flags) {
   case G_TLS_CERTIFICATE_UNKNOWN_CA:
@@ -549,11 +519,8 @@ uri_file_read_cb (GObject      *object,
     return;
   }
 
-  soup_message_get_https_status (message, NULL, &err_flags);
-
   if (message &&
-      soup_message_get_https_status (message, NULL, &err_flags) &&
-      err_flags) {
+      (err_flags = soup_message_get_tls_peer_certificate_errors (message))) {
     guint timeout_id, timeout;
 
     timeout = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (task), "timeout"));
@@ -593,6 +560,14 @@ message_network_event_cb (SoupMessage        *msg,
   /* @connection is a #GSocketConnection */
   address = g_socket_connection_get_remote_address (G_SOCKET_CONNECTION (connection), NULL);
   g_object_set_data_full (user_data, "address", address, g_object_unref);
+}
+
+static gboolean
+accept_certificate_callback (SoupMessage *msg, GTlsCertificate *certificate,
+                             GTlsCertificateFlags tls_errors, gpointer user_data)
+{
+    // Returning TRUE trusts it anyway.
+    return TRUE;
 }
 
 void
@@ -641,9 +616,10 @@ matrix_utils_read_uri_async (const char          *uri,
                            G_CALLBACK (message_network_event_cb), task,
                            G_CONNECT_AFTER);
   session = soup_session_new ();
-  g_object_set (G_OBJECT (session), SOUP_SESSION_SSL_STRICT, FALSE, NULL);
+  /* Accept invalid certificates */
+  g_signal_connect (message, "accept-certificate", G_CALLBACK (accept_certificate_callback), NULL);
 
-  soup_session_send_async (session, message, cancel,
+  soup_session_send_async (session, message, 0, cancel,
                            uri_file_read_cb,
                            g_steal_pointer (&task));
 }

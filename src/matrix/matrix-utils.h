@@ -41,9 +41,6 @@ JsonObject   *matrix_utils_json_object_get_object   (JsonObject    *object,
 JsonArray    *matrix_utils_json_object_get_array    (JsonObject    *object,
                                                      const char    *member);
 
-JsonObject   *matrix_utils_get_message_json_object  (SoupMessage   *message,
-                                                     const char    *member);
-
 void          matrix_utils_read_uri_async           (const char    *uri,
                                                      guint          timeout,
                                                      GCancellable  *cancellable,

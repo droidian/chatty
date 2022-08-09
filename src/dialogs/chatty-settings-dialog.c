@@ -618,14 +618,25 @@ settings_homeserver_entry_changed (ChattySettingsDialog *self,
 
   server = gtk_entry_get_text (entry);
 
+
   if (server && *server) {
-    g_autoptr(SoupURI) uri = NULL;
+    g_autoptr(GUri) uri = NULL;
+    const char *scheme = NULL;
+    const char *path = NULL;
+    const char *host = NULL;
 
-    uri = soup_uri_new (gtk_entry_get_text (entry));
+    uri = g_uri_parse (gtk_entry_get_text (entry), G_URI_FLAGS_NONE, NULL);
+    if (uri) {
+      scheme = g_uri_get_scheme (uri);
+      path = g_uri_get_path (uri);
+      host = g_uri_get_host (uri);
+    }
 
-    valid = SOUP_URI_VALID_FOR_HTTP (uri);
-    /* We need an absolute path URI */
-    valid = valid && *uri->host && g_str_equal (soup_uri_get_path (uri), "/");
+    valid = scheme && *scheme;
+    valid = valid && (g_str_equal (scheme, "http") || g_str_equal (scheme, "https"));
+    valid = valid && host && *host;
+    valid = valid && !g_str_has_suffix (host, ".");
+    valid = valid && (!path || !*path);
   }
 
   if (valid)

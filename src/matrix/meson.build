@@ -14,7 +14,7 @@ libsrc += files([
 
 chatty_deps += [
   dependency('libgcrypt'),
-  dependency('libsoup-2.4'),
+  dependency('libsoup-3.0'),
   dependency('json-glib-1.0'),
   libolm_dep,
 ]

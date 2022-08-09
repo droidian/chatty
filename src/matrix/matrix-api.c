@@ -512,9 +512,8 @@ handle_common_errors (MatrixApi *self,
    * The G_RESOLVER_ERROR may be suggesting that the hostname is wrong, but we don't
    * know if it's network/DNS/Proxy error. So keep retrying.
    */
-  if ((error->domain == SOUP_HTTP_ERROR &&
-       error->code <= SOUP_STATUS_TLS_FAILED &&
-       error->code > SOUP_STATUS_CANCELLED) ||
+  if ((error->domain == SOUP_TLD_ERROR &&
+       error->domain == G_TLS_ERROR) ||
       g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NETWORK_UNREACHABLE) ||
       g_error_matches (error, G_IO_ERROR, G_IO_ERROR_TIMED_OUT) ||
       error->domain == G_RESOLVER_ERROR ||
@@ -1250,22 +1249,23 @@ void
 matrix_api_set_homeserver (MatrixApi  *self,
                            const char *homeserver)
 {
-  g_autoptr(SoupURI) uri = NULL;
+  g_autoptr(GUri) uri = NULL;
   GString *host;
 
   g_return_if_fail (MATRIX_IS_API (self));
 
-  uri = soup_uri_new (homeserver);
-  if (!homeserver || !uri ||
-      !SOUP_URI_VALID_FOR_HTTP (uri))
+  if (!homeserver || !(uri = g_uri_parse (homeserver, SOUP_HTTP_URI_FLAGS, NULL)))
     return;
 
   host = g_string_new (NULL);
-  g_string_append (host, soup_uri_get_scheme (uri));
+  g_string_append (host, g_uri_get_scheme (uri));
   g_string_append (host, "://");
-  g_string_append (host, uri->host);
-  if (!soup_uri_uses_default_port (uri))
-    g_string_append_printf (host, ":%d", soup_uri_get_port (uri));
+  g_string_append (host, g_uri_get_host (uri));
+  if (!(((g_strcmp0 (g_uri_get_scheme (uri), "http") == 0) && g_uri_get_port (uri) == 80) ||
+      ((g_strcmp0 (g_uri_get_scheme (uri), "https") == 0) && g_uri_get_port (uri) == 443)))
+    {
+      g_string_append_printf (host, ":%d", g_uri_get_port (uri));
+    }
 
   g_free (self->homeserver);
   self->homeserver = g_string_free (host, FALSE);

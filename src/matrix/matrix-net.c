@@ -301,7 +301,8 @@ queue_data (MatrixNet  *self,
             GTask      *task)
 {
   g_autoptr(SoupMessage) message = NULL;
-  g_autoptr(SoupURI) uri = NULL;
+  g_autoptr(GUri) uri = NULL;
+  g_autoptr(GBytes) content_data = NULL;
   GCancellable *cancellable;
   SoupMessagePriority msg_priority;
   int priority = 0;
@@ -315,8 +316,8 @@ queue_data (MatrixNet  *self,
             method == SOUP_METHOD_POST ||
             method == SOUP_METHOD_PUT);
 
-  uri = soup_uri_new (self->homeserver);
-  soup_uri_set_path (uri, uri_path);
+  uri = g_uri_parse (self->homeserver, SOUP_HTTP_URI_FLAGS, NULL);
+  uri = soup_uri_copy (uri, SOUP_URI_PATH, uri_path, SOUP_URI_NONE);
 
   if (self->access_token) {
     if (!query)
@@ -324,12 +325,12 @@ queue_data (MatrixNet  *self,
                                      (GDestroyNotify)matrix_utils_free_buffer);
 
     g_hash_table_replace (query, g_strdup ("access_token"), g_strdup (self->access_token));
-    soup_uri_set_query_from_form (uri, query);
+    uri = soup_uri_copy(uri, SOUP_URI_QUERY, soup_form_encode_hash(query), SOUP_URI_NONE);
     g_hash_table_unref (query);
   }
 
   message = soup_message_new_from_uri (method, uri);
-  soup_message_headers_append (message->request_headers, "Accept-Encoding", "gzip");
+  soup_message_headers_append (soup_message_get_request_headers (message), "Accept-Encoding", "gzip");
 
   priority = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (task), "priority"));
 
@@ -347,11 +348,14 @@ queue_data (MatrixNet  *self,
   soup_message_set_priority (message, msg_priority);
 
   if (data)
-    soup_message_set_request (message, "application/json", SOUP_MEMORY_TAKE, data, size);
+    {
+      content_data = g_bytes_new_static (data, size);
+      soup_message_set_request_body_from_bytes (message, "application/json", content_data);
+    }
 
   cancellable = g_task_get_cancellable (task);
   g_task_set_task_data (task, g_object_ref (message), g_object_unref);
-  soup_session_send_async (self->soup_session, message, cancellable,
+  soup_session_send_async (self->soup_session, message, msg_priority, cancellable,
                            session_send_cb, task);
 }
 
@@ -593,7 +597,7 @@ matrix_net_get_file_async (MatrixNet             *self,
   if (message)
     chatty_message_emit_updated (message);
 
-  soup_session_send_async (self->file_session, msg, cancellable,
+  soup_session_send_async (self->file_session, msg, 0, cancellable,
                            net_get_file_stream_cb, task);
 }
 
