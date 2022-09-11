@@ -10,7 +10,6 @@ src_inc += include_directories('users')
 
 purple_plugdir = ''
 
-subdir('matrix')
 subdir('mm')
 subdir('purple')
 
