@@ -27,7 +27,7 @@ Build-Depends:
  libphonenumber-dev,
  libpurple-dev (>= 2.14.9),
  libsecret-1-dev,
- libsoup2.4-dev,
+ libsoup-3.0-dev,
  libsqlite3-dev,
  meson,
  xauth,
